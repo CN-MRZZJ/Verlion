@@ -1,0 +1,21 @@
+from .admin import MeetAdminMixin
+from .athletes import MeetAthleteMixin
+from .base import MeetServiceBase
+from .imports import MeetImportMixin
+from .notice import MeetNoticeMixin
+from .results import MeetResultMixin
+from .teams import MeetTeamMixin
+from .views import MeetViewMixin
+
+
+class SportsMeetService(
+    MeetServiceBase,
+    MeetAthleteMixin,
+    MeetTeamMixin,
+    MeetResultMixin,
+    MeetViewMixin,
+    MeetNoticeMixin,
+    MeetImportMixin,
+    MeetAdminMixin,
+):
+    pass
