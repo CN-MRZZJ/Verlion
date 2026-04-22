@@ -1,0 +1,398 @@
+{% extends "layout.html" %}
+{% block title %}组队管理{% endblock %}
+{% block content %}
+
+<div class="layui-row layui-col-space15" id="team-ops-app">
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">查询队伍</div>
+      <div class="layui-card-body">
+        <form class="layui-form" id="team-query-form" autocomplete="off">
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md3">
+              <select name="event_id" id="query-event-id">
+                <option value="">全部团体项目</option>
+                {% for e in team_events %}
+                  {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
+                  {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                  <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="layui-col-md3">
+              <input type="text" name="department_name" id="query-department-name" class="layui-input" placeholder="单位（可选）" list="team-dept-list" />
+            </div>
+            <div class="layui-col-md3">
+              <input type="text" name="keyword" id="query-keyword" class="layui-input" placeholder="输入队伍名/项目名/单位" />
+            </div>
+            <div class="layui-col-md3">
+              <button type="button" class="layui-btn" id="btn-team-query">查询</button>
+              <button type="button" class="layui-btn layui-btn-primary" id="btn-team-query-reset">重置</button>
+            </div>
+          </div>
+        </form>
+        <datalist id="team-dept-list">
+          {% for d in departments %}
+            <option value="{{ d }}"></option>
+          {% endfor %}
+        </datalist>
+        <div style="margin-top:10px;" id="team-query-meta"></div>
+        <div class="table-scroll" style="margin-top:8px;">
+          <table class="layui-table" lay-even>
+            <thead>
+              <tr>
+                <th>队伍ID</th><th>队伍名称</th><th>单位</th><th>项目</th><th>人数</th><th>成员摘要</th>
+              </tr>
+            </thead>
+            <tbody id="team-query-body">
+              <tr><td colspan="6">请点击“查询”</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">新增队伍</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/team/add" data-ajax="true" data-no-reload="1" id="team-add-form" autocomplete="off">
+          <div class="layui-form-item">
+            <label class="layui-form-label">团体项目</label>
+            <div class="layui-input-block">
+              <select name="event_id" required>
+                <option value="">请选择</option>
+                {% for e in team_events %}
+                  {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
+                  {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                  <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">归属单位</label>
+            <div class="layui-input-block">
+              <input type="text" name="department_name" class="layui-input" list="team-dept-list" required />
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">队伍名称</label>
+            <div class="layui-input-block">
+              <input type="text" name="team_name" class="layui-input" required />
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn">新增队伍</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">删除队伍</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/team/delete" data-ajax="true" data-no-reload="1" id="team-delete-form" autocomplete="off">
+          <div class="layui-form-item">
+            <label class="layui-form-label">队伍ID</label>
+            <div class="layui-input-block">
+              <input type="number" min="1" name="team_id" class="layui-input" required />
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn layui-btn-danger">删除队伍</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">队伍成员增减</div>
+      <div class="layui-card-body">
+        <div class="layui-row layui-col-space15">
+          <div class="layui-col-md6">
+            <form class="layui-form js-ajax-form" method="post" action="/team/member/add" data-ajax="true" data-no-reload="1" autocomplete="off">
+              <fieldset class="layui-elem-field">
+                <legend>增加成员</legend>
+                <div class="layui-field-box">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">队伍ID</label>
+                    <div class="layui-input-block">
+                      <input type="number" min="1" name="team_id" class="layui-input" required />
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">运动员类型</label>
+                    <div class="layui-input-block">
+                      <select name="athlete_type" required>
+                        <option value="">请选择</option>
+                        <option value="competitive">竞技</option>
+                        <option value="fun">趣味</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">运动员号</label>
+                    <div class="layui-input-block">
+                      <input type="text" name="athlete_no" class="layui-input" required />
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <div class="layui-input-block">
+                      <button type="submit" class="layui-btn">增加成员</button>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+          <div class="layui-col-md6">
+            <form class="layui-form js-ajax-form" method="post" action="/team/member/remove" data-ajax="true" data-no-reload="1" autocomplete="off" id="team-member-remove-form">
+              <fieldset class="layui-elem-field">
+                <legend>减少成员</legend>
+                <div class="layui-field-box">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">队伍ID</label>
+                    <div class="layui-input-block">
+                      <input type="number" min="1" name="team_id" id="remove-team-id" class="layui-input" required />
+                      <div style="margin-top:8px;">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btn-load-team-members">加载当前成员</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">待移除成员</label>
+                    <div class="layui-input-block">
+                      <select id="remove-member-select">
+                        <option value="">请选择成员</option>
+                      </select>
+                      <input type="hidden" name="athlete_type" id="remove-athlete-type" required />
+                      <input type="hidden" name="athlete_no" id="remove-athlete-no" required />
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <div class="layui-input-block">
+                      <button type="submit" class="layui-btn layui-btn-warm">减少成员</button>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function(){
+  var app = document.getElementById('team-ops-app');
+  if(!app) return;
+
+  var queryEvent = document.getElementById('query-event-id');
+  var queryDept = document.getElementById('query-department-name');
+  var queryKeyword = document.getElementById('query-keyword');
+  var queryBtn = document.getElementById('btn-team-query');
+  var queryResetBtn = document.getElementById('btn-team-query-reset');
+  var queryBody = document.getElementById('team-query-body');
+  var queryMeta = document.getElementById('team-query-meta');
+
+  var teamDeleteForm = document.getElementById('team-delete-form');
+  var removeForm = document.getElementById('team-member-remove-form');
+  var removeTeamIdInput = document.getElementById('remove-team-id');
+  var removeMemberSelect = document.getElementById('remove-member-select');
+  var removeAthleteType = document.getElementById('remove-athlete-type');
+  var removeAthleteNo = document.getElementById('remove-athlete-no');
+  var btnLoadTeamMembers = document.getElementById('btn-load-team-members');
+
+  var removeLoadSeq = 0;
+
+  function renderSelect(){
+    if(window.layui && layui.form){ layui.form.render('select'); }
+  }
+
+  function fillRemoveMemberSelect(items){
+    if(!removeMemberSelect) return;
+    removeMemberSelect.innerHTML = '';
+    removeMemberSelect.add(new Option('请选择成员', ''));
+    (items || []).forEach(function(it){
+      var val = String(it.athlete_type || '') + '|' + String(it.athlete_no || '');
+      var typeText = it.athlete_type === 'competitive' ? '竞技' : (it.athlete_type === 'fun' ? '趣味' : String(it.athlete_type || ''));
+      var label = typeText + ' · ' + String(it.athlete_no || '') + ' · ' + String(it.athlete_name || '');
+      removeMemberSelect.add(new Option(label, val));
+    });
+    renderSelect();
+  }
+
+  function syncHiddenFromSelect(){
+    if(!removeMemberSelect || !removeAthleteType || !removeAthleteNo) return;
+    var val = String(removeMemberSelect.value || '');
+    if(!val || val.indexOf('|') < 0){
+      removeAthleteType.value = '';
+      removeAthleteNo.value = '';
+      return;
+    }
+    var parts = val.split('|');
+    removeAthleteType.value = String(parts[0] || '');
+    removeAthleteNo.value = String(parts[1] || '');
+  }
+
+  function typeText(t){
+    return t === 'competitive' ? '竞技' : (t === 'fun' ? '趣味' : t || '');
+  }
+
+  function renderQueryRows(items){
+    if(!queryBody) return;
+    if(!items || !items.length){
+      queryBody.innerHTML = '<tr><td colspan="6">无匹配数据</td></tr>';
+      return;
+    }
+    queryBody.innerHTML = items.map(function(it){
+      return '<tr>'
+        + '<td>' + String(it.id || '') + '</td>'
+        + '<td>' + String(it.team_name || '') + '</td>'
+        + '<td>' + String(it.department_name || '') + '</td>'
+        + '<td>' + String(it.event_name || '') + '</td>'
+        + '<td>' + String(it.member_count || 0) + '</td>'
+        + '<td>' + String(it.members_summary || '') + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  async function fetchTeamQuery(){
+    var qs = new URLSearchParams({
+      event_id: queryEvent && queryEvent.value ? queryEvent.value : '',
+      department_name: queryDept && queryDept.value ? queryDept.value : '',
+      keyword: queryKeyword && queryKeyword.value ? queryKeyword.value : ''
+    });
+    try{
+      var resp = await fetch('/api/team/query?' + qs.toString());
+      var data = await resp.json();
+      if(!resp.ok || data.ok === false){
+        if(window.layer && layer.msg) layer.msg(data.error || '查询失败');
+        return;
+      }
+      var items = data.items || [];
+      renderQueryRows(items);
+      if(queryMeta){
+        queryMeta.innerHTML = '<span class="layui-badge layui-bg-blue">共 ' + String(data.total || items.length || 0) + ' 条</span>';
+      }
+    }catch(_){
+      if(window.layer && layer.msg) layer.msg('查询失败');
+    }
+  }
+
+  async function loadTeamMembersForRemove(){
+    var seq = ++removeLoadSeq;
+    var teamId = removeTeamIdInput && removeTeamIdInput.value ? String(removeTeamIdInput.value).trim() : '';
+    fillRemoveMemberSelect([]);
+    syncHiddenFromSelect();
+    if(!teamId){
+      if(removeMemberSelect){
+        removeMemberSelect.add(new Option('请先输入队伍ID', ''));
+        renderSelect();
+      }
+      return;
+    }
+    try{
+      var resp = await fetch('/api/team/members?team_id=' + encodeURIComponent(teamId));
+      var data = await resp.json();
+      if(seq !== removeLoadSeq) return;
+      if(!resp.ok || data.ok === false){
+        fillRemoveMemberSelect([]);
+        if(removeMemberSelect){
+          removeMemberSelect.add(new Option('加载失败', ''));
+          renderSelect();
+        }
+        if(window.layer && layer.msg) layer.msg(data.error || '加载失败');
+        return;
+      }
+      var items = data.items || [];
+      if(!items.length){
+        fillRemoveMemberSelect([]);
+        if(removeMemberSelect){
+          removeMemberSelect.add(new Option('该队伍暂无成员', ''));
+          renderSelect();
+        }
+      } else {
+        fillRemoveMemberSelect(items);
+      }
+      syncHiddenFromSelect();
+    }catch(_){
+      fillRemoveMemberSelect([]);
+      if(removeMemberSelect){
+        removeMemberSelect.add(new Option('加载失败', ''));
+        renderSelect();
+      }
+      if(window.layer && layer.msg) layer.msg('加载失败');
+    }
+  }
+
+  if(queryBtn){ queryBtn.addEventListener('click', fetchTeamQuery); }
+  if(queryResetBtn){
+    queryResetBtn.addEventListener('click', function(){
+      if(queryEvent) queryEvent.value = '';
+      if(queryDept) queryDept.value = '';
+      if(queryKeyword) queryKeyword.value = '';
+      if(queryMeta) queryMeta.innerHTML = '';
+      if(queryBody) queryBody.innerHTML = '<tr><td colspan="6">请点击“查询”</td></tr>';
+      renderSelect();
+    });
+  }
+
+  if(teamDeleteForm){
+    teamDeleteForm.addEventListener('submit', function(e){
+      var ok = window.confirm('将删除该队伍，并清理其相关成员/成绩记录。是否继续？');
+      if(!ok) e.preventDefault();
+    });
+  }
+
+  if(removeMemberSelect){
+    removeMemberSelect.addEventListener('change', syncHiddenFromSelect);
+  }
+  if(removeTeamIdInput){
+    removeTeamIdInput.addEventListener('change', loadTeamMembersForRemove);
+    removeTeamIdInput.addEventListener('blur', loadTeamMembersForRemove);
+  }
+  if(btnLoadTeamMembers){
+    btnLoadTeamMembers.addEventListener('click', loadTeamMembersForRemove);
+  }
+
+  if(removeForm){
+    removeForm.addEventListener('submit', function(e){
+      syncHiddenFromSelect();
+      if(!removeAthleteType.value || !removeAthleteNo.value){
+        e.preventDefault();
+        if(window.layer && layer.msg) layer.msg('请先选择待移除成员');
+      }
+    });
+  }
+
+  app.querySelectorAll('.js-ajax-form').forEach(function(form){
+    form.addEventListener('ajax:success', function(){
+      fetchTeamQuery();
+      if(form.id === 'team-delete-form'){
+        fillRemoveMemberSelect([]);
+        syncHiddenFromSelect();
+      }
+      if(String(form.action || '').indexOf('/team/member/') >= 0){
+        loadTeamMembersForRemove();
+      }
+    });
+  });
+
+  renderSelect();
+});
+</script>
+
+{% endblock %}

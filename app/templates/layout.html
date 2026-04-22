@@ -10,7 +10,7 @@
 <body class="layui-layout-body">
   <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
-      <div class="layui-logo">Sports Point 管理后台</div>
+      <div class="layui-logo"><img src="https://www.bistu.edu.cn/picture/logo.png" alt="BISTU Logo" style="height: 60%; max-height: 40px; width: auto;"></div>
       <ul class="layui-nav layui-layout-left">
         <li class="layui-nav-item"><a href="/">教工运动会数据系统</a></li>
       </ul>
@@ -31,6 +31,7 @@
             <dl class="layui-nav-child">
               <dd class="{% if active_page == 'import_center' %}layui-this{% endif %}"><a href="/import-center">数据导入</a></dd>
               <dd class="{% if active_page == 'athlete_ops' %}layui-this{% endif %}"><a href="/athlete-ops">运动员操作</a></dd>
+              <dd class="{% if active_page == 'team_ops' %}layui-this{% endif %}"><a href="/team-ops">组队管理</a></dd>
               <dd class="{% if active_page == 'result_entry' %}layui-this{% endif %}"><a href="/result-entry">成绩录入</a></dd>
               <dd class="{% if active_page == 'notice_center' %}layui-this{% endif %}"><a href="/notice-center">成绩公示</a></dd>
               <dd class="{% if active_page == 'data_center' %}layui-this{% endif %}"><a href="/data">数据库查看</a></dd>

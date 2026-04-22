@@ -114,6 +114,17 @@ def athlete_ops():
     )
 
 
+@main_bp.get("/team-ops")
+def team_ops():
+    service = get_service()
+    return render_template(
+        "team_ops.html",
+        active_page="team_ops",
+        team_events=service.list_team_events(),
+        departments=service.list_department_names(),
+    )
+
+
 @main_bp.post("/setup/init")
 def setup_init():
     try:
@@ -304,6 +315,62 @@ def athlete_registration_remove():
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
+@main_bp.post("/team/add")
+def team_add():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        team_id = get_service().add_team_by_department_name(
+            department_name=str(payload.get("department_name", "")).strip(),
+            event_id=int(str(payload.get("event_id", "")).strip()),
+            team_name=str(payload.get("team_name", "")).strip(),
+        )
+        return jsonify({"ok": True, "inserted": 1, "team_id": team_id})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.post("/team/delete")
+def team_delete():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        result = get_service().delete_team(
+            team_id=int(str(payload.get("team_id", "")).strip()),
+        )
+        return jsonify({"ok": True, **result})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.post("/team/member/add")
+def team_member_add():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        result = get_service().adjust_team_member(
+            team_id=int(str(payload.get("team_id", "")).strip()),
+            athlete_type=str(payload.get("athlete_type", "")).strip(),
+            athlete_no=str(payload.get("athlete_no", "")).strip(),
+            op="add",
+        )
+        return jsonify({"ok": True, **result})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.post("/team/member/remove")
+def team_member_remove():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        result = get_service().adjust_team_member(
+            team_id=int(str(payload.get("team_id", "")).strip()),
+            athlete_type=str(payload.get("athlete_type", "")).strip(),
+            athlete_no=str(payload.get("athlete_no", "")).strip(),
+            op="remove",
+        )
+        return jsonify({"ok": True, **result})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
 @main_bp.get("/api/athlete/query")
 def api_athlete_query():
     try:
@@ -324,6 +391,33 @@ def api_athlete_registered_events():
             athlete_type=athlete_type,
             athlete_no=athlete_no,
         )
+        return jsonify({"ok": True, "items": items, "total": len(items)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.get("/api/team/query")
+def api_team_query():
+    try:
+        keyword = request.args.get("keyword", "").strip()
+        department_name = request.args.get("department_name", "").strip()
+        event_id_raw = request.args.get("event_id", "").strip()
+        event_id = int(event_id_raw) if event_id_raw else None
+        items = get_service().query_teams(
+            keyword=keyword,
+            department_name=department_name,
+            event_id=event_id,
+        )
+        return jsonify({"ok": True, "items": items, "total": len(items)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.get("/api/team/members")
+def api_team_members():
+    try:
+        team_id = int(str(request.args.get("team_id", "")).strip())
+        items = get_service().get_team_members(team_id)
         return jsonify({"ok": True, "items": items, "total": len(items)})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
