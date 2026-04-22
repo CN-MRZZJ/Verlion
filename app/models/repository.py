@@ -21,6 +21,16 @@ class SportsRepository:
         row = self.conn.execute("SELECT value FROM settings WHERE key='meet_date'").fetchone()
         return row["value"] if row else None
 
+    def set_setting(self, key: str, value: str) -> None:
+        self.conn.execute(
+            "INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, value),
+        )
+
+    def get_setting(self, key: str) -> Optional[str]:
+        row = self.conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+        return row["value"] if row else None
+
     def insert_department(self, name: str, total_members: int) -> int:
         cur = self.conn.execute("INSERT INTO departments(name, total_members) VALUES(?,?)", (name, total_members))
         return int(cur.lastrowid)
@@ -219,6 +229,18 @@ class SportsRepository:
             """
         ).fetchall()
 
+    def athlete_registration_exists(self, athlete_type: str, athlete_ref_id: int, event_id: int) -> bool:
+        row = self.conn.execute(
+            """
+            SELECT id
+            FROM athlete_registrations
+            WHERE athlete_type=? AND athlete_ref_id=? AND event_id=?
+            LIMIT 1
+            """,
+            (athlete_type, athlete_ref_id, event_id),
+        ).fetchone()
+        return row is not None
+
     def count_fun_individual_registrations(self, athlete_type: str, athlete_ref_id: int) -> int:
         row = self.conn.execute(
             """
@@ -268,6 +290,25 @@ class SportsRepository:
             FROM results
             WHERE event_id=?
             ORDER BY rank ASC, id ASC
+            """,
+            (event_id,),
+        ).fetchall()
+
+    def list_individual_results_for_event(self, event_id: int):
+        return self.conn.execute(
+            """
+            SELECT
+                r.rank,
+                COALESCE(ca.name, fa.name) AS athlete_name,
+                COALESCE(d1.name, '') AS department_name,
+                r.performance
+            FROM results r
+            LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
+            LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
+            LEFT JOIN departments d1 ON d1.id = COALESCE(ca.department_id, fa.department_id)
+            WHERE r.event_id=? AND r.athlete_ref_id IS NOT NULL
+            ORDER BY r.rank ASC, r.id ASC
+            LIMIT 8
             """,
             (event_id,),
         ).fetchall()
@@ -337,6 +378,7 @@ class SportsRepository:
             SELECT
                 r.id,
                 e.name AS event_name,
+                e.scoring_strategy,
                 CASE
                     WHEN r.athlete_ref_id IS NOT NULL THEN COALESCE(ca.name, fa.name)
                     ELSE t.name
@@ -425,6 +467,7 @@ class SportsRepository:
                 r.id,
                 e.name AS event_name,
                 e.category,
+                e.scoring_strategy,
                 e.age_group,
                 CASE
                     WHEN r.athlete_ref_id IS NOT NULL THEN 'athlete'

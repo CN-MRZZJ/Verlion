@@ -1,8 +1,14 @@
 from datetime import date
 import csv
 import io
+import json
+import os
 import re
+import shutil
+import subprocess
+import tempfile
 from typing import Optional
+from openpyxl import load_workbook
 
 from app.models import (
     POINT_RULE,
@@ -25,6 +31,15 @@ class SportsMeetService:
         "athlete_registrations": "报名记录",
         "results": "成绩记录",
     }
+    REPORT_ENV_KEYS = [
+        "date",
+        "wind_direction",
+        "wind_speed",
+        "air_quality",
+        "weather",
+        "temperature_high",
+        "temperature_low",
+    ]
 
     def __init__(self, db_path: str) -> None:
         self.db = Database(db_path)
@@ -37,6 +52,68 @@ class SportsMeetService:
             repo = SportsRepository(conn)
             repo.set_meet_date(meet_date.isoformat())
             conn.commit()
+
+    def set_report_environment_settings(self, payload: dict[str, str]) -> None:
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            for key in self.REPORT_ENV_KEYS:
+                val = str(payload.get(key, "")).strip()
+                repo.set_setting(f"report_env.{key}", val)
+            conn.commit()
+
+    def get_report_environment_settings(self) -> dict[str, str]:
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            return {
+                key: str(repo.get_setting(f"report_env.{key}") or "").strip()
+                for key in self.REPORT_ENV_KEYS
+            }
+
+    def list_notice_templates(self, template_dir: str) -> list[str]:
+        if not os.path.isdir(template_dir):
+            return []
+        names: list[str] = []
+        for name in os.listdir(template_dir):
+            lower = name.lower()
+            if lower.endswith(".xlsx") or lower.endswith(".xlsm"):
+                names.append(name)
+        names.sort()
+        return names
+
+    def _event_gender_label(self, gender: str) -> str:
+        if gender == "male":
+            return "男子"
+        if gender == "female":
+            return "女子"
+        return "混合"
+
+    def _event_group_label(self, age_group: str) -> str:
+        if age_group == "A":
+            return "甲组"
+        if age_group == "B":
+            return "乙组"
+        if age_group == "C":
+            return "丙组"
+        return "不限组"
+
+    def _event_display_name(self, event: dict) -> str:
+        return f"{event.get('name', '')}{self._event_gender_label(str(event.get('gender', '')))}{self._event_group_label(str(event.get('age_group', '')))}"
+
+    def _notice_title_for_event(self, event: dict, layout: Optional[dict] = None) -> str:
+        title_map = (layout or {}).get("notice_title_by_event_type", {}) if isinstance(layout, dict) else {}
+        event_type = str(event.get("event_type", "")).strip()
+        if isinstance(title_map, dict):
+            custom = str(title_map.get(event_type, "")).strip()
+            if custom:
+                return custom
+            custom_default = str(title_map.get("default", "")).strip()
+            if custom_default:
+                return custom_default
+        if event_type == "track":
+            return "径赛成绩单"
+        if event_type == "field":
+            return "田赛成绩单"
+        return "趣味成绩单"
 
     def get_meet_date(self) -> date:
         with self.db.connect() as conn:
@@ -69,26 +146,76 @@ class SportsMeetService:
         raise ValueError("gender 必须为 male/female/mixed，或男女合并值（男女/both/male+female/all）")
 
     def _parse_performance_numeric(self, strategy: str, performance: Optional[str]) -> Optional[float]:
-        text = (performance or "").strip()
+        text = self._normalize_performance_text(strategy, performance)
         if not text:
             return None
         if strategy == "time":
-            if ":" in text:
-                parts = [p for p in text.split(":") if p != ""]
-                try:
-                    nums = [float(p) for p in parts]
-                    sec = 0.0
-                    for n in nums:
-                        sec = sec * 60 + n
-                    return sec
-                except ValueError:
-                    pass
-            m = re.search(r"[-+]?\d+(?:\.\d+)?", text)
-            return float(m.group(0)) if m else None
+            if not re.fullmatch(r"\d+(?:\.\d+)*", text):
+                return None
+            parts = text.split(".")
+            if len(parts) <= 2:
+                return float(text)
+            minute = int(parts[0])
+            sec_int = parts[1]
+            sec_decimal = "".join(parts[2:])
+            sec_val = float(sec_int + ("." + sec_decimal if sec_decimal else ""))
+            return minute * 60 + sec_val
         if strategy in {"length", "count"}:
-            m = re.search(r"[-+]?\d+(?:\.\d+)?", text)
-            return float(m.group(0)) if m else None
+            if not re.fullmatch(r"\d+(?:\.\d+)*", text):
+                return None
+            parts = text.split(".")
+            if len(parts) <= 2:
+                return float(text)
+            return float(parts[0] + "." + "".join(parts[1:]))
         return None
+
+    def _normalize_performance_text(self, strategy: str, performance: Optional[str]) -> Optional[str]:
+        raw = (performance or "").strip()
+        if not raw:
+            return None
+        text = raw.replace("：", ":").replace("．", ".").replace("。", ".")
+        text = re.sub(r"\s+", "", text)
+
+        if strategy == "time":
+            text = text.lower().replace("分", ".").replace("秒", "")
+            text = text.replace(":", ".")
+            text = text.replace("s", "")
+        elif strategy == "length":
+            text = text.lower().replace("米", "").replace("m", "")
+            text = text.replace(":", ".")
+        elif strategy == "count":
+            text = text.replace("次", "").replace("个", "")
+            text = text.replace(":", ".")
+
+        text = re.sub(r"[^0-9.]", "", text)
+        text = text.strip(".")
+        return text or None
+
+    def _format_time_seconds(self, seconds: float) -> str:
+        total_cs = max(int(round(seconds * 100)), 0)
+        minute = total_cs // 6000
+        sec_cs = total_cs % 6000
+        sec_int = sec_cs // 100
+        sec_frac = sec_cs % 100
+        return f"{minute:02d}:{sec_int:02d}.{sec_frac:02d}"
+
+    def _format_performance_for_display(self, scoring_strategy: str, performance: Optional[str]) -> str:
+        text = (performance or "").strip()
+        if not text:
+            return ""
+        if scoring_strategy != "time":
+            return text
+        sec = self._parse_performance_numeric("time", text)
+        if sec is None:
+            return text
+        return self._format_time_seconds(sec)
+
+    def _format_result_rows_performance(self, rows: list[dict]) -> list[dict]:
+        for row in rows:
+            strategy = str(row.get("scoring_strategy", "")).strip()
+            if strategy == "time":
+                row["performance"] = self._format_performance_for_display(strategy, row.get("performance"))
+        return rows
 
     def _auto_rank_for_result(
         self,
@@ -245,9 +372,24 @@ class SportsMeetService:
         rank: Optional[int] = None,
         athlete_type: Optional[str] = None,
         athlete_ref_id: Optional[int] = None,
+        athlete_no: Optional[str] = None,
         team_id: Optional[int] = None,
         performance: Optional[str] = None,
     ) -> int:
+        athlete_no_text = (athlete_no or "").strip()
+        if athlete_ref_id is not None and athlete_no_text:
+            raise ValueError("athlete_ref_id 和 athlete_no 不能同时传")
+        if athlete_ref_id is None and athlete_no_text:
+            if not athlete_type:
+                raise ValueError("使用 athlete_no 录入时，athlete_type 必填")
+            athlete_type = self._validate_athlete_type(athlete_type)
+            with self.db.connect() as conn:
+                repo = SportsRepository(conn)
+                found = repo.get_athlete_by_no(athlete_type, athlete_no_text)
+                if not found:
+                    raise ValueError(f"运动员不存在: {athlete_type}/{athlete_no_text}")
+                athlete_ref_id = int(found["id"])
+
         has_athlete = athlete_ref_id is not None
         has_team = team_id is not None
         if has_athlete == has_team:
@@ -263,6 +405,22 @@ class SportsMeetService:
             event = repo.get_event_by_id(event_id)
             if not event:
                 raise ValueError(f"比赛项目不存在: {event_id}")
+            scoring_strategy = str(event["scoring_strategy"])
+            normalized_performance = self._normalize_performance_text(scoring_strategy, performance)
+            if performance and not normalized_performance:
+                if scoring_strategy == "time":
+                    raise ValueError("径赛成绩格式无效，请使用 '.' 分隔（示例：9.86 或 1.36.5）")
+                if scoring_strategy == "length":
+                    raise ValueError("田赛成绩格式无效，请使用米数数字并用 '.' 分隔（示例：6.23）")
+                raise ValueError("成绩格式无效，请使用数字并用 '.' 分隔")
+            if scoring_strategy == "time":
+                if normalized_performance:
+                    sec = self._parse_performance_numeric("time", normalized_performance)
+                    if sec is None:
+                        raise ValueError("径赛成绩格式无效，请使用 '.' 分隔（示例：9.86 或 1.36.5）")
+                    normalized_performance = f"{sec:.2f}"
+                else:
+                    normalized_performance = None
 
             if has_athlete:
                 athlete = repo.get_athlete_by_id(athlete_type or "", int(athlete_ref_id))
@@ -270,6 +428,10 @@ class SportsMeetService:
                     raise ValueError(f"运动员不存在: {athlete_type}/{athlete_ref_id}")
                 if event["category"] != athlete_type:
                     raise ValueError("项目类别与运动员类型不匹配")
+                if int(event["is_individual"]) != 1:
+                    raise ValueError("该项目为团体项目，不能录入个人成绩")
+                if not repo.athlete_registration_exists(athlete_type, int(athlete_ref_id), event_id):
+                    raise ValueError("该运动员未报名此项目，不能录入成绩")
             if has_team and not repo.get_team_by_id(int(team_id)):
                 raise ValueError(f"队伍不存在: {team_id}")
 
@@ -277,8 +439,8 @@ class SportsMeetService:
             final_rank = int(rank) if rank is not None else self._auto_rank_for_result(
                 repo,
                 event_id,
-                str(event["scoring_strategy"]),
-                performance,
+                scoring_strategy,
+                normalized_performance,
             )
             if final_rank < 1:
                 raise ValueError("rank 必须 >= 1")
@@ -290,10 +452,10 @@ class SportsMeetService:
                 athlete_type=athlete_type if has_athlete else None,
                 athlete_ref_id=athlete_ref_id if has_athlete else None,
                 team_id=team_id if has_team else None,
-                performance=performance,
+                performance=normalized_performance,
             )
             if auto_rank:
-                self._recalculate_event_ranks(repo, event_id, str(event["scoring_strategy"]))
+                self._recalculate_event_ranks(repo, event_id, scoring_strategy)
             conn.commit()
             return result_id
 
@@ -308,12 +470,14 @@ class SportsMeetService:
     def dashboard_summary(self) -> dict:
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
+            recent_results = [dict(r) for r in repo.recent_results(10)]
+            self._format_result_rows_performance(recent_results)
             return {
                 "event_count": repo.events_count(),
                 "dept_count": repo.departments_count(),
                 "athlete_count": repo.athletes_count(),
                 "standings": repo.standings()[:10],
-                "recent_results": repo.recent_results(10),
+                "recent_results": recent_results,
             }
 
     def workbench_data(self) -> dict:
@@ -356,7 +520,10 @@ class SportsMeetService:
                 rows = repo.participation_rate()
             else:
                 raise ValueError(f"不支持的数据视图: {view_name}")
-            return [dict(row) for row in rows]
+            items = [dict(row) for row in rows]
+            if view_name == "results":
+                self._format_result_rows_performance(items)
+            return items
 
     def get_grid_page(
         self,
@@ -400,6 +567,8 @@ class SportsMeetService:
                 raise ValueError(f"不支持的数据视图: {view_name}")
 
             items = [dict(r) for r in rows]
+            if view_name == "results":
+                self._format_result_rows_performance(items)
             return {
                 "view": view_name,
                 "page": page,
@@ -441,6 +610,190 @@ class SportsMeetService:
         for row in items:
             writer.writerow(row)
         return output.getvalue()
+
+    def export_personal_result_notice_xlsx(
+        self,
+        event_id: int,
+        template_name: str,
+        template_dir: str,
+        layout_config_path: str,
+    ) -> tuple[bytes, str]:
+        safe_template_name = os.path.basename((template_name or "").strip())
+        if not safe_template_name:
+            raise ValueError("template_name 不能为空")
+        if not safe_template_name.lower().endswith((".xlsx", ".xlsm")):
+            raise ValueError("模板文件必须是 .xlsx 或 .xlsm")
+
+        template_path = os.path.join(template_dir, safe_template_name)
+        if not os.path.isfile(template_path):
+            raise ValueError(f"模板文件不存在: {safe_template_name}")
+        if not os.path.isfile(layout_config_path):
+            raise ValueError("公示单坐标配置文件不存在")
+
+        with open(layout_config_path, "r", encoding="utf-8") as f:
+            layout = json.load(f)
+
+        sheet_name = str(layout.get("sheet_name", "")).strip() or "Sheet1"
+        environment_cells = layout.get("environment_cells", {}) or {}
+        rank_rows = layout.get("rank_rows", []) or []
+        if len(rank_rows) < 8:
+            raise ValueError("坐标配置 rank_rows 至少需要 8 行")
+
+        event, rows, env = self._get_personal_notice_payload(event_id)
+
+        wb = load_workbook(template_path)
+        ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
+
+        env_values = {
+            "date": env.get("date", ""),
+            "wind_direction": env.get("wind_direction", ""),
+            "wind_speed": env.get("wind_speed", ""),
+            "air_quality": env.get("air_quality", ""),
+            "weather": env.get("weather", ""),
+            "temperature_high": env.get("temperature_high", ""),
+            "temperature_low": env.get("temperature_low", ""),
+            "event_name": self._event_display_name(event),
+            "notice_title": self._notice_title_for_event(event, layout),
+        }
+        for key, cell in environment_cells.items():
+            if key in env_values and cell:
+                ws[str(cell)] = env_values[key]
+
+        for idx in range(8):
+            mapping = rank_rows[idx] if idx < len(rank_rows) else {}
+            data = rows[idx] if idx < len(rows) else {}
+            if mapping.get("rank"):
+                ws[str(mapping["rank"])] = data.get("rank", idx + 1 if data else "")
+            if mapping.get("name"):
+                ws[str(mapping["name"])] = data.get("athlete_name", "")
+            if mapping.get("department"):
+                ws[str(mapping["department"])] = data.get("department_name", "")
+            perf_cell = (
+                mapping.get("performance")
+                or mapping.get("perGormance")
+                or mapping.get("成绩")
+            )
+            if perf_cell:
+                ws[str(perf_cell)] = data.get("performance", "")
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        event_name_token = re.sub(r"[\\\\/:*?\"<>|]+", "_", self._event_display_name(event))
+        filename = f"个人成绩公示单_{event_name_token}.xlsx"
+        return buf.getvalue(), filename
+
+    def _get_personal_notice_payload(self, event_id: int) -> tuple[dict, list[dict], dict[str, str]]:
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            event_row = repo.get_event_by_id(event_id)
+            if not event_row:
+                raise ValueError(f"项目不存在: {event_id}")
+            event = dict(event_row)
+            if int(event.get("is_individual", 0)) != 1:
+                raise ValueError("仅个人项目支持导出个人成绩公示单")
+            scoring_strategy = str(event.get("scoring_strategy", ""))
+            rows = [dict(r) for r in repo.list_individual_results_for_event(event_id)]
+            for row in rows:
+                row["performance"] = self._format_performance_for_display(scoring_strategy, row.get("performance"))
+        env = self.get_report_environment_settings()
+        return event, rows, env
+
+    def _convert_xlsx_to_pdf_with_excel(self, xlsx_path: str, pdf_path: str) -> None:
+        try:
+            import pythoncom  # type: ignore
+            import win32com.client as win32  # type: ignore
+        except Exception as exc:  # pragma: no cover
+            raise RuntimeError("缺少 pywin32 或无法加载 win32com") from exc
+
+        excel = None
+        wb = None
+        inited = False
+        try:
+            pythoncom.CoInitialize()
+            inited = True
+            excel = win32.DispatchEx("Excel.Application")
+            excel.Visible = False
+            excel.DisplayAlerts = False
+            wb = excel.Workbooks.Open(os.path.abspath(xlsx_path))
+            # 0 = PDF
+            wb.ExportAsFixedFormat(0, os.path.abspath(pdf_path))
+        finally:
+            if wb is not None:
+                try:
+                    wb.Close(False)
+                except Exception:
+                    pass
+            if excel is not None:
+                try:
+                    excel.Quit()
+                except Exception:
+                    pass
+            if inited:
+                try:
+                    pythoncom.CoUninitialize()
+                except Exception:
+                    pass
+
+    def _convert_xlsx_to_pdf_with_libreoffice(self, xlsx_path: str, out_dir: str) -> str:
+        exe = shutil.which("soffice")
+        if not exe:
+            raise RuntimeError("未找到 soffice")
+        cmd = [exe, "--headless", "--convert-to", "pdf", "--outdir", out_dir, xlsx_path]
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        if p.returncode != 0:
+            stderr = (p.stderr or "").strip()
+            raise RuntimeError(f"soffice 转换失败: {stderr or p.returncode}")
+        pdf_path = os.path.splitext(xlsx_path)[0] + ".pdf"
+        if not os.path.exists(pdf_path):
+            raise RuntimeError("soffice 未生成 pdf 文件")
+        return pdf_path
+
+    def _convert_xlsx_bytes_to_pdf_bytes(self, xlsx_bytes: bytes) -> bytes:
+        errors: list[str] = []
+        with tempfile.TemporaryDirectory(prefix="sports_notice_") as tmpdir:
+            xlsx_path = os.path.join(tmpdir, "notice.xlsx")
+            pdf_path = os.path.join(tmpdir, "notice.pdf")
+            with open(xlsx_path, "wb") as f:
+                f.write(xlsx_bytes)
+
+            try:
+                self._convert_xlsx_to_pdf_with_excel(xlsx_path, pdf_path)
+                if not os.path.exists(pdf_path):
+                    raise RuntimeError("Excel 未生成 pdf 文件")
+                with open(pdf_path, "rb") as f:
+                    return f.read()
+            except Exception as exc:
+                errors.append(f"Excel 转换失败: {exc}")
+
+            try:
+                generated_pdf = self._convert_xlsx_to_pdf_with_libreoffice(xlsx_path, tmpdir)
+                with open(generated_pdf, "rb") as f:
+                    return f.read()
+            except Exception as exc:
+                errors.append(f"LibreOffice 转换失败: {exc}")
+
+        joined = "；".join(errors)
+        raise ValueError(
+            "xlsx 转 pdf 失败。请安装 Microsoft Excel（并安装 pywin32）或安装 LibreOffice(soffice)。"
+            + (f" 详情：{joined}" if joined else "")
+        )
+
+    def export_personal_result_notice_pdf(
+        self,
+        event_id: int,
+        template_name: str,
+        template_dir: str,
+        layout_config_path: str,
+    ) -> tuple[bytes, str]:
+        xlsx_bytes, xlsx_filename = self.export_personal_result_notice_xlsx(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=template_dir,
+            layout_config_path=layout_config_path,
+        )
+        pdf_bytes = self._convert_xlsx_bytes_to_pdf_bytes(xlsx_bytes)
+        pdf_filename = re.sub(r"\.xlsx$", ".pdf", xlsx_filename, flags=re.IGNORECASE)
+        return pdf_bytes, pdf_filename
 
     def get_initialization_status(self) -> dict:
         with self.db.connect() as conn:
@@ -655,22 +1008,6 @@ class SportsMeetService:
     def _is_selected_mark(self, value: str) -> bool:
         mark = (value or "").strip().lower()
         return mark in {"1", "y", "yes", "true", "t", "x", "√", "是"}
-
-    def _event_gender_label(self, gender: str) -> str:
-        if gender == "male":
-            return "男子"
-        if gender == "female":
-            return "女子"
-        return "混合"
-
-    def _event_group_label(self, age_group: str) -> str:
-        if age_group == "A":
-            return "甲组"
-        if age_group == "B":
-            return "乙组"
-        if age_group == "C":
-            return "丙组"
-        return "不限组"
 
     def import_registration_matrix_rows(self, rows: list[dict[str, str]], target_category: str) -> dict:
         if target_category not in {"competitive", "fun"}:

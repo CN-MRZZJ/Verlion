@@ -26,6 +26,8 @@
             return;
           }
 
+          form.dispatchEvent(new CustomEvent('ajax:success', { detail: data }));
+
           var summary = [];
           if (typeof data.inserted !== 'undefined') summary.push('新增 ' + data.inserted);
           if (typeof data.skipped !== 'undefined') summary.push('跳过 ' + data.skipped);
@@ -57,9 +59,12 @@
               alert(detailText);
             }
           } else {
-            setTimeout(function () {
-              window.location.reload();
-            }, 800);
+            var noReload = (form.getAttribute('data-no-reload') || '') === '1';
+            if (!noReload) {
+              setTimeout(function () {
+                window.location.reload();
+              }, 800);
+            }
           }
         } catch (err) {
           showMsg('请求异常: ' + err, false);

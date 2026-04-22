@@ -1,0 +1,128 @@
+{% extends "layout.html" %}
+{% block title %}公示中心{% endblock %}
+{% block content %}
+
+<div class="layui-row layui-col-space15 notice-center-page" id="notice-center-app">
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">公示单环境信息</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/settings/report-environment" data-ajax="true" data-no-reload="1" autocomplete="off">
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md3"><input type="text" name="date" class="layui-input" value="{{ report_env.get('date', '') }}" placeholder="日期" /></div>
+            <div class="layui-col-md2"><input type="text" name="wind_direction" class="layui-input" value="{{ report_env.get('wind_direction', '') }}" placeholder="风向" /></div>
+            <div class="layui-col-md2"><input type="text" name="wind_speed" class="layui-input" value="{{ report_env.get('wind_speed', '') }}" placeholder="风速" /></div>
+            <div class="layui-col-md2"><input type="text" name="air_quality" class="layui-input" value="{{ report_env.get('air_quality', '') }}" placeholder="空气质量" /></div>
+            <div class="layui-col-md1"><input type="text" name="weather" class="layui-input" value="{{ report_env.get('weather', '') }}" placeholder="天气" /></div>
+            <div class="layui-col-md1"><input type="text" name="temperature_high" class="layui-input" value="{{ report_env.get('temperature_high', '') }}" placeholder="最高" /></div>
+            <div class="layui-col-md1"><input type="text" name="temperature_low" class="layui-input" value="{{ report_env.get('temperature_low', '') }}" placeholder="最低" /></div>
+            <div class="layui-col-md12" style="margin-top:8px;">
+              <button type="submit" class="layui-btn layui-btn-primary">保存环境信息</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">个人成绩公示单导出与预览</div>
+      <div class="layui-card-body">
+        <form class="layui-form" id="notice-export-form" method="get" action="/export/personal-result-notice.xlsx" autocomplete="off">
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md4">
+              <select name="event_id" id="notice-event-id" required>
+                <option value="">请选择个人项目</option>
+                {% for e in events %}
+                  {% if e['is_individual'] == 1 %}
+                    {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
+                    {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                    <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="layui-col-md4">
+              <select name="template_name" id="notice-template-name" required>
+                <option value="">请选择xlsx模板</option>
+                {% for name in notice_templates %}
+                  <option value="{{ name }}">{{ name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="layui-col-md4">
+              <button type="submit" class="layui-btn layui-btn-normal">导出 XLSX</button>
+              <button type="button" class="layui-btn" id="btn-preview-pdf">在线预览 PDF</button>
+              <button type="button" class="layui-btn layui-btn-warm" id="btn-print-pdf">打印 PDF</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="notice-preview-wrap" style="margin-top:10px;">
+          <iframe id="notice-pdf-frame" title="PDF预览" style="width:100%;height:780px;border:1px solid #e6e6e6;border-radius:4px;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function(){
+  var app = document.getElementById('notice-center-app');
+  if(!app) return;
+  var eventSel = document.getElementById('notice-event-id');
+  var tplSel = document.getElementById('notice-template-name');
+  var frame = document.getElementById('notice-pdf-frame');
+  var btnPreview = document.getElementById('btn-preview-pdf');
+  var btnPrint = document.getElementById('btn-print-pdf');
+
+  function buildPdfUrl(){
+    var eid = eventSel && eventSel.value ? String(eventSel.value).trim() : '';
+    var tpl = tplSel && tplSel.value ? String(tplSel.value).trim() : '';
+    if(!tpl) return '';
+    if(!eid) return '';
+    return '/preview/personal-result-notice.pdf?event_id=' + encodeURIComponent(eid) + '&template_name=' + encodeURIComponent(tpl);
+  }
+
+  if(btnPreview){
+    btnPreview.addEventListener('click', function(){
+      var url = buildPdfUrl();
+      if(!url){
+        if(window.layer && layer.msg) layer.msg('请先选择个人项目和模板');
+        return;
+      }
+      if(frame) frame.src = url;
+    });
+  }
+
+  if(btnPrint){
+    btnPrint.addEventListener('click', function(){
+      var url = buildPdfUrl();
+      if(!url){
+        if(window.layer && layer.msg) layer.msg('请先选择个人项目和模板');
+        return;
+      }
+      if(frame && (!frame.src || frame.src.indexOf('/preview/personal-result-notice.pdf') < 0)){
+        frame.src = url;
+      }
+      setTimeout(function(){
+        try {
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+        } catch (_) {
+          window.open(url, '_blank');
+        }
+      }, 300);
+    });
+  }
+
+  if(window.layui && layui.use){
+    layui.use(['form'], function(){
+      if(layui.form) layui.form.render('select');
+    });
+  }
+});
+</script>
+
+{% endblock %}

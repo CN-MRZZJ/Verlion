@@ -1,6 +1,7 @@
 import csv
 import io
 from datetime import datetime
+from urllib.parse import quote
 
 from flask import Blueprint, Response, current_app, jsonify, render_template, request, send_from_directory
 
@@ -71,17 +72,32 @@ def result_entry():
     service = get_service()
     events = [dict(row) for row in service.list_events()]
     athletes = [dict(row) for row in service.list_athletes()]
+    registrations = [dict(row) for row in service.list_registration_pairs()]
     teams = service.get_data_view("teams")
-    registration_pairs = [dict(row) for row in service.list_registration_pairs()]
     recent_results = service.get_data_view("results")[:30]
     return render_template(
         "result_entry.html",
         active_page="result_entry",
         events=events,
         athletes=athletes,
+        registrations=registrations,
         teams=teams,
-        registration_pairs=registration_pairs,
         recent_results=recent_results,
+    )
+
+
+@main_bp.get("/notice-center")
+def notice_center():
+    service = get_service()
+    events = [dict(row) for row in service.list_events()]
+    notice_templates = service.list_notice_templates(current_app.config["NOTICE_TEMPLATE_DIR"])
+    report_env = service.get_report_environment_settings()
+    return render_template(
+        "notice_center.html",
+        active_page="notice_center",
+        events=events,
+        notice_templates=notice_templates,
+        report_env=report_env,
     )
 
 
@@ -194,6 +210,7 @@ def record_result():
         rank_text = payload.get("rank")
         athlete_type = str(payload.get("athlete_type", "")).strip()
         athlete_id_text = payload.get("athlete_id")
+        athlete_no_text = str(payload.get("athlete_no", "")).strip()
         team_id_text = payload.get("team_id")
         performance = payload.get("performance")
 
@@ -205,10 +222,78 @@ def record_result():
             rank=int(str(rank_text).strip()) if rank_text else None,
             athlete_type=athlete_type if athlete_type else None,
             athlete_ref_id=int(str(athlete_id_text).strip()) if athlete_id_text else None,
+            athlete_no=athlete_no_text if athlete_no_text else None,
             team_id=int(str(team_id_text).strip()) if team_id_text else None,
             performance=str(performance).strip() if performance else None,
         )
         return jsonify({"ok": True, "result_id": result_id})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.post("/settings/report-environment")
+def save_report_environment():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        fields = {
+            "date": str(payload.get("date", "")).strip(),
+            "wind_direction": str(payload.get("wind_direction", "")).strip(),
+            "wind_speed": str(payload.get("wind_speed", "")).strip(),
+            "air_quality": str(payload.get("air_quality", "")).strip(),
+            "weather": str(payload.get("weather", "")).strip(),
+            "temperature_high": str(payload.get("temperature_high", "")).strip(),
+            "temperature_low": str(payload.get("temperature_low", "")).strip(),
+        }
+        get_service().set_report_environment_settings(fields)
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.get("/export/personal-result-notice.xlsx")
+def export_personal_result_notice():
+    try:
+        event_id = int(str(request.args.get("event_id", "")).strip())
+        template_name = str(request.args.get("template_name", "")).strip()
+        content, filename = get_service().export_personal_result_notice_xlsx(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
+            layout_config_path=current_app.config["NOTICE_LAYOUT_CONFIG"],
+        )
+        safe_ascii_name = "personal_result_notice.xlsx"
+        encoded_name = quote(filename)
+        return Response(
+            content,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename={safe_ascii_name}; filename*=UTF-8''{encoded_name}"
+            },
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.get("/preview/personal-result-notice.pdf")
+def preview_personal_result_notice_pdf():
+    try:
+        event_id = int(str(request.args.get("event_id", "")).strip())
+        template_name = str(request.args.get("template_name", "")).strip()
+        content, filename = get_service().export_personal_result_notice_pdf(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
+            layout_config_path=current_app.config["NOTICE_LAYOUT_CONFIG"],
+        )
+        safe_ascii_name = "personal_result_notice.pdf"
+        encoded_name = quote(filename)
+        return Response(
+            content,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename={safe_ascii_name}; filename*=UTF-8''{encoded_name}"
+            },
+        )
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
 

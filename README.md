@@ -24,6 +24,7 @@
 │   │   ├── layout.html
 │   │   ├── home.html
 │   │   ├── import_center.html
+│   │   ├── notice_center.html
 │   │   ├── data_center.html
 │   │   └── init_status.html
 │   └── static/
@@ -35,6 +36,9 @@
 │           ├── events_template.csv
 │           ├── competitive_athletes_template.csv
 │           └── fun_athletes_template.csv
+│       └── notice_templates/
+│           ├── personal_notice_template.xlsx
+│           └── personal_notice_layout.json
 ├── config.py
 ├── requirements.txt
 ├── migrations/
@@ -61,6 +65,7 @@ python run.py
 - 工作台：初始化提醒、关键指标、最近成绩、积分榜
 - 导入中心：设置比赛日期、模板下载、项目导入、运动员名单导入、项目报名导入、成绩录入
 - 成绩录入页：个人/团体分开录入，项目联动筛选运动员或队伍，并展示最近成绩
+- 公示单中心：导出个人成绩公示单（xlsx）+ PDF 在线预览 + 浏览器打印
 - 导入中心：支持按需清除表数据（多重确认防误触）
 - 数据中心：统一筛选 + 统一分页（20/50/100）+ 多数据视图切换 + 点击表头升降序排序 + 重置/刷新/导出
 - 状态中心：初始化检查结果（比赛日期、项目导入）
@@ -73,6 +78,26 @@ python run.py
 - `/templates/fun_athletes_template.csv`
 - `/templates/registrations-template.csv?category=competitive`
 - `/templates/registrations-template.csv?category=fun`
+
+## 个人成绩公示单（xlsx / pdf）
+- 页面入口：`/notice-center`
+- 环境信息字段（写入 `settings` 表）：
+  - `date` 日期
+  - `wind_direction` 风向
+  - `wind_speed` 风速
+  - `air_quality` 空气质量
+  - `weather` 天气
+  - `temperature_high` 最高气温
+  - `temperature_low` 最低气温
+- 模板目录：`app/static/notice_templates/`
+  - 默认模板文件：`personal_notice_template.xlsx`
+  - 坐标配置文件：`personal_notice_layout.json`
+- 导出接口：
+  - `GET /export/personal-result-notice.xlsx?event_id=<项目ID>&template_name=<模板文件名>`
+  - `GET /preview/personal-result-notice.pdf?event_id=<项目ID>`（在线预览）
+- 坐标配置说明：
+  - `environment_cells`：环境信息和项目名称写入坐标
+  - `rank_rows`：第1-8名的写入坐标，每行包含 `rank`、`name`、`department`、`performance`
 
 ### 项目模板（events_template.csv）
 用于导入比赛项目基础信息。
