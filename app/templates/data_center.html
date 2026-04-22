@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+{% block title %}数据中心{% endblock %}
+{% block content %}
+
+<div id="data-center-app" class="dc-shell">
+  <div class="dc-layout">
+    <aside class="dc-sidebar">
+      <div class="dc-sidebar-title">数据视图</div>
+      <div class="dc-view-list">
+        {% for key, label in data_views %}
+          <button type="button" class="dc-view-btn{% if loop.first %} is-active{% endif %}" data-view="{{ key }}">
+            <span class="dc-view-label">{{ label }}</span>
+            <span class="dc-view-key">{{ key }}</span>
+          </button>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <section class="dc-main">
+      <div class="dc-header">
+        <div>
+          <h2 class="dc-title">数据中心</h2>
+          <p class="dc-subtitle">统一筛选、排序、分页和导出</p>
+        </div>
+        <div class="dc-header-actions">
+          <button type="button" class="layui-btn layui-btn-primary" id="btn-refresh">刷新</button>
+          <button type="button" class="layui-btn layui-btn-warm" id="btn-export">导出当前结果</button>
+        </div>
+      </div>
+
+      <form class="layui-form dc-filter-card" id="grid-filter-form">
+        <input type="hidden" name="view" id="view-select" value="{{ data_views[0][0] if data_views else 'events' }}" />
+        <div class="dc-filter-grid">
+          <div class="dc-filter-item dc-filter-item-wide">
+            <label class="dc-filter-label">关键词</label>
+            <input type="text" name="keyword" placeholder="可输入姓名 / 项目名 / 编号" class="layui-input" />
+          </div>
+          <div class="dc-filter-item">
+            <label class="dc-filter-label">部门</label>
+            <select name="department_name">
+              <option value="">全部部门</option>
+              {% for name in department_names %}
+                <option value="{{ name }}">{{ name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="dc-filter-item">
+            <label class="dc-filter-label">类别</label>
+            <select name="category">
+              <option value="">全部类别</option>
+              <option value="competitive">竞技</option>
+              <option value="fun">趣味</option>
+            </select>
+          </div>
+          <div class="dc-filter-item">
+            <label class="dc-filter-label">策略</label>
+            <select name="scoring_strategy">
+              <option value="">全部策略</option>
+              <option value="time">time</option>
+              <option value="length">length</option>
+              <option value="count">count</option>
+            </select>
+          </div>
+          <div class="dc-filter-item">
+            <label class="dc-filter-label">性别</label>
+            <select name="gender">
+              <option value="">全部性别</option>
+              <option value="male">男</option>
+              <option value="female">女</option>
+              <option value="mixed">混合</option>
+            </select>
+          </div>
+          <div class="dc-filter-item">
+            <label class="dc-filter-label">组别</label>
+            <select name="age_group">
+              <option value="">全部组别</option>
+              <option value="ALL">不分组</option>
+              <option value="A">甲组</option>
+              <option value="B">乙组</option>
+              <option value="C">丙组</option>
+            </select>
+          </div>
+          <div class="dc-filter-item">
+            <label class="dc-filter-label">每页条数</label>
+            <select name="page_size">
+              <option value="20">20条</option>
+              <option value="50">50条</option>
+              <option value="100">100条</option>
+            </select>
+          </div>
+        </div>
+        <div class="dc-filter-actions">
+          <button type="button" class="layui-btn" id="btn-search">查询</button>
+          <button type="button" class="layui-btn layui-btn-primary" id="btn-reset">重置</button>
+        </div>
+      </form>
+
+      <div class="dc-metrics">
+        <div class="dc-metric">
+          <div class="dc-metric-label">当前视图</div>
+          <div class="dc-metric-value" id="dc-metric-view">-</div>
+        </div>
+        <div class="dc-metric">
+          <div class="dc-metric-label">记录总数</div>
+          <div class="dc-metric-value" id="dc-metric-total">0</div>
+        </div>
+        <div class="dc-metric">
+          <div class="dc-metric-label">分页状态</div>
+          <div class="dc-metric-value" id="dc-metric-page">1/1</div>
+        </div>
+        <div class="dc-metric">
+          <div class="dc-metric-label">排序字段</div>
+          <div class="dc-metric-value" id="dc-metric-sort">默认</div>
+        </div>
+      </div>
+
+      <div class="grid-meta" id="grid-meta"></div>
+
+      <div class="dc-table-card">
+        <div class="table-scroll">
+          <table class="layui-table" id="grid-table">
+            <thead id="grid-head"></thead>
+            <tbody id="grid-body"></tbody>
+          </table>
+        </div>
+        <div id="grid-pagination"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+{% endblock %}

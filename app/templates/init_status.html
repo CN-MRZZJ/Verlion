@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block title %}初始化状态{% endblock %}
+{% block content %}
+
+<div class="layui-row layui-col-space15">
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">初始化状态检查</div>
+      <div class="layui-card-body">
+        {% if completed %}
+          <span class="layui-badge layui-bg-green">已完成初始化</span>
+        {% else %}
+          <span class="layui-badge">未完成初始化</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md8">
+    <div class="layui-card">
+      <div class="layui-card-header">检查项</div>
+      <div class="layui-card-body table-scroll">
+        <table class="layui-table" lay-even>
+          <thead>
+            <tr><th>检查项</th><th>状态</th><th>详情</th></tr>
+          </thead>
+          <tbody>
+            {% for item in checks %}
+            <tr>
+              <td>{{ item.label }}</td>
+              <td>
+                {% if item.ok %}
+                  <span class="layui-badge layui-bg-green">通过</span>
+                {% else %}
+                  <span class="layui-badge">未通过</span>
+                {% endif %}
+              </td>
+              <td>{{ item.detail }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md4">
+    <div class="layui-card">
+      <div class="layui-card-header">数据概览</div>
+      <div class="layui-card-body">
+        <p>项目数：<b>{{ summary.event_count }}</b></p>
+        <p>部门数：<b>{{ summary.department_count }}</b></p>
+        <p>运动员数：<b>{{ summary.athlete_count }}</b></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

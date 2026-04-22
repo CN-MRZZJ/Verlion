@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}运动会数据系统{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.15/dist/css/layui.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body class="layui-layout-body">
+  <div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+      <div class="layui-logo">Sports Point 管理后台</div>
+      <ul class="layui-nav layui-layout-left">
+        <li class="layui-nav-item"><a href="/">教工运动会数据系统</a></li>
+      </ul>
+    </div>
+
+    <div class="layui-side layui-bg-black">
+      <div class="layui-side-scroll">
+        <ul class="layui-nav layui-nav-tree" lay-filter="side-nav">
+          <li class="layui-nav-item layui-nav-itemed">
+            <a href="javascript:;">工作台</a>
+            <dl class="layui-nav-child">
+              <dd class="{% if active_page == 'home' %}layui-this{% endif %}"><a href="/">首页</a></dd>
+              <dd class="{% if active_page == 'init_status' %}layui-this{% endif %}"><a href="/init-status">初始化状态</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item layui-nav-itemed">
+            <a href="javascript:;">数据操作</a>
+            <dl class="layui-nav-child">
+              <dd class="{% if active_page == 'import_center' %}layui-this{% endif %}"><a href="/import-center">导入中心</a></dd>
+              <dd class="{% if active_page == 'result_entry' %}layui-this{% endif %}"><a href="/result-entry">成绩录入</a></dd>
+              <dd class="{% if active_page == 'data_center' %}layui-this{% endif %}"><a href="/data">数据中心</a></dd>
+            </dl>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="layui-body">
+      <div class="layui-fluid page-wrap">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+
+    <div class="layui-footer">
+      Sports Point · Admin UI
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/layui@2.9.15/dist/layui.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+{% extends "layout.html" %}
+{% block title %}成绩录入{% endblock %}
+{% block content %}
+
+<div class="layui-row layui-col-space15 result-entry-page" id="result-entry-app">
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">个人成绩录入</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/record-result" data-ajax="true" id="individual-result-form">
+          <div class="layui-form-item">
+            <label class="layui-form-label">项目</label>
+            <div class="layui-input-block">
+              <select name="event_id" id="ind-event" lay-filter="ind-event" required>
+                <option value="">请选择个人项目</option>
+                {% for e in events %}
+                  {% if e['is_individual'] == 1 %}
+                    <option value="{{ e['id'] }}" data-category="{{ e['category'] }}" data-gender="{{ e['gender'] }}" data-age-group="{{ e['age_group'] }}">{{ e['name'] }} · {{ e['category'] }} · {{ e['gender'] }} · {{ e['age_group'] }} [{{ e['id'] }}]</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">运动员类型</label>
+            <div class="layui-input-block">
+              <select name="athlete_type" id="ind-athlete-type" lay-filter="ind-athlete-type" required>
+                <option value="">请选择类型</option>
+                <option value="competitive">竞技</option>
+                <option value="fun">趣味</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">运动员</label>
+            <div class="layui-input-block">
+              <select name="athlete_id" id="ind-athlete-id" required>
+                <option value="">请选择运动员</option>
+                {% for a in athletes %}
+                  <option value="{{ a['athlete_ref_id'] }}" data-type="{{ a['athlete_type'] }}" data-gender="{{ a['gender'] }}" data-age-group="{{ a['age_group'] or '' }}">
+                    {{ a['name'] }} · {{ a['department_name'] }} · {{ a['athlete_type'] }} · {{ a['gender'] }} [{{ a['athlete_ref_id'] }}]
+                  </option>
+                {% endfor %}
+              </select>
+              <div class="layui-form-mid layui-word-aux">仅显示已报名该项目的运动员。</div>
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">名次</label>
+            <div class="layui-input-block">
+              <input type="number" name="rank" min="1" class="layui-input" placeholder="留空自动计算名次" />
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">成绩</label>
+            <div class="layui-input-block">
+              <input type="text" name="performance" class="layui-input" placeholder="例如：12.35s / 5.63m / 18次" />
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn">提交个人成绩</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">团体成绩录入</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/record-result" data-ajax="true" id="team-result-form">
+          <div class="layui-form-item">
+            <label class="layui-form-label">项目</label>
+            <div class="layui-input-block">
+              <select name="event_id" id="team-event" lay-filter="team-event" required>
+                <option value="">请选择团体项目</option>
+                {% for e in events %}
+                  {% if e['is_individual'] == 0 %}
+                    <option value="{{ e['id'] }}">{{ e['name'] }} · {{ e['category'] }} · {{ e['gender'] }} · {{ e['age_group'] }} [{{ e['id'] }}]</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">队伍</label>
+            <div class="layui-input-block">
+              <select name="team_id" id="team-id" required>
+                <option value="">请选择队伍</option>
+                {% for t in teams %}
+                  <option value="{{ t['id'] }}" data-event-id="{{ t['event_id'] if 'event_id' in t else '' }}">
+                    {{ t['team_name'] }} · {{ t['department_name'] }} · {{ t['event_name'] }} [{{ t['id'] }}]
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">名次</label>
+            <div class="layui-input-block">
+              <input type="number" name="rank" min="1" class="layui-input" placeholder="留空自动计算名次" />
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">成绩</label>
+            <div class="layui-input-block">
+              <input type="text" name="performance" class="layui-input" placeholder="例如：3:52.11 / 210分" />
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn layui-btn-normal">提交团体成绩</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">最近成绩（30条）</div>
+      <div class="layui-card-body table-scroll">
+        <table class="layui-table" lay-even>
+          <thead>
+            <tr>
+              <th>ID</th><th>项目</th><th>类别</th><th>对象</th><th>部门</th><th>名次</th><th>积分</th><th>成绩</th><th>时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in recent_results %}
+              <tr>
+                <td>{{ r['id'] }}</td>
+                <td>{{ r['event_name'] }}</td>
+                <td>{{ r['category'] }}</td>
+                <td>{{ r['target_name'] }}</td>
+                <td>{{ r['department_name'] }}</td>
+                <td>{{ r['rank'] }}</td>
+                <td>{{ r['points'] }}</td>
+                <td>{{ r['performance'] or '' }}</td>
+                <td>{{ r['created_at'] }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function(){
+  var app = document.getElementById('result-entry-app');
+  if(!app) return;
+  var registrationPairs = {{ registration_pairs|tojson }};
+  var registrationSet = {};
+  registrationPairs.forEach(function(p){
+    var key = String(p.athlete_type || '') + '|' + String(p.athlete_ref_id || '') + '|' + String(p.event_id || '');
+    registrationSet[key] = true;
+  });
+
+  function renderSelect(){
+    if(window.layui && layui.form){ layui.form.render('select'); }
+  }
+
+  var indEvent = document.getElementById('ind-event');
+  var indType = document.getElementById('ind-athlete-type');
+  var indAthlete = document.getElementById('ind-athlete-id');
+  var allAthletes = [];
+  if(indAthlete){
+    allAthletes = Array.prototype.slice.call(indAthlete.options, 1).map(function(opt){
+      return {
+        value: opt.value,
+        text: opt.text,
+        type: opt.getAttribute('data-type') || '',
+        gender: opt.getAttribute('data-gender') || '',
+        age_group: opt.getAttribute('data-age-group') || ''
+      };
+    });
+  }
+
+  function rebuildAthletes(){
+    if(!indType || !indAthlete) return;
+    var prev = indAthlete.value || '';
+    var t = (indType.value || '').trim();
+    var selectedEvent = indEvent && indEvent.options[indEvent.selectedIndex] ? indEvent.options[indEvent.selectedIndex] : null;
+    var eventId = selectedEvent ? (selectedEvent.value || '') : '';
+    var eventGender = selectedEvent ? (selectedEvent.getAttribute('data-gender') || '') : '';
+    indAthlete.innerHTML = '';
+    indAthlete.add(new Option('请选择运动员', ''));
+    var keepExists = false;
+    allAthletes.forEach(function(a){
+      var okType = !t || a.type === t;
+      var okGender = !eventGender || eventGender === 'mixed' || a.gender === eventGender;
+      var okRegistered = !eventId || !!registrationSet[(a.type + '|' + a.value + '|' + eventId)];
+      if(!(okType && okGender && okRegistered)) return;
+      var option = new Option(a.text, a.value);
+      option.setAttribute('data-type', a.type);
+      option.setAttribute('data-gender', a.gender);
+      option.setAttribute('data-age-group', a.age_group);
+      indAthlete.add(option);
+      if(a.value === prev) keepExists = true;
+    });
+    indAthlete.value = keepExists ? prev : '';
+    renderSelect();
+  }
+
+  function syncTypeByEvent(){
+    if(!indEvent || !indType) return;
+    var selected = indEvent.options[indEvent.selectedIndex];
+    if(!selected) return;
+    var cat = selected.getAttribute('data-category') || '';
+    if(cat === 'competitive' || cat === 'fun'){
+      indType.value = cat;
+    }
+    rebuildAthletes();
+    renderSelect();
+  }
+
+  if(indEvent){ indEvent.addEventListener('change', syncTypeByEvent); } // 原生兜底
+  if(indType){ indType.addEventListener('change', rebuildAthletes); } // 原生兜底
+
+  var teamEvent = document.getElementById('team-event');
+  var teamId = document.getElementById('team-id');
+  var allTeams = [];
+  if(teamId){
+    allTeams = Array.prototype.slice.call(teamId.options, 1).map(function(opt){
+      return {
+        value: opt.value,
+        text: opt.text,
+        event_id: opt.getAttribute('data-event-id') || ''
+      };
+    });
+  }
+  function filterTeams(){
+    if(!teamEvent || !teamId) return;
+    var eid = (teamEvent.value || '').trim();
+    var prev = teamId.value || '';
+    teamId.innerHTML = '';
+    teamId.add(new Option('请选择队伍', ''));
+    var keepExists = false;
+    allTeams.forEach(function(t){
+      if(eid && t.event_id !== eid) return;
+      var option = new Option(t.text, t.value);
+      option.setAttribute('data-event-id', t.event_id);
+      teamId.add(option);
+      if(t.value === prev) keepExists = true;
+    });
+    teamId.value = keepExists ? prev : '';
+    renderSelect();
+  }
+  if(teamEvent){ teamEvent.addEventListener('change', filterTeams); } // 原生兜底
+
+  function bindLayuiSelectEvents(){
+    if(!(window.layui && layui.form)) return;
+    layui.form.on('select(ind-event)', function(){
+      syncTypeByEvent();
+    });
+    layui.form.on('select(ind-athlete-type)', function(){
+      rebuildAthletes();
+    });
+    layui.form.on('select(team-event)', function(){
+      filterTeams();
+    });
+  }
+
+  syncTypeByEvent();
+  filterTeams();
+  if(window.layui && layui.use){
+    layui.use(['form'], function(){
+      bindLayuiSelectEvents();
+      renderSelect();
+    });
+  } else {
+    bindLayuiSelectEvents();
+  }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends "layout.html" %}
+{% block title %}导入中心{% endblock %}
+{% block content %}
+
+<div class="layui-row layui-col-space15">
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">系统初始化</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/setup/init" data-ajax="true">
+          <div class="layui-form-item">
+            <label class="layui-form-label">比赛日期</label>
+            <div class="layui-input-block">
+              <input type="text" name="meet_date" value="2026-04-23" placeholder="YYYY-MM-DD" class="layui-input" />
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn">保存</button>
+              <a class="layui-btn layui-btn-primary" href="/init-status">查看状态</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">模板下载</div>
+      <div class="layui-card-body">
+        <a class="layui-btn layui-btn-primary" href="/templates/events_template.csv">下载项目模板</a>
+        <a class="layui-btn layui-btn-primary" href="/templates/competitive_athletes_template.csv">下载竞技名单模板</a>
+        <a class="layui-btn layui-btn-primary" href="/templates/fun_athletes_template.csv">下载趣味名单模板</a>
+        <div style="margin-top: 10px;">
+          <form class="layui-form" method="get" action="/templates/registrations-template.csv" style="display:inline-block; margin-right: 12px;">
+            <input type="hidden" name="category" value="competitive" />
+            <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-sm">导出竞技报名矩阵模板</button></div>
+          </form>
+          <form class="layui-form" method="get" action="/templates/registrations-template.csv" style="display:inline-block;">
+            <input type="hidden" name="category" value="fun" />
+            <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-sm layui-btn-warm">导出趣味报名矩阵模板</button></div>
+          </form>
+        </div>
+        <p class="layui-word-aux">报名模板格式：前5列是 athlete_no/name/gender/age_group/department_name，后续每列为 项目名-组别[event_id1|event_id2]。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">导入项目 CSV</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/import/events-csv" enctype="multipart/form-data" data-ajax="true">
+          <div class="layui-form-item">
+            <input type="file" name="file" accept=".csv" class="layui-input" required />
+          </div>
+          <button type="submit" class="layui-btn layui-btn-normal">上传并导入</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">导入竞技运动员名单 CSV</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/import/competitive-athletes-csv" enctype="multipart/form-data" data-ajax="true">
+          <div class="layui-form-item">
+            <input type="file" name="file" accept=".csv" class="layui-input" required />
+          </div>
+          <button type="submit" class="layui-btn layui-btn-normal">上传并导入名单</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">导入趣味运动员名单 CSV</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/import/fun-athletes-csv" enctype="multipart/form-data" data-ajax="true">
+          <div class="layui-form-item">
+            <input type="file" name="file" accept=".csv" class="layui-input" required />
+          </div>
+          <button type="submit" class="layui-btn layui-btn-normal">上传并导入名单</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">导入竞技项目报名 CSV</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/import/competitive-registrations-csv" enctype="multipart/form-data" data-ajax="true">
+          <div class="layui-form-item">
+            <input type="file" name="file" accept=".csv" class="layui-input" required />
+          </div>
+          <button type="submit" class="layui-btn layui-btn-warm">上传并导入报名矩阵</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">导入趣味项目报名 CSV</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/import/fun-registrations-csv" enctype="multipart/form-data" data-ajax="true">
+          <div class="layui-form-item">
+            <input type="file" name="file" accept=".csv" class="layui-input" required />
+          </div>
+          <button type="submit" class="layui-btn layui-btn-warm">上传并导入报名矩阵</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">成绩录入</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/record-result" data-ajax="true">
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md2"><input type="number" name="event_id" min="1" placeholder="项目ID" class="layui-input" required /></div>
+            <div class="layui-col-md2"><input type="number" name="rank" min="1" placeholder="名次（留空自动）" class="layui-input" /></div>
+            <div class="layui-col-md2">
+              <select name="athlete_type">
+                <option value="">运动员类型</option>
+                <option value="competitive">竞技</option>
+                <option value="fun">趣味</option>
+              </select>
+            </div>
+            <div class="layui-col-md2"><input type="number" name="athlete_id" min="1" placeholder="运动员ID" class="layui-input" /></div>
+            <div class="layui-col-md2"><input type="number" name="team_id" min="1" placeholder="队伍ID" class="layui-input" /></div>
+            <div class="layui-col-md1"><input type="text" name="performance" placeholder="成绩描述" class="layui-input" /></div>
+            <div class="layui-col-md1"><button type="submit" class="layui-btn">提交</button></div>
+          </div>
+          <p class="layui-word-aux">录入个人成绩时需填写运动员类型+运动员ID；录入团体成绩时只填队伍ID。</p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header" style="color:#c00;">危险操作：按需清除数据</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/admin/clear-data" data-ajax="true" id="clear-data-form">
+          <div class="layui-form-item">
+            <label class="layui-form-label">选择表</label>
+            <div class="layui-input-block">
+              {% for key, label in clear_table_options.items() %}
+                <input type="checkbox" name="tables" value="{{ key }}" title="{{ label }} ({{ key }})" lay-skin="primary">
+              {% endfor %}
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">确认口令</label>
+            <div class="layui-input-inline">
+              <input type="text" name="confirm_text" placeholder="请输入 DELETE" class="layui-input" />
+            </div>
+            <div class="layui-form-mid layui-word-aux">必须输入大写 DELETE</div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">校验码</label>
+            <div class="layui-input-inline">
+              <input type="text" name="confirm_code" placeholder="请输入 CLEAR-N" class="layui-input" />
+            </div>
+            <div class="layui-form-mid layui-word-aux">N = 所选表数量，当前应输入 <span id="clear-code-hint">CLEAR-0</span></div>
+          </div>
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <input type="checkbox" name="acknowledged" value="1" title="我已确认这是不可逆操作" lay-skin="primary">
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn layui-btn-danger">执行清除</button>
+            </div>
+          </div>
+          <p class="layui-word-aux">系统会按依赖关系安全清理关联数据，防止外键冲突。请先备份数据库。</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
