@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}导入中心{% endblock %}
+{% block title %}数据导入{% endblock %}
 {% block content %}
 
 <div class="layui-row layui-col-space15">
@@ -42,7 +42,6 @@
             <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-sm layui-btn-warm">导出趣味报名矩阵模板</button></div>
           </form>
         </div>
-        <p class="layui-word-aux">报名模板格式：前5列是 athlete_no/name/gender/age_group/department_name，后续每列为 项目名-组别[event_id1|event_id2]。</p>
       </div>
     </div>
   </div>
@@ -119,32 +118,6 @@
 
   <div class="layui-col-md12">
     <div class="layui-card">
-      <div class="layui-card-header">成绩录入</div>
-      <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/record-result" data-ajax="true" autocomplete="off">
-          <div class="layui-row layui-col-space10">
-            <div class="layui-col-md2"><input type="number" name="event_id" min="1" placeholder="项目ID" class="layui-input" required /></div>
-            <div class="layui-col-md2"><input type="number" name="rank" min="1" placeholder="名次（留空自动）" class="layui-input" /></div>
-            <div class="layui-col-md2">
-              <select name="athlete_type">
-                <option value="">运动员类型</option>
-                <option value="competitive">竞技</option>
-                <option value="fun">趣味</option>
-              </select>
-            </div>
-            <div class="layui-col-md2"><input type="number" name="athlete_id" min="1" placeholder="运动员ID" class="layui-input" /></div>
-            <div class="layui-col-md2"><input type="number" name="team_id" min="1" placeholder="队伍ID" class="layui-input" /></div>
-            <div class="layui-col-md1"><input type="text" name="performance" placeholder="成绩描述" class="layui-input" /></div>
-            <div class="layui-col-md1"><button type="submit" class="layui-btn">提交</button></div>
-          </div>
-          <p class="layui-word-aux">录入个人成绩时需填写运动员类型+运动员ID；录入团体成绩时只填队伍ID。</p>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <div class="layui-col-md12">
-    <div class="layui-card">
       <div class="layui-card-header" style="color:#c00;">危险操作：按需清除数据</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/admin/clear-data" data-ajax="true" id="clear-data-form" autocomplete="off">
@@ -168,7 +141,7 @@
             <div class="layui-input-inline">
               <input type="text" name="confirm_code" placeholder="请输入 CLEAR-N" class="layui-input" />
             </div>
-            <div class="layui-form-mid layui-word-aux">N = 所选表数量，当前应输入 <span id="clear-code-hint">CLEAR-0</span></div>
+            <div class="layui-form-mid layui-word-aux">N = 所选表数量</div>
           </div>
           <div class="layui-form-item">
             <div class="layui-input-block">

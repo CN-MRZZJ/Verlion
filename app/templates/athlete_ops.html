@@ -1,0 +1,443 @@
+{% extends "layout.html" %}
+{% block title %}运动员操作{% endblock %}
+{% block content %}
+
+<div class="layui-row layui-col-space15" id="athlete-ops-app">
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">查询运动员</div>
+      <div class="layui-card-body">
+        <form class="layui-form" id="athlete-query-form" autocomplete="off">
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md2">
+              <select name="athlete_type" id="query-athlete-type">
+                <option value="">全部类型</option>
+                <option value="competitive">竞技</option>
+                <option value="fun">趣味</option>
+              </select>
+            </div>
+            <div class="layui-col-md5">
+              <input type="text" name="keyword" id="query-keyword" class="layui-input" placeholder="输入运动员号/姓名/单位" />
+            </div>
+            <div class="layui-col-md5">
+              <button type="button" class="layui-btn" id="btn-athlete-query">查询</button>
+              <button type="button" class="layui-btn layui-btn-primary" id="btn-athlete-query-reset">重置</button>
+            </div>
+          </div>
+        </form>
+        <div style="margin-top:10px;" id="athlete-query-meta"></div>
+        <div class="table-scroll" style="margin-top:8px;">
+          <table class="layui-table" lay-even>
+            <thead>
+              <tr>
+                <th>类型</th><th>运动员号</th><th>姓名</th><th>性别</th><th>组别</th><th>单位</th><th>报名数</th><th>已报名项目</th>
+              </tr>
+            </thead>
+            <tbody id="athlete-query-body">
+              <tr><td colspan="8">请点击“查询”</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">新增运动员</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/athlete/add" data-ajax="true" data-no-reload="1" autocomplete="off">
+          <div class="layui-form-item">
+            <label class="layui-form-label">类型</label>
+            <div class="layui-input-block">
+              <select name="athlete_type" required>
+                <option value="">请选择</option>
+                <option value="competitive">竞技</option>
+                <option value="fun">趣味</option>
+              </select>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">运动员号</label>
+            <div class="layui-input-block">
+              <input type="text" name="athlete_no" class="layui-input" required />
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">姓名</label>
+            <div class="layui-input-block">
+              <input type="text" name="name" class="layui-input" required />
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">性别</label>
+            <div class="layui-input-block">
+              <select name="gender" required>
+                <option value="">请选择</option>
+                <option value="male">男</option>
+                <option value="female">女</option>
+              </select>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">归属单位</label>
+            <div class="layui-input-block">
+              <input type="text" name="department_name" class="layui-input" list="dept-list" required />
+              <datalist id="dept-list">
+                {% for d in departments %}
+                  <option value="{{ d }}"></option>
+                {% endfor %}
+              </datalist>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">年龄组</label>
+            <div class="layui-input-block">
+              <select name="age_group">
+                <option value="">不填</option>
+                <option value="A">甲组</option>
+                <option value="B">乙组</option>
+                <option value="C">丙组</option>
+              </select>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn">新增运动员</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
+      <div class="layui-card-header">删除运动员</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/athlete/delete" data-ajax="true" data-no-reload="1" autocomplete="off" id="athlete-delete-form">
+          <div class="layui-form-item">
+            <label class="layui-form-label">类型</label>
+            <div class="layui-input-block">
+              <select name="athlete_type" required>
+                <option value="">请选择</option>
+                <option value="competitive">竞技</option>
+                <option value="fun">趣味</option>
+              </select>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">运动员号</label>
+            <div class="layui-input-block">
+              <input type="text" name="athlete_no" class="layui-input" required />
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn layui-btn-danger">删除运动员</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">报名项目增减</div>
+      <div class="layui-card-body">
+        <div class="layui-row layui-col-space15">
+          <div class="layui-col-md6">
+            <form class="layui-form js-ajax-form" method="post" action="/athlete/registration/add" data-ajax="true" data-no-reload="1" autocomplete="off">
+              <fieldset class="layui-elem-field">
+                <legend>增加报名项目</legend>
+                <div class="layui-field-box">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">类型</label>
+                    <div class="layui-input-block">
+                      <select name="athlete_type" class="js-reg-type" data-target="add" lay-filter="reg-type-add" required>
+                        <option value="">请选择</option>
+                        <option value="competitive">竞技</option>
+                        <option value="fun">趣味</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">运动员号</label>
+                    <div class="layui-input-block">
+                      <input type="text" name="athlete_no" class="layui-input" required />
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">项目</label>
+                    <div class="layui-input-block">
+                      <select name="event_id" id="reg-add-event" required>
+                        <option value="">请选择项目</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <div class="layui-input-block">
+                      <button type="submit" class="layui-btn">增加报名</button>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+          <div class="layui-col-md6">
+            <form class="layui-form js-ajax-form" method="post" action="/athlete/registration/remove" data-ajax="true" data-no-reload="1" autocomplete="off">
+              <fieldset class="layui-elem-field">
+                <legend>减少报名项目</legend>
+                <div class="layui-field-box">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">类型</label>
+                    <div class="layui-input-block">
+                      <select name="athlete_type" class="js-reg-type" data-target="remove" lay-filter="reg-type-remove" required>
+                        <option value="">请选择</option>
+                        <option value="competitive">竞技</option>
+                        <option value="fun">趣味</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">运动员号</label>
+                    <div class="layui-input-block">
+                      <input type="text" name="athlete_no" id="reg-remove-athlete-no" class="layui-input" required />
+                      <div style="margin-top:8px;">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btn-load-remove-events">加载已报名项目</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">项目</label>
+                    <div class="layui-input-block">
+                      <select name="event_id" id="reg-remove-event" required>
+                        <option value="">请选择项目</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <div class="layui-input-block">
+                      <button type="submit" class="layui-btn layui-btn-warm">减少报名</button>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function(){
+  var app = document.getElementById('athlete-ops-app');
+  if(!app) return;
+  var compEvents = {{ competitive_events|tojson }};
+  var funEvents = {{ fun_events|tojson }};
+  var addSel = document.getElementById('reg-add-event');
+  var removeSel = document.getElementById('reg-remove-event');
+  var removeAthleteNoInput = document.getElementById('reg-remove-athlete-no');
+  var btnLoadRemoveEvents = document.getElementById('btn-load-remove-events');
+  var removeLoadSeq = 0;
+  var queryType = document.getElementById('query-athlete-type');
+  var queryKeyword = document.getElementById('query-keyword');
+  var queryBtn = document.getElementById('btn-athlete-query');
+  var queryResetBtn = document.getElementById('btn-athlete-query-reset');
+  var queryBody = document.getElementById('athlete-query-body');
+  var queryMeta = document.getElementById('athlete-query-meta');
+
+  function renderSelect(){
+    if(window.layui && layui.form){ layui.form.render('select'); }
+  }
+
+  function eventLabel(e){
+    var g = e.gender === 'male' ? '男子' : (e.gender === 'female' ? '女子' : '混合');
+    var ag = e.age_group === 'A' ? '甲组' : (e.age_group === 'B' ? '乙组' : (e.age_group === 'C' ? '丙组' : ''));
+    return String(e.name || '') + g + ag;
+  }
+
+  function fillEventSelect(sel, typeVal){
+    if(!sel) return;
+    sel.innerHTML = '';
+    sel.add(new Option('请选择项目', ''));
+    var list = typeVal === 'fun' ? funEvents : compEvents;
+    (list || []).forEach(function(e){
+      sel.add(new Option(eventLabel(e), String(e.id || '')));
+    });
+  }
+
+  function syncByType(target, typeVal){
+    if(target === 'add'){
+      fillEventSelect(addSel, typeVal);
+    } else if(target === 'remove'){
+      loadRemoveEventsByAthlete();
+    }
+    renderSelect();
+  }
+
+  async function loadRemoveEventsByAthlete(){
+    var seq = ++removeLoadSeq;
+    if(!removeSel) return;
+    var removeTypeSel = app.querySelector('select.js-reg-type[data-target="remove"]');
+    var t = removeTypeSel && removeTypeSel.value ? String(removeTypeSel.value).trim() : '';
+    var no = removeAthleteNoInput && removeAthleteNoInput.value ? String(removeAthleteNoInput.value).trim() : '';
+    removeSel.innerHTML = '';
+    removeSel.add(new Option('请选择项目', ''));
+    if(!t || !no){
+      if(!t){
+        removeSel.add(new Option('请先选择类型', ''));
+      } else {
+        removeSel.add(new Option('请输入运动员号', ''));
+      }
+      renderSelect();
+      return;
+    }
+    try{
+      var qs = new URLSearchParams({ athlete_type: t, athlete_no: no });
+      var resp = await fetch('/api/athlete/registered-events?' + qs.toString());
+      var data = await resp.json();
+      if(seq !== removeLoadSeq) return;
+      if(!resp.ok || data.ok === false){
+        removeSel.add(new Option('加载失败', ''));
+        if(window.layer && layer.msg){
+          layer.msg((data && data.error) ? data.error : '加载失败');
+        }
+        renderSelect();
+        return;
+      }
+      var items = data.items || [];
+      if(!items.length){
+        removeSel.add(new Option('该运动员暂无可减少的报名项目', ''));
+      } else {
+        var seen = {};
+        items.forEach(function(e){
+          var eid = String(e.id || '');
+          if(!eid || seen[eid]) return;
+          seen[eid] = true;
+          removeSel.add(new Option(String(e.label || e.name || ''), String(e.id || '')));
+        });
+      }
+      renderSelect();
+    }catch(_){
+      removeSel.add(new Option('加载失败', ''));
+      if(window.layer && layer.msg) layer.msg('加载失败');
+      renderSelect();
+    }
+  }
+
+  app.querySelectorAll('.js-reg-type').forEach(function(sel){
+    sel.addEventListener('change', function(){
+      var target = sel.getAttribute('data-target') || '';
+      syncByType(target, sel.value || '');
+    });
+    var initTarget = sel.getAttribute('data-target') || '';
+    if(sel.value){
+      syncByType(initTarget, sel.value);
+    }
+  });
+  if(removeAthleteNoInput){
+    removeAthleteNoInput.addEventListener('change', loadRemoveEventsByAthlete);
+    removeAthleteNoInput.addEventListener('blur', loadRemoveEventsByAthlete);
+    removeAthleteNoInput.addEventListener('keydown', function(e){
+      if(e.key !== 'Enter') return;
+      e.preventDefault();
+      loadRemoveEventsByAthlete();
+    });
+  }
+  if(btnLoadRemoveEvents){
+    btnLoadRemoveEvents.addEventListener('click', loadRemoveEventsByAthlete);
+  }
+
+  var deleteForm = document.getElementById('athlete-delete-form');
+  if(deleteForm){
+    deleteForm.addEventListener('submit', function(e){
+      var ok = window.confirm('将删除该运动员，并清理其相关报名/成绩/队伍成员记录。是否继续？');
+      if(!ok) e.preventDefault();
+    });
+  }
+
+  function genderText(g){
+    if(g === 'male') return '男';
+    if(g === 'female') return '女';
+    return g || '';
+  }
+  function typeText(t){
+    return t === 'competitive' ? '竞技' : (t === 'fun' ? '趣味' : t || '');
+  }
+  function renderQueryRows(items){
+    if(!queryBody) return;
+    if(!items || !items.length){
+      queryBody.innerHTML = '<tr><td colspan="8">无匹配数据</td></tr>';
+      return;
+    }
+    queryBody.innerHTML = items.map(function(it){
+      return '<tr>'
+        + '<td>' + typeText(it.athlete_type) + '</td>'
+        + '<td>' + String(it.athlete_no || '') + '</td>'
+        + '<td>' + String(it.name || '') + '</td>'
+        + '<td>' + genderText(it.gender) + '</td>'
+        + '<td>' + String(it.age_group || '') + '</td>'
+        + '<td>' + String(it.department_name || '') + '</td>'
+        + '<td>' + String(it.registration_count || 0) + '</td>'
+        + '<td>' + String(it.registered_events || '') + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+  async function fetchAthleteQuery(){
+    var t = queryType && queryType.value ? queryType.value : '';
+    var kw = queryKeyword && queryKeyword.value ? queryKeyword.value : '';
+    var qs = new URLSearchParams({ athlete_type: t, keyword: kw });
+    try{
+      var resp = await fetch('/api/athlete/query?' + qs.toString());
+      var data = await resp.json();
+      if(!resp.ok || data.ok === false){
+        if(window.layer && layer.msg) layer.msg(data.error || '查询失败');
+        return;
+      }
+      if(queryMeta) queryMeta.textContent = '共 ' + String(data.total || 0) + ' 条';
+      renderQueryRows(data.items || []);
+    }catch(_){
+      if(window.layer && layer.msg) layer.msg('查询失败');
+    }
+  }
+  if(queryBtn){
+    queryBtn.addEventListener('click', fetchAthleteQuery);
+  }
+  if(queryResetBtn){
+    queryResetBtn.addEventListener('click', function(){
+      if(queryType) queryType.value = '';
+      if(queryKeyword) queryKeyword.value = '';
+      if(queryMeta) queryMeta.textContent = '';
+      if(queryBody) queryBody.innerHTML = '<tr><td colspan="8">请点击“查询”</td></tr>';
+      renderSelect();
+    });
+  }
+  if(queryKeyword){
+    queryKeyword.addEventListener('keydown', function(e){
+      if(e.key !== 'Enter') return;
+      e.preventDefault();
+      fetchAthleteQuery();
+    });
+  }
+
+  if(window.layui && layui.use){
+    layui.use(['form'], function(){
+      if(layui.form){
+        layui.form.on('select(reg-type-add)', function(data){
+          syncByType('add', (data && data.value) ? data.value : '');
+        });
+        layui.form.on('select(reg-type-remove)', function(data){
+          syncByType('remove', (data && data.value) ? data.value : '');
+        });
+      }
+      renderSelect();
+    });
+  }
+});
+</script>
+
+{% endblock %}

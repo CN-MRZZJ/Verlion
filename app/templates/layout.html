@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}运动会数据系统{% endblock %}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.15/dist/css/layui.css" />
+  <link href="//unpkg.com/layui@2.13.5/dist/css/layui.css" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body class="layui-layout-body">
@@ -23,16 +23,17 @@
             <a href="javascript:;">工作台</a>
             <dl class="layui-nav-child">
               <dd class="{% if active_page == 'home' %}layui-this{% endif %}"><a href="/">首页</a></dd>
-              <dd class="{% if active_page == 'init_status' %}layui-this{% endif %}"><a href="/init-status">初始化状态</a></dd>
+              <dd class="{% if active_page == 'status' %}layui-this{% endif %}"><a href="/status">系统状态</a></dd>
             </dl>
           </li>
           <li class="layui-nav-item layui-nav-itemed">
             <a href="javascript:;">数据操作</a>
             <dl class="layui-nav-child">
-              <dd class="{% if active_page == 'import_center' %}layui-this{% endif %}"><a href="/import-center">导入中心</a></dd>
+              <dd class="{% if active_page == 'import_center' %}layui-this{% endif %}"><a href="/import-center">数据导入</a></dd>
+              <dd class="{% if active_page == 'athlete_ops' %}layui-this{% endif %}"><a href="/athlete-ops">运动员操作</a></dd>
               <dd class="{% if active_page == 'result_entry' %}layui-this{% endif %}"><a href="/result-entry">成绩录入</a></dd>
-              <dd class="{% if active_page == 'notice_center' %}layui-this{% endif %}"><a href="/notice-center">公示中心</a></dd>
-              <dd class="{% if active_page == 'data_center' %}layui-this{% endif %}"><a href="/data">数据中心</a></dd>
+              <dd class="{% if active_page == 'notice_center' %}layui-this{% endif %}"><a href="/notice-center">成绩公示</a></dd>
+              <dd class="{% if active_page == 'data_center' %}layui-this{% endif %}"><a href="/data">数据库查看</a></dd>
             </dl>
           </li>
         </ul>
@@ -50,7 +51,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/layui@2.9.15/dist/layui.js"></script>
+  <script src="//unpkg.com/layui@2.13.5/dist/layui.js"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

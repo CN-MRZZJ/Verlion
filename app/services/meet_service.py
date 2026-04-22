@@ -160,13 +160,17 @@ class SportsMeetService:
             sec_decimal = "".join(parts[2:])
             sec_val = float(sec_int + ("." + sec_decimal if sec_decimal else ""))
             return minute * 60 + sec_val
-        if strategy in {"length", "count"}:
+        if strategy == "length":
             if not re.fullmatch(r"\d+(?:\.\d+)*", text):
                 return None
             parts = text.split(".")
             if len(parts) <= 2:
                 return float(text)
             return float(parts[0] + "." + "".join(parts[1:]))
+        if strategy == "count":
+            if not re.fullmatch(r"\d+", text):
+                return None
+            return float(int(text))
         return None
 
     def _normalize_performance_text(self, strategy: str, performance: Optional[str]) -> Optional[str]:
@@ -185,10 +189,14 @@ class SportsMeetService:
             text = text.replace(":", ".")
         elif strategy == "count":
             text = text.replace("次", "").replace("个", "")
-            text = text.replace(":", ".")
+            text = text.replace(":", "")
 
-        text = re.sub(r"[^0-9.]", "", text)
-        text = text.strip(".")
+        if strategy == "count":
+            text = re.sub(r"[^0-9]", "", text)
+            text = text.strip()
+        else:
+            text = re.sub(r"[^0-9.]", "", text)
+            text = text.strip(".")
         return text or None
 
     def _format_time_seconds(self, seconds: float) -> str:
@@ -203,17 +211,27 @@ class SportsMeetService:
         text = (performance or "").strip()
         if not text:
             return ""
-        if scoring_strategy != "time":
-            return text
-        sec = self._parse_performance_numeric("time", text)
-        if sec is None:
-            return text
-        return self._format_time_seconds(sec)
+        if scoring_strategy == "time":
+            sec = self._parse_performance_numeric("time", text)
+            if sec is None:
+                return text
+            return self._format_time_seconds(sec)
+        if scoring_strategy == "length":
+            meters = self._parse_performance_numeric("length", text)
+            if meters is None:
+                return text
+            return f"{meters:.2f}m"
+        if scoring_strategy == "count":
+            count_val = self._parse_performance_numeric("count", text)
+            if count_val is None:
+                return text
+            return f"{int(count_val)}个"
+        return text
 
     def _format_result_rows_performance(self, rows: list[dict]) -> list[dict]:
         for row in rows:
             strategy = str(row.get("scoring_strategy", "")).strip()
-            if strategy == "time":
+            if strategy in {"time", "length", "count"}:
                 row["performance"] = self._format_performance_for_display(strategy, row.get("performance"))
         return rows
 
@@ -311,6 +329,213 @@ class SportsMeetService:
     def list_registration_pairs(self):
         with self.db.connect() as conn:
             return SportsRepository(conn).list_registration_pairs()
+
+    def query_athletes(self, athlete_type: str = "", keyword: str = "") -> list[dict]:
+        type_filter = (athlete_type or "").strip()
+        if type_filter and type_filter not in {"competitive", "fun"}:
+            raise ValueError("athlete_type 必须为 competitive/fun 或留空")
+        kw = (keyword or "").strip().lower()
+
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            athletes = [dict(r) for r in repo.list_athletes_with_department()]
+            pairs = [dict(r) for r in repo.list_registration_pairs()]
+            events = [dict(r) for r in repo.list_events()]
+
+        event_map = {int(e["id"]): e for e in events}
+        reg_map: dict[tuple[str, int], list[int]] = {}
+        for p in pairs:
+            key = (str(p["athlete_type"]), int(p["athlete_ref_id"]))
+            reg_map.setdefault(key, []).append(int(p["event_id"]))
+
+        def _event_label(event: dict) -> str:
+            g = self._event_gender_label(str(event.get("gender", "")))
+            ag = self._event_group_label(str(event.get("age_group", "")))
+            return f"{event.get('name', '')}{g}{ag}"
+
+        items: list[dict] = []
+        for a in athletes:
+            at = str(a.get("athlete_type", ""))
+            if type_filter and at != type_filter:
+                continue
+
+            hay = " ".join(
+                [
+                    str(a.get("athlete_no", "") or ""),
+                    str(a.get("name", "") or ""),
+                    str(a.get("department_name", "") or ""),
+                ]
+            ).lower()
+            if kw and kw not in hay:
+                continue
+
+            key = (at, int(a.get("athlete_ref_id", 0)))
+            event_ids = reg_map.get(key, [])
+            labels = []
+            for eid in event_ids:
+                e = event_map.get(eid)
+                if e and int(e.get("is_individual", 0)) == 1:
+                    labels.append(_event_label(e))
+            labels = sorted(set(labels))
+
+            items.append(
+                {
+                    "athlete_type": at,
+                    "athlete_ref_id": a.get("athlete_ref_id"),
+                    "athlete_no": a.get("athlete_no", "") or "",
+                    "name": a.get("name", "") or "",
+                    "gender": a.get("gender", "") or "",
+                    "age_group": a.get("age_group", "") or "",
+                    "department_name": a.get("department_name", "") or "",
+                    "registration_count": len(labels),
+                    "registered_events": "；".join(labels),
+                }
+            )
+        items.sort(key=lambda x: (str(x["athlete_type"]), str(x["athlete_no"]), str(x["name"])))
+        return items
+
+    def get_registered_individual_events(self, athlete_type: str, athlete_no: str) -> list[dict]:
+        athlete_type = self._validate_athlete_type((athlete_type or "").strip())
+        athlete_no_text = (athlete_no or "").strip()
+        if not athlete_no_text:
+            raise ValueError("athlete_no 不能为空")
+
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            athlete = repo.get_athlete_by_no(athlete_type, athlete_no_text)
+            if not athlete:
+                raise ValueError(f"运动员不存在: {athlete_type}/{athlete_no_text}")
+            rows = repo.list_registered_individual_events_for_athlete(
+                athlete_type=athlete_type,
+                athlete_ref_id=int(athlete["athlete_ref_id"]),
+            )
+            items = [dict(r) for r in rows]
+
+        for it in items:
+            it["label"] = (
+                f"{it.get('name', '')}"
+                f"{self._event_gender_label(str(it.get('gender', '')))}"
+                f"{self._event_group_label(str(it.get('age_group', '')))}"
+            )
+        return items
+
+    def list_individual_events_by_category(self, category: str):
+        if category not in {"competitive", "fun"}:
+            raise ValueError("category 必须为 competitive 或 fun")
+        with self.db.connect() as conn:
+            return SportsRepository(conn).list_individual_events_by_category(category)
+
+    def add_athlete_by_department_name(
+        self,
+        athlete_type: str,
+        athlete_no: Optional[str],
+        name: str,
+        gender: str,
+        department_name: str,
+        age_group: Optional[str] = None,
+    ) -> int:
+        athlete_type = self._validate_athlete_type(athlete_type)
+        athlete_no_text = (athlete_no or "").strip()
+        if not athlete_no_text:
+            raise ValueError("athlete_no 不能为空")
+        name_text = (name or "").strip()
+        if not name_text:
+            raise ValueError("name 不能为空")
+        if gender not in {"male", "female"}:
+            raise ValueError("gender 必须是 male 或 female")
+        dept_name = (department_name or "").strip()
+        if not dept_name:
+            raise ValueError("department_name 不能为空")
+        age_group_text = (age_group or "").strip() or None
+        if age_group_text and age_group_text not in {"A", "B", "C"}:
+            raise ValueError("age_group 必须是 A/B/C")
+
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            exists = repo.get_athlete_by_no(athlete_type, athlete_no_text)
+            if exists:
+                raise ValueError(f"athlete_no 已存在: {athlete_no_text}")
+            dept = repo.get_department_by_name(dept_name)
+            if dept:
+                dept_id = int(dept["id"])
+            else:
+                dept_id = repo.insert_department(dept_name, 0)
+            athlete_id = repo.insert_athlete(
+                athlete_type=athlete_type,
+                athlete_no=athlete_no_text,
+                name=name_text,
+                gender=gender,
+                department_id=dept_id,
+                age_group=age_group_text,
+            )
+            conn.commit()
+            return athlete_id
+
+    def delete_athlete_by_no(self, athlete_type: str, athlete_no: str) -> dict:
+        athlete_type = self._validate_athlete_type(athlete_type)
+        athlete_no_text = (athlete_no or "").strip()
+        if not athlete_no_text:
+            raise ValueError("athlete_no 不能为空")
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            athlete = repo.get_athlete_by_no(athlete_type, athlete_no_text)
+            if not athlete:
+                raise ValueError(f"运动员不存在: {athlete_type}/{athlete_no_text}")
+            athlete_ref_id = int(athlete["athlete_ref_id"])
+            related = repo.delete_athlete_related_data(athlete_type, athlete_ref_id)
+            deleted = repo.delete_athlete_by_id(athlete_type, athlete_ref_id)
+            conn.commit()
+            return {
+                "deleted_athlete": deleted,
+                "deleted_related": related,
+                "athlete_type": athlete_type,
+                "athlete_no": athlete_no_text,
+            }
+
+    def adjust_athlete_registration(self, athlete_type: str, athlete_no: str, event_id: int, op: str) -> dict:
+        athlete_type = self._validate_athlete_type(athlete_type)
+        athlete_no_text = (athlete_no or "").strip()
+        if not athlete_no_text:
+            raise ValueError("athlete_no 不能为空")
+        if op not in {"add", "remove"}:
+            raise ValueError("op 必须是 add 或 remove")
+
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            athlete = repo.get_athlete_by_no(athlete_type, athlete_no_text)
+            if not athlete:
+                raise ValueError(f"运动员不存在: {athlete_type}/{athlete_no_text}")
+            athlete_ref_id = int(athlete["athlete_ref_id"])
+            event = repo.get_event_by_id(event_id)
+            if not event:
+                raise ValueError(f"比赛项目不存在: {event_id}")
+            if event["category"] != athlete_type:
+                raise ValueError("项目类别与运动员类型不匹配")
+            if int(event["is_individual"]) != 1:
+                raise ValueError("仅个人项目支持运动员报名")
+            if event["gender"] not in {athlete["gender"], "mixed"}:
+                raise ValueError("项目性别与运动员不匹配")
+
+            exists = repo.athlete_registration_exists(athlete_type, athlete_ref_id, event_id)
+            changed = 0
+            if op == "add":
+                if exists:
+                    conn.commit()
+                    return {"changed": 0, "status": "exists"}
+                repo.insert_athlete_registration(athlete_type, athlete_ref_id, event_id)
+                changed = 1
+            else:
+                changed = repo.delete_athlete_registration(athlete_type, athlete_ref_id, event_id)
+
+            conn.commit()
+            return {
+                "changed": changed,
+                "status": "ok",
+                "athlete_type": athlete_type,
+                "athlete_no": athlete_no_text,
+                "event_id": event_id,
+                "op": op,
+            }
 
     def register_athlete_event(self, athlete_type: str, athlete_ref_id: int, event_id: int) -> int:
         athlete_type = self._validate_athlete_type(athlete_type)
@@ -412,6 +637,8 @@ class SportsMeetService:
                     raise ValueError("径赛成绩格式无效，请使用 '.' 分隔（示例：9.86 或 1.36.5）")
                 if scoring_strategy == "length":
                     raise ValueError("田赛成绩格式无效，请使用米数数字并用 '.' 分隔（示例：6.23）")
+                if scoring_strategy == "count":
+                    raise ValueError("count 成绩必须为整数，单位个（示例：18）")
                 raise ValueError("成绩格式无效，请使用数字并用 '.' 分隔")
             if scoring_strategy == "time":
                 if normalized_performance:
@@ -419,6 +646,14 @@ class SportsMeetService:
                     if sec is None:
                         raise ValueError("径赛成绩格式无效，请使用 '.' 分隔（示例：9.86 或 1.36.5）")
                     normalized_performance = f"{sec:.2f}"
+                else:
+                    normalized_performance = None
+            elif scoring_strategy == "count":
+                if normalized_performance:
+                    cnt = self._parse_performance_numeric("count", normalized_performance)
+                    if cnt is None:
+                        raise ValueError("count 成绩必须为整数，单位个（示例：18）")
+                    normalized_performance = str(int(cnt))
                 else:
                     normalized_performance = None
 

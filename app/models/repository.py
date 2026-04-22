@@ -221,6 +221,22 @@ class SportsRepository:
             (athlete_type,),
         ).fetchall()
 
+    def list_registered_individual_events_for_athlete(self, athlete_type: str, athlete_ref_id: int):
+        return self.conn.execute(
+            """
+            SELECT
+                e.id,
+                e.name,
+                e.gender,
+                e.age_group
+            FROM athlete_registrations r
+            JOIN events e ON e.id = r.event_id
+            WHERE r.athlete_type=? AND r.athlete_ref_id=? AND e.is_individual=1
+            ORDER BY e.id
+            """,
+            (athlete_type, athlete_ref_id),
+        ).fetchall()
+
     def list_registration_pairs(self):
         return self.conn.execute(
             """
@@ -240,6 +256,42 @@ class SportsRepository:
             (athlete_type, athlete_ref_id, event_id),
         ).fetchone()
         return row is not None
+
+    def delete_athlete_registration(self, athlete_type: str, athlete_ref_id: int, event_id: int) -> int:
+        cur = self.conn.execute(
+            """
+            DELETE FROM athlete_registrations
+            WHERE athlete_type=? AND athlete_ref_id=? AND event_id=?
+            """,
+            (athlete_type, athlete_ref_id, event_id),
+        )
+        return int(cur.rowcount or 0)
+
+    def delete_athlete_related_data(self, athlete_type: str, athlete_ref_id: int) -> dict[str, int]:
+        counts = {"results": 0, "registrations": 0, "team_members": 0}
+        cur_results = self.conn.execute(
+            "DELETE FROM results WHERE athlete_type=? AND athlete_ref_id=?",
+            (athlete_type, athlete_ref_id),
+        )
+        counts["results"] = int(cur_results.rowcount or 0)
+
+        cur_regs = self.conn.execute(
+            "DELETE FROM athlete_registrations WHERE athlete_type=? AND athlete_ref_id=?",
+            (athlete_type, athlete_ref_id),
+        )
+        counts["registrations"] = int(cur_regs.rowcount or 0)
+
+        cur_team_members = self.conn.execute(
+            "DELETE FROM team_members WHERE athlete_type=? AND athlete_ref_id=?",
+            (athlete_type, athlete_ref_id),
+        )
+        counts["team_members"] = int(cur_team_members.rowcount or 0)
+        return counts
+
+    def delete_athlete_by_id(self, athlete_type: str, athlete_ref_id: int) -> int:
+        table = self._athlete_table(athlete_type)
+        cur = self.conn.execute(f"DELETE FROM {table} WHERE id=?", (athlete_ref_id,))
+        return int(cur.rowcount or 0)
 
     def count_fun_individual_registrations(self, athlete_type: str, athlete_ref_id: int) -> int:
         row = self.conn.execute(

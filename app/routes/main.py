@@ -101,6 +101,19 @@ def notice_center():
     )
 
 
+@main_bp.get("/athlete-ops")
+def athlete_ops():
+    service = get_service()
+    return render_template(
+        "athlete_ops.html",
+        active_page="athlete_ops",
+        athletes=[dict(row) for row in service.list_athletes()],
+        competitive_events=[dict(row) for row in service.list_individual_events_by_category("competitive")],
+        fun_events=[dict(row) for row in service.list_individual_events_by_category("fun")],
+        departments=service.list_department_names(),
+    )
+
+
 @main_bp.post("/setup/init")
 def setup_init():
     try:
@@ -227,6 +240,91 @@ def record_result():
             performance=str(performance).strip() if performance else None,
         )
         return jsonify({"ok": True, "result_id": result_id})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.post("/athlete/add")
+def athlete_add():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        athlete_id = get_service().add_athlete_by_department_name(
+            athlete_type=str(payload.get("athlete_type", "")).strip(),
+            athlete_no=str(payload.get("athlete_no", "")).strip(),
+            name=str(payload.get("name", "")).strip(),
+            gender=str(payload.get("gender", "")).strip(),
+            department_name=str(payload.get("department_name", "")).strip(),
+            age_group=str(payload.get("age_group", "")).strip() or None,
+        )
+        return jsonify({"ok": True, "inserted": 1, "athlete_id": athlete_id})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.post("/athlete/delete")
+def athlete_delete():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        result = get_service().delete_athlete_by_no(
+            athlete_type=str(payload.get("athlete_type", "")).strip(),
+            athlete_no=str(payload.get("athlete_no", "")).strip(),
+        )
+        return jsonify({"ok": True, **result})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.post("/athlete/registration/add")
+def athlete_registration_add():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        result = get_service().adjust_athlete_registration(
+            athlete_type=str(payload.get("athlete_type", "")).strip(),
+            athlete_no=str(payload.get("athlete_no", "")).strip(),
+            event_id=int(str(payload.get("event_id", "")).strip()),
+            op="add",
+        )
+        return jsonify({"ok": True, **result})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.post("/athlete/registration/remove")
+def athlete_registration_remove():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        result = get_service().adjust_athlete_registration(
+            athlete_type=str(payload.get("athlete_type", "")).strip(),
+            athlete_no=str(payload.get("athlete_no", "")).strip(),
+            event_id=int(str(payload.get("event_id", "")).strip()),
+            op="remove",
+        )
+        return jsonify({"ok": True, **result})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.get("/api/athlete/query")
+def api_athlete_query():
+    try:
+        athlete_type = request.args.get("athlete_type", "").strip()
+        keyword = request.args.get("keyword", "").strip()
+        items = get_service().query_athletes(athlete_type=athlete_type, keyword=keyword)
+        return jsonify({"ok": True, "items": items, "total": len(items)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.get("/api/athlete/registered-events")
+def api_athlete_registered_events():
+    try:
+        athlete_type = request.args.get("athlete_type", "").strip()
+        athlete_no = request.args.get("athlete_no", "").strip()
+        items = get_service().get_registered_individual_events(
+            athlete_type=athlete_type,
+            athlete_no=athlete_no,
+        )
+        return jsonify({"ok": True, "items": items, "total": len(items)})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
 
@@ -377,10 +475,10 @@ def export_data(view: str):
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
-@main_bp.get("/init-status")
-def init_status():
+@main_bp.get("/status")
+def status():
     status = get_service().get_initialization_status()
-    return render_template("init_status.html", active_page="init_status", **status)
+    return render_template("status.html", active_page="status", **status)
 
 
 @main_bp.get("/api/init-status")

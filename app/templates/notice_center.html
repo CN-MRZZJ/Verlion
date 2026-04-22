@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}公示中心{% endblock %}
+{% block title %}成绩公示{% endblock %}
 {% block content %}
 
 <div class="layui-row layui-col-space15 notice-center-page" id="notice-center-app">
@@ -47,7 +47,7 @@
               <select name="template_name" id="notice-template-name" required>
                 <option value="">请选择xlsx模板</option>
                 {% for name in notice_templates %}
-                  <option value="{{ name }}">{{ name }}</option>
+                  <option value="{{ name }}" {% if loop.first %}selected{% endif %}>{{ name }}</option>
                 {% endfor %}
               </select>
             </div>
