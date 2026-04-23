@@ -96,6 +96,16 @@ def data_view():
     )
 
 
+@main_bp.get("/export-center")
+def export_center():
+    return render_template(
+        "export_center.html",
+        active_page="export_center",
+        data_views=DATA_VIEWS,
+        department_names=get_service().list_department_names(),
+    )
+
+
 @main_bp.get("/status")
 def status():
     status = get_service().get_initialization_status()

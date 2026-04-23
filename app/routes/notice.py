@@ -1,5 +1,4 @@
 from urllib.parse import quote
-
 from flask import Response, current_app, jsonify, request
 
 from .common import get_service, main_bp

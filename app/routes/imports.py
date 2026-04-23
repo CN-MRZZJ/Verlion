@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from flask import Response, current_app, jsonify, request, send_from_directory
 
 from .common import get_service, main_bp, parse_csv_upload

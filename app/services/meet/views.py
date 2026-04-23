@@ -5,6 +5,74 @@ from app.models import SportsRepository
 
 
 class MeetViewMixin:
+    def _export_header_alias(self, key: str) -> str:
+        mapping = {
+            "id": "ID",
+            "event_id": "项目ID",
+            "athlete_ref_id": "运动员ID",
+            "athlete_no": "运动员号",
+            "athlete_name": "运动员姓名",
+            "team_name": "队伍名称",
+            "department_name": "单位",
+            "name": "名称",
+            "event_name": "项目名称",
+            "category": "类别",
+            "event_type": "项目类型",
+            "gender": "性别",
+            "age_group": "组别",
+            "is_individual": "项目属性",
+            "scoring_strategy": "计分策略",
+            "result_type": "成绩对象",
+            "athlete_type": "运动员类型",
+            "target_name": "对象名称",
+            "rank": "名次",
+            "points": "积分",
+            "performance": "成绩",
+            "created_at": "创建时间",
+            "total_members": "总人数",
+            "active_members": "参赛人数",
+            "participation_percent": "参赛率(%)",
+            "total_points": "总积分",
+        }
+        return mapping.get(key, key)
+
+    def _export_readable_value(self, key: str, value):
+        if value is None:
+            return ""
+        text = str(value)
+        if key == "category":
+            return {"competitive": "竞技", "fun": "趣味"}.get(text, text)
+        if key == "event_type":
+            return {"track": "径赛", "field": "田赛", "fun": "趣味"}.get(text, text)
+        if key == "gender":
+            return {"male": "男", "female": "女", "mixed": "混合"}.get(text, text)
+        if key == "age_group":
+            return {"A": "甲组", "B": "乙组", "C": "丙组", "ALL": "不限组"}.get(text, text)
+        if key == "is_individual":
+            return "个人" if text in {"1", "True", "true"} else ("团体" if text in {"0", "False", "false"} else text)
+        if key == "scoring_strategy":
+            return {
+                "time": "time(计时)",
+                "length": "length(计距)",
+                "count": "count(计数)",
+                "count_miss": "count_miss(个数/失误)",
+            }.get(text, text)
+        if key == "result_type":
+            return {"athlete": "个人", "team": "团体"}.get(text, text)
+        if key == "athlete_type":
+            return {"competitive": "竞技", "fun": "趣味"}.get(text, text)
+        if key == "record_done":
+            return "是" if text in {"1", "True", "true"} else ("否" if text in {"0", "False", "false"} else text)
+        if key == "print_done":
+            return "是" if text in {"1", "True", "true"} else ("否" if text in {"0", "False", "false"} else text)
+        return value
+
+    def _readable_item(self, item: dict) -> dict:
+        out = {}
+        for k, v in item.items():
+            out[k] = self._export_readable_value(k, v)
+        return out
+
     def list_events(self):
         with self.db.connect() as conn:
             return SportsRepository(conn).list_events()
@@ -135,23 +203,55 @@ class MeetViewMixin:
             elif view_name == "departments":
                 total, rows = repo.page_departments(page, page_size, keyword, sort_by, sort_dir)
             elif view_name == "teams":
-                total, rows = repo.page_teams(page, page_size, keyword, department_name, sort_by, sort_dir)
+                total, rows = repo.page_teams(
+                    page,
+                    page_size,
+                    keyword,
+                    department_name,
+                    gender,
+                    age_group,
+                    category,
+                    scoring_strategy,
+                    sort_by,
+                    sort_dir,
+                )
             elif view_name == "registrations":
-                total, rows = repo.page_registrations(page, page_size, keyword, department_name, sort_by, sort_dir)
+                total, rows = repo.page_registrations(
+                    page,
+                    page_size,
+                    keyword,
+                    department_name,
+                    gender,
+                    age_group,
+                    category,
+                    scoring_strategy,
+                    sort_by,
+                    sort_dir,
+                )
             elif view_name == "results":
                 total, rows = repo.page_results(
-                    page, page_size, keyword, department_name, category, scoring_strategy, sort_by, sort_dir
+                    page,
+                    page_size,
+                    keyword,
+                    department_name,
+                    gender,
+                    age_group,
+                    category,
+                    scoring_strategy,
+                    sort_by,
+                    sort_dir,
                 )
             elif view_name == "standings":
-                total, rows = repo.page_standings(page, page_size, sort_by, sort_dir)
+                total, rows = repo.page_standings(page, page_size, keyword, sort_by, sort_dir)
             elif view_name == "participation":
-                total, rows = repo.page_participation(page, page_size, sort_by, sort_dir)
+                total, rows = repo.page_participation(page, page_size, keyword, sort_by, sort_dir)
             else:
                 raise ValueError(f"不支持的数据视图: {view_name}")
 
             items = [dict(r) for r in rows]
             if view_name == "results":
                 self._format_result_rows_performance(items)
+            items = [self._readable_item(i) for i in items]
             return {
                 "view": view_name,
                 "page": page,
@@ -187,11 +287,15 @@ class MeetViewMixin:
         )
         columns = first["columns"]
         items = first["items"]
+        headers = [self._export_header_alias(c) for c in columns]
         output = io.StringIO()
-        writer = csv.DictWriter(output, fieldnames=columns)
+        writer = csv.DictWriter(output, fieldnames=headers)
         writer.writeheader()
         for row in items:
-            writer.writerow(row)
+            readable_row = {}
+            for col, header in zip(columns, headers):
+                readable_row[header] = self._export_readable_value(col, row.get(col))
+            writer.writerow(readable_row)
         return output.getvalue()
 
     def get_initialization_status(self) -> dict:

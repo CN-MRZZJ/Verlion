@@ -1,38 +1,19 @@
 from datetime import date
 
-POINT_RULE = {1: 9, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
+from .legacy import legacy_interface
+from .mvc.domain.rules import POINT_RULE
+from .mvc.domain.rules import calc_age_group as _calc_age_group
+from .mvc.domain.rules import scoring_strategy_for_event_type as _scoring_strategy_for_event_type
 
 
+@legacy_interface("app.models.meet.scoring_strategy_for_event_type 是兼容旧接口，将在未来前后端分离阶段移除，请改用 app.models.mvc.domain.rules.scoring_strategy_for_event_type")
 def scoring_strategy_for_event_type(event_type: str) -> str:
-    mapping = {
-        "track": "time",
-        "field": "length",
-        "fun": "count",
-    }
-    if event_type not in mapping:
-        raise ValueError("event_type 必须是 track/field/fun")
-    return mapping[event_type]
+    return _scoring_strategy_for_event_type(event_type)
 
 
-def age_on_date(birth_date: date, on_date: date) -> int:
-    years = on_date.year - birth_date.year
-    if (on_date.month, on_date.day) < (birth_date.month, birth_date.day):
-        years -= 1
-    return years
-
-
+@legacy_interface("app.models.meet.calc_age_group 是兼容旧接口，将在未来前后端分离阶段移除，请改用 app.models.mvc.domain.rules.calc_age_group")
 def calc_age_group(gender: str, birth_date: date, meet_date: date) -> str:
-    age = age_on_date(birth_date, meet_date)
-    if gender == "male":
-        if age >= 50:
-            return "A"
-        if age >= 38:
-            return "B"
-        return "C"
-    if gender == "female":
-        if age >= 46:
-            return "A"
-        if age >= 38:
-            return "B"
-        return "C"
-    raise ValueError("gender 必须是 male 或 female")
+    return _calc_age_group(gender, birth_date, meet_date)
+
+
+__all__ = ["POINT_RULE", "calc_age_group", "scoring_strategy_for_event_type"]
