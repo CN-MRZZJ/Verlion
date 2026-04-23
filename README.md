@@ -56,9 +56,22 @@ pip install -r requirements.txt
 ```
 
 ## 启动
+### Dev（开发模式）
 ```bash
-python run.py
+python run_dev.py
 ```
+
+### Prod（生产模式）
+Windows / 通用：
+```bash
+python run_prod.py
+```
+
+Linux（推荐 Gunicorn）：
+```bash
+gunicorn -w 4 -b 0.0.0.0:5000 run:app
+```
+
 访问：`http://127.0.0.1:5000`
 
 ## 功能
@@ -97,7 +110,7 @@ python run.py
   - `GET /preview/personal-result-notice.pdf?event_id=<项目ID>`（在线预览）
 - 坐标配置说明：
   - `environment_cells`：环境信息和项目名称写入坐标
-  - `rank_rows`：第1-8名的写入坐标，每行包含 `rank`、`name`、`department`、`performance`
+  - `rank_rows`：第1-8名的写入坐标，每行需包含排名坐标（`rank`，也支持别名 `ranking/place/名次`），以及 `name`、`department`、`performance`
 
 ### 项目模板（events_template.csv）
 用于导入比赛项目基础信息。

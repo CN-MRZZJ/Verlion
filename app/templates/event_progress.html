@@ -1,0 +1,191 @@
+{% extends "layout.html" %}
+{% block title %}流程勾选{% endblock %}
+{% block content %}
+
+<div class="layui-row layui-col-space15" id="event-progress-app">
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">项目流程勾选</div>
+      <div class="layui-card-body">
+        <form class="layui-form" id="event-progress-filter" autocomplete="off">
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md6">
+              <input type="text" id="progress-keyword" class="layui-input" placeholder="输入项目名/类型/组别/性别筛选" />
+            </div>
+            <div class="layui-col-md6">
+              <button type="button" class="layui-btn" id="btn-progress-refresh">刷新</button>
+            </div>
+          </div>
+        </form>
+        <div style="margin-top:10px;" id="progress-meta"></div>
+        <div class="table-scroll" style="margin-top:8px;">
+          <table class="layui-table" lay-even>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>项目</th>
+                <th>类别</th>
+                <th>项目类型</th>
+                <th>性别</th>
+                <th>组别</th>
+                <th>完成记录</th>
+                <th>完成打印</th>
+                <th>更新时间</th>
+              </tr>
+            </thead>
+            <tbody id="progress-body">
+              <tr><td colspan="9">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function(){
+  var app = document.getElementById('event-progress-app');
+  if(!app) return;
+
+  var body = document.getElementById('progress-body');
+  var meta = document.getElementById('progress-meta');
+  var keywordInput = document.getElementById('progress-keyword');
+  var refreshBtn = document.getElementById('btn-progress-refresh');
+  var allItems = [];
+
+  function msg(text, ok){
+    if(window.layer && layer.msg){ layer.msg(text, { icon: ok ? 1 : 2, time: 1400 }); return; }
+    alert(text);
+  }
+
+  function eventTypeText(v){
+    if(v === 'track') return '径赛';
+    if(v === 'field') return '田赛';
+    if(v === 'fun') return '趣味';
+    return v || '';
+  }
+
+  function render(items){
+    if(!body) return;
+    if(!items || !items.length){
+      body.innerHTML = '<tr><td colspan="9">无数据</td></tr>';
+      if(meta) meta.textContent = '共 0 条';
+      return;
+    }
+    body.innerHTML = items.map(function(it){
+      var checkedRecord = Number(it.record_done || 0) === 1 ? 'checked' : '';
+      var checkedPrint = Number(it.print_done || 0) === 1 ? 'checked' : '';
+      return '<tr data-event-id="' + String(it.id) + '">'
+        + '<td>' + String(it.id) + '</td>'
+        + '<td>' + String(it.name || '') + '</td>'
+        + '<td>' + String(it.category_text || '') + '</td>'
+        + '<td>' + eventTypeText(String(it.event_type || '')) + '</td>'
+        + '<td>' + String(it.gender_text || '') + '</td>'
+        + '<td>' + String(it.age_group_text || '') + '</td>'
+        + '<td><input type="checkbox" class="js-record-done" ' + checkedRecord + '></td>'
+        + '<td><input type="checkbox" class="js-print-done" ' + checkedPrint + '></td>'
+        + '<td>' + String(it.updated_at || '') + '</td>'
+        + '</tr>';
+    }).join('');
+    if(meta) meta.textContent = '共 ' + String(items.length) + ' 条';
+  }
+
+  function applyFilter(){
+    var kw = keywordInput && keywordInput.value ? String(keywordInput.value).trim().toLowerCase() : '';
+    if(!kw){
+      render(allItems);
+      return;
+    }
+    var items = (allItems || []).filter(function(it){
+      var hay = [
+        it.name || '',
+        it.category_text || '',
+        it.event_type || '',
+        it.gender_text || '',
+        it.age_group_text || ''
+      ].join(' ').toLowerCase();
+      return hay.indexOf(kw) >= 0;
+    });
+    render(items);
+  }
+
+  async function loadItems(){
+    try{
+      var resp = await fetch('/api/event-progress');
+      var data = await resp.json();
+      if(!resp.ok || data.ok === false){
+        msg((data && data.error) ? data.error : '加载失败', false);
+        return;
+      }
+      allItems = data.items || [];
+      applyFilter();
+    }catch(_){
+      msg('加载失败', false);
+    }
+  }
+
+  async function saveRow(row){
+    var eventId = Number(row.getAttribute('data-event-id') || 0);
+    if(!eventId) return;
+    var recordDone = row.querySelector('.js-record-done') && row.querySelector('.js-record-done').checked ? 1 : 0;
+    var printDone = row.querySelector('.js-print-done') && row.querySelector('.js-print-done').checked ? 1 : 0;
+    try{
+      var fd = new FormData();
+      fd.append('event_id', String(eventId));
+      fd.append('record_done', String(recordDone));
+      fd.append('print_done', String(printDone));
+      var resp = await fetch('/api/event-progress/update', { method: 'POST', body: fd });
+      var data = await resp.json();
+      if(!resp.ok || data.ok === false){
+        msg((data && data.error) ? data.error : '保存失败', false);
+        return;
+      }
+      var target = allItems.find(function(it){ return Number(it.id) === eventId; });
+      if(target){
+        target.record_done = recordDone;
+        target.print_done = printDone;
+      }
+      var updateCell = row.cells[8];
+      if(updateCell){
+        var now = new Date();
+        var s = now.getFullYear()
+          + '-' + String(now.getMonth() + 1).padStart(2, '0')
+          + '-' + String(now.getDate()).padStart(2, '0')
+          + ' ' + String(now.getHours()).padStart(2, '0')
+          + ':' + String(now.getMinutes()).padStart(2, '0')
+          + ':' + String(now.getSeconds()).padStart(2, '0');
+        updateCell.textContent = s;
+      }
+    }catch(_){
+      msg('保存失败', false);
+    }
+  }
+
+  if(keywordInput){
+    keywordInput.addEventListener('input', applyFilter);
+    keywordInput.addEventListener('keydown', function(e){
+      if(e.key !== 'Enter') return;
+      e.preventDefault();
+      applyFilter();
+    });
+  }
+  if(refreshBtn){
+    refreshBtn.addEventListener('click', loadItems);
+  }
+  if(body){
+    body.addEventListener('change', function(e){
+      var t = e.target;
+      if(!t) return;
+      if(!t.classList.contains('js-record-done') && !t.classList.contains('js-print-done')) return;
+      var row = t.closest('tr');
+      if(!row) return;
+      saveRow(row);
+    });
+  }
+
+  loadItems();
+});
+</script>
+
+{% endblock %}

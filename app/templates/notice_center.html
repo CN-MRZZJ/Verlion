@@ -65,6 +65,50 @@
       </div>
     </div>
   </div>
+
+  <div class="layui-col-md12">
+    <div class="layui-card">
+      <div class="layui-card-header">团体成绩公示单导出与预览</div>
+      <div class="layui-card-body">
+        <form class="layui-form" id="team-notice-export-form" method="get" action="/export/team-result-notice.xlsx" autocomplete="off">
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md4">
+              <select name="event_id" id="team-notice-event-id" required>
+                <option value="">请选择团体项目</option>
+                {% for e in events %}
+                  {% if e['is_individual'] == 0 %}
+                    {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
+                    {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                    <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="layui-col-md4">
+              <select name="template_name" id="team-notice-template-name" required>
+                <option value="">请选择团体xlsx模板</option>
+                {% set ns = namespace(selected=false) %}
+                {% for name in notice_templates %}
+                  {% if name.startswith('team') %}
+                    <option value="{{ name }}" {% if not ns.selected %}selected{% set ns.selected = true %}{% endif %}>{{ name }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="layui-col-md4">
+              <button type="submit" class="layui-btn layui-btn-normal">导出 XLSX</button>
+              <button type="button" class="layui-btn" id="btn-team-preview-pdf">在线预览 PDF</button>
+              <button type="button" class="layui-btn layui-btn-warm" id="btn-team-print-pdf">打印 PDF</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="notice-preview-wrap" style="margin-top:10px;">
+          <iframe id="team-notice-pdf-frame" title="团体PDF预览" style="width:100%;height:780px;border:1px solid #e6e6e6;border-radius:4px;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -76,6 +120,11 @@ window.addEventListener('load', function(){
   var frame = document.getElementById('notice-pdf-frame');
   var btnPreview = document.getElementById('btn-preview-pdf');
   var btnPrint = document.getElementById('btn-print-pdf');
+  var teamEventSel = document.getElementById('team-notice-event-id');
+  var teamTplSel = document.getElementById('team-notice-template-name');
+  var teamFrame = document.getElementById('team-notice-pdf-frame');
+  var teamBtnPreview = document.getElementById('btn-team-preview-pdf');
+  var teamBtnPrint = document.getElementById('btn-team-print-pdf');
 
   function buildPdfUrl(){
     var eid = eventSel && eventSel.value ? String(eventSel.value).trim() : '';
@@ -83,6 +132,14 @@ window.addEventListener('load', function(){
     if(!tpl) return '';
     if(!eid) return '';
     return '/preview/personal-result-notice.pdf?event_id=' + encodeURIComponent(eid) + '&template_name=' + encodeURIComponent(tpl);
+  }
+
+  function buildTeamPdfUrl(){
+    var eid = teamEventSel && teamEventSel.value ? String(teamEventSel.value).trim() : '';
+    var tpl = teamTplSel && teamTplSel.value ? String(teamTplSel.value).trim() : '';
+    if(!tpl) return '';
+    if(!eid) return '';
+    return '/preview/team-result-notice.pdf?event_id=' + encodeURIComponent(eid) + '&template_name=' + encodeURIComponent(tpl);
   }
 
   if(btnPreview){
@@ -110,6 +167,38 @@ window.addEventListener('load', function(){
         try {
           frame.contentWindow.focus();
           frame.contentWindow.print();
+        } catch (_) {
+          window.open(url, '_blank');
+        }
+      }, 300);
+    });
+  }
+
+  if(teamBtnPreview){
+    teamBtnPreview.addEventListener('click', function(){
+      var url = buildTeamPdfUrl();
+      if(!url){
+        if(window.layer && layer.msg) layer.msg('请先选择团体项目和模板');
+        return;
+      }
+      if(teamFrame) teamFrame.src = url;
+    });
+  }
+
+  if(teamBtnPrint){
+    teamBtnPrint.addEventListener('click', function(){
+      var url = buildTeamPdfUrl();
+      if(!url){
+        if(window.layer && layer.msg) layer.msg('请先选择团体项目和模板');
+        return;
+      }
+      if(teamFrame && (!teamFrame.src || teamFrame.src.indexOf('/preview/team-result-notice.pdf') < 0)){
+        teamFrame.src = url;
+      }
+      setTimeout(function(){
+        try {
+          teamFrame.contentWindow.focus();
+          teamFrame.contentWindow.print();
         } catch (_) {
           window.open(url, '_blank');
         }

@@ -10,6 +10,9 @@
 <body class="layui-layout-body">
   <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
+      <button type="button" class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="展开菜单">
+        <i class="layui-icon layui-icon-spread-left"></i>
+      </button>
       <div class="layui-logo"><img src="https://www.bistu.edu.cn/picture/logo.png" alt="BISTU Logo" style="height: 60%; max-height: 40px; width: auto;"></div>
       <ul class="layui-nav layui-layout-left">
         <li class="layui-nav-item"><a href="/">教工运动会数据系统</a></li>
@@ -27,13 +30,29 @@
             </dl>
           </li>
           <li class="layui-nav-item layui-nav-itemed">
-            <a href="javascript:;">数据操作</a>
+            <a href="javascript:;">初始化与导入</a>
             <dl class="layui-nav-child">
               <dd class="{% if active_page == 'import_center' %}layui-this{% endif %}"><a href="/import-center">数据导入</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item layui-nav-itemed">
+            <a href="javascript:;">报名与队伍</a>
+            <dl class="layui-nav-child">
               <dd class="{% if active_page == 'athlete_ops' %}layui-this{% endif %}"><a href="/athlete-ops">运动员操作</a></dd>
               <dd class="{% if active_page == 'team_ops' %}layui-this{% endif %}"><a href="/team-ops">组队管理</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item layui-nav-itemed">
+            <a href="javascript:;">成绩与公示</a>
+            <dl class="layui-nav-child">
               <dd class="{% if active_page == 'result_entry' %}layui-this{% endif %}"><a href="/result-entry">成绩录入</a></dd>
+              <dd class="{% if active_page == 'event_progress' %}layui-this{% endif %}"><a href="/event-progress">流程勾选</a></dd>
               <dd class="{% if active_page == 'notice_center' %}layui-this{% endif %}"><a href="/notice-center">成绩公示</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item layui-nav-itemed">
+            <a href="javascript:;">数据与维护</a>
+            <dl class="layui-nav-child">
               <dd class="{% if active_page == 'data_center' %}layui-this{% endif %}"><a href="/data">数据库查看</a></dd>
             </dl>
           </li>
@@ -51,6 +70,7 @@
       Sports Point · Admin UI
     </div>
   </div>
+  <div class="mobile-side-mask" id="mobile-side-mask"></div>
 
   <script src="//unpkg.com/layui@2.13.5/dist/layui.js"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>

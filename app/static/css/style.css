@@ -2,6 +2,29 @@
   padding: 15px 0;
 }
 
+.mobile-nav-toggle {
+  display: none;
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+}
+
+.mobile-nav-toggle .layui-icon {
+  font-size: 20px;
+}
+
+.mobile-side-mask {
+  display: none;
+}
+
 .metric-card {
   border: 1px solid #ebeef5;
   border-radius: 8px;
@@ -240,6 +263,83 @@
 }
 
 @media (max-width: 768px) {
+  .layui-layout-admin .layui-header .layui-layout-left {
+    display: none;
+  }
+
+  .layui-layout-admin .layui-logo {
+    left: 52px;
+    width: auto;
+    right: 10px;
+    text-align: left;
+    overflow: hidden;
+  }
+
+  .mobile-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002;
+  }
+
+  .layui-layout-admin .layui-side {
+    left: -220px;
+    width: 220px;
+    transition: left .2s ease;
+    z-index: 1001;
+  }
+
+  body.mobile-nav-open .layui-layout-admin .layui-side {
+    left: 0;
+  }
+
+  .layui-layout-admin .layui-body,
+  .layui-layout-admin .layui-footer {
+    left: 0;
+  }
+
+  .layui-fluid.page-wrap {
+    padding: 10px 6px;
+  }
+
+  .mobile-side-mask {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 60px;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1000;
+  }
+
+  body.mobile-nav-open .mobile-side-mask {
+    display: block;
+  }
+
+  .layui-form-item .layui-form-label {
+    float: none;
+    width: auto;
+    text-align: left;
+    padding: 0 0 6px;
+    line-height: 1.2;
+  }
+
+  .layui-form-item .layui-input-block {
+    margin-left: 0;
+  }
+
+  .layui-form-item .layui-input-inline {
+    width: 100%;
+  }
+
+  .layui-card-body {
+    padding: 10px;
+  }
+
+  .layui-table {
+    min-width: 680px;
+  }
+
   .dc-header {
     flex-direction: column;
     align-items: flex-start;

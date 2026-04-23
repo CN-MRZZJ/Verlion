@@ -78,6 +78,14 @@ def team_ops():
     )
 
 
+@main_bp.get("/event-progress")
+def event_progress():
+    return render_template(
+        "event_progress.html",
+        active_page="event_progress",
+    )
+
+
 @main_bp.get("/data")
 def data_view():
     return render_template(

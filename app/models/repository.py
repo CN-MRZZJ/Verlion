@@ -190,6 +190,40 @@ class SportsRepository:
             "SELECT id, name, category, event_type, scoring_strategy, gender, age_group, is_individual FROM events ORDER BY id"
         ).fetchall()
 
+    def list_events_with_progress(self):
+        return self.conn.execute(
+            """
+            SELECT
+                e.id,
+                e.name,
+                e.category,
+                e.event_type,
+                e.scoring_strategy,
+                e.gender,
+                e.age_group,
+                e.is_individual,
+                COALESCE(p.record_done, 0) AS record_done,
+                COALESCE(p.print_done, 0) AS print_done,
+                COALESCE(p.updated_at, '') AS updated_at
+            FROM events e
+            LEFT JOIN event_progress p ON p.event_id = e.id
+            ORDER BY e.id
+            """
+        ).fetchall()
+
+    def upsert_event_progress(self, event_id: int, record_done: int, print_done: int) -> None:
+        self.conn.execute(
+            """
+            INSERT INTO event_progress(event_id, record_done, print_done, updated_at)
+            VALUES(?,?,?,datetime('now'))
+            ON CONFLICT(event_id) DO UPDATE SET
+                record_done=excluded.record_done,
+                print_done=excluded.print_done,
+                updated_at=datetime('now')
+            """,
+            (event_id, record_done, print_done),
+        )
+
     def list_individual_events_by_category(self, category: str):
         return self.conn.execute(
             """
@@ -400,6 +434,49 @@ class SportsRepository:
         )
         return int(cur.lastrowid)
 
+    def get_result_by_target(
+        self,
+        event_id: int,
+        athlete_type: Optional[str],
+        athlete_ref_id: Optional[int],
+        team_id: Optional[int],
+    ):
+        if athlete_ref_id is not None:
+            return self.conn.execute(
+                """
+                SELECT id, rank, points, performance
+                FROM results
+                WHERE event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (event_id, athlete_type, athlete_ref_id),
+            ).fetchone()
+
+        if team_id is not None:
+            return self.conn.execute(
+                """
+                SELECT id, rank, points, performance
+                FROM results
+                WHERE event_id=? AND team_id=? AND athlete_ref_id IS NULL AND athlete_type IS NULL
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (event_id, team_id),
+            ).fetchone()
+
+        return None
+
+    def update_result(self, result_id: int, rank: int, points: int, performance: Optional[str]) -> None:
+        self.conn.execute(
+            """
+            UPDATE results
+            SET rank=?, points=?, performance=?
+            WHERE id=?
+            """,
+            (rank, points, performance, result_id),
+        )
+
     def list_event_results(self, event_id: int):
         return self.conn.execute(
             """
@@ -426,6 +503,43 @@ class SportsRepository:
             WHERE r.event_id=? AND r.athlete_ref_id IS NOT NULL
             ORDER BY r.rank ASC, r.id ASC
             LIMIT 8
+            """,
+            (event_id,),
+        ).fetchall()
+
+    def list_individual_results_for_event_all(self, event_id: int):
+        return self.conn.execute(
+            """
+            SELECT
+                r.id,
+                r.rank,
+                COALESCE(ca.name, fa.name) AS athlete_name,
+                COALESCE(d1.name, '') AS department_name,
+                r.performance
+            FROM results r
+            LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
+            LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
+            LEFT JOIN departments d1 ON d1.id = COALESCE(ca.department_id, fa.department_id)
+            WHERE r.event_id=? AND r.athlete_ref_id IS NOT NULL
+            ORDER BY r.id ASC
+            """,
+            (event_id,),
+        ).fetchall()
+
+    def list_team_results_for_event_all(self, event_id: int):
+        return self.conn.execute(
+            """
+            SELECT
+                r.id,
+                r.rank,
+                COALESCE(t.name, '') AS team_name,
+                COALESCE(d.name, '') AS department_name,
+                r.performance
+            FROM results r
+            LEFT JOIN teams t ON t.id = r.team_id
+            LEFT JOIN departments d ON d.id = t.department_id
+            WHERE r.event_id=? AND r.team_id IS NOT NULL
+            ORDER BY r.id ASC
             """,
             (event_id,),
         ).fetchall()
@@ -553,6 +667,17 @@ class SportsRepository:
             JOIN events e ON e.id = t.event_id
             ORDER BY t.id
             """
+        ).fetchall()
+
+    def list_team_names_by_event_department(self, event_id: int, department_id: int):
+        return self.conn.execute(
+            """
+            SELECT name
+            FROM teams
+            WHERE event_id=? AND department_id=?
+            ORDER BY id
+            """,
+            (event_id, department_id),
         ).fetchall()
 
     def list_registrations_with_details(self):

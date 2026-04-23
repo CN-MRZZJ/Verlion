@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 from app.models import SportsRepository
@@ -5,6 +6,48 @@ from .validators import require_text
 
 
 class MeetTeamMixin:
+    def _gender_token_for_team_name(self, gender: str) -> str:
+        g = (gender or "").strip()
+        if g == "male":
+            return "男子"
+        if g == "female":
+            return "女子"
+        return "性别不限"
+
+    def _next_auto_team_name(
+        self,
+        repo: SportsRepository,
+        event_id: int,
+        department_id: int,
+        department_name: str,
+        event_name: str,
+        event_gender: str,
+    ) -> str:
+        existing_rows = repo.list_team_names_by_event_department(event_id, department_id)
+        existing = {str(r["name"]) for r in existing_rows}
+        prefix = f"{department_name}{event_name}{self._gender_token_for_team_name(event_gender)}"
+        escaped_prefix = re.escape(prefix)
+        used_letters: set[str] = set()
+        for team_name in existing:
+            m = re.fullmatch(rf"{escaped_prefix}([A-Z]+)队", team_name)
+            if m:
+                used_letters.add(m.group(1))
+
+        idx = 1
+        while idx <= 10000:
+            letters = ""
+            n = idx
+            while n > 0:
+                n -= 1
+                letters = chr(ord("A") + (n % 26)) + letters
+                n //= 26
+            if letters not in used_letters:
+                candidate = f"{prefix}{letters}队"
+                if candidate not in existing:
+                    return candidate
+            idx += 1
+        raise ValueError(f"无法为单位 {department_name} 生成可用队名")
+
     def create_team(self, department_id: int, event_id: int, name: str) -> int:
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
@@ -109,6 +152,71 @@ class MeetTeamMixin:
             team_id = repo.insert_team(dept_id, event_id, name)
             conn.commit()
             return team_id
+
+    def batch_add_teams_by_departments(self, event_id: int, department_names: list[str]) -> dict:
+        cleaned = []
+        seen = set()
+        for n in department_names:
+            text = (n or "").strip()
+            if not text:
+                continue
+            if text in seen:
+                continue
+            seen.add(text)
+            cleaned.append(text)
+        if not cleaned:
+            raise ValueError("请至少提供一个学院/单位")
+
+        inserted = 0
+        skipped = 0
+        errors: list[str] = []
+        skipped_details: list[str] = []
+        created: list[dict] = []
+
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            event = repo.get_event_by_id(event_id)
+            if not event:
+                raise ValueError(f"比赛项目不存在: {event_id}")
+            if int(event["is_individual"]) != 0:
+                raise ValueError("仅团体项目可批量建队")
+
+            for dept_name in cleaned:
+                try:
+                    dept = repo.get_department_by_name(dept_name)
+                    if not dept:
+                        dept_id = repo.insert_department(dept_name, 0)
+                    else:
+                        dept_id = int(dept["id"])
+
+                    team_name = self._next_auto_team_name(
+                        repo=repo,
+                        event_id=event_id,
+                        department_id=dept_id,
+                        department_name=dept_name,
+                        event_name=str(event["name"]),
+                        event_gender=str(event["gender"]),
+                    )
+                    if repo.team_exists(dept_id, event_id, team_name):
+                        skipped += 1
+                        skipped_details.append(f"{dept_name}: {team_name} 已存在，已跳过")
+                        continue
+
+                    team_id = repo.insert_team(dept_id, event_id, team_name)
+                    inserted += 1
+                    created.append({"team_id": team_id, "department_name": dept_name, "team_name": team_name})
+                except Exception as exc:
+                    errors.append(f"{dept_name}: {exc}")
+
+            conn.commit()
+
+        return {
+            "inserted": inserted,
+            "skipped": skipped,
+            "errors": errors,
+            "skipped_details": skipped_details,
+            "created": created,
+        }
 
     def delete_team(self, team_id: int) -> dict:
         with self.db.connect() as conn:

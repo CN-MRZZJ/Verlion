@@ -9,6 +9,35 @@ class MeetViewMixin:
         with self.db.connect() as conn:
             return SportsRepository(conn).list_events()
 
+    def list_event_progress(self) -> list[dict]:
+        with self.db.connect() as conn:
+            rows = [dict(r) for r in SportsRepository(conn).list_events_with_progress()]
+        for row in rows:
+            row["record_done"] = int(row.get("record_done", 0))
+            row["print_done"] = int(row.get("print_done", 0))
+            row["gender_text"] = self._event_gender_label(str(row.get("gender", "")))
+            row["age_group_text"] = self._event_group_label(str(row.get("age_group", "")))
+            row["category_text"] = "竞技" if row.get("category") == "competitive" else "趣味"
+        return rows
+
+    def set_event_progress(self, event_id: int, record_done: bool, print_done: bool) -> dict:
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            event = repo.get_event_by_id(event_id)
+            if not event:
+                raise ValueError(f"项目不存在: {event_id}")
+            repo.upsert_event_progress(
+                event_id=event_id,
+                record_done=1 if record_done else 0,
+                print_done=1 if print_done else 0,
+            )
+            conn.commit()
+        return {
+            "event_id": event_id,
+            "record_done": 1 if record_done else 0,
+            "print_done": 1 if print_done else 0,
+        }
+
     def list_registration_pairs(self):
         with self.db.connect() as conn:
             return SportsRepository(conn).list_registration_pairs()

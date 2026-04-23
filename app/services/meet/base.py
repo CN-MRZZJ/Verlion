@@ -13,6 +13,7 @@ class MeetServiceBase:
         "settings": "系统设置",
         "departments": "部门",
         "events": "项目",
+        "event_progress": "流程勾选",
         "competitive_athletes": "竞技运动员",
         "fun_athletes": "趣味运动员",
         "teams": "队伍",
@@ -171,6 +172,13 @@ class MeetServiceBase:
             if not re.fullmatch(r"\d+", text):
                 return None
             return float(int(text))
+        if strategy == "count_miss":
+            if not re.fullmatch(r"\d+/\d+", text):
+                return None
+            left, right = text.split("/", 1)
+            count = int(left)
+            miss = int(right)
+            return float(count * 1000000 - miss)
         return None
 
     def _normalize_performance_text(self, strategy: str, performance: Optional[str]) -> Optional[str]:
@@ -190,10 +198,33 @@ class MeetServiceBase:
         elif strategy == "count":
             text = text.replace("次", "").replace("个", "")
             text = text.replace(":", "")
+        elif strategy == "count_miss":
+            text = (
+                text.replace("个", "")
+                .replace("次", "")
+                .replace("失误", "/")
+                .replace("错误", "/")
+                .replace("，", "/")
+                .replace(",", "/")
+                .replace(":", "/")
+                .replace("：", "/")
+                .replace("、", "/")
+                .replace("-", "/")
+            )
+            text = re.sub(r"\s+", "", text)
+            text = re.sub(r"[^0-9/]", "", text)
+            text = re.sub(r"/+", "/", text).strip("/")
 
         if strategy == "count":
             text = re.sub(r"[^0-9]", "", text)
             text = text.strip()
+        elif strategy == "count_miss":
+            if re.fullmatch(r"\d+/\d+", text):
+                pass
+            elif re.fullmatch(r"\d+", text):
+                text = text + "/0"
+            else:
+                return None
         else:
             text = re.sub(r"[^0-9.]", "", text)
             text = text.strip(".")
@@ -226,11 +257,17 @@ class MeetServiceBase:
             if count_val is None:
                 return text
             return f"{int(count_val)}个"
+        if scoring_strategy == "count_miss":
+            norm = self._normalize_performance_text("count_miss", text)
+            if not norm or "/" not in norm:
+                return text
+            left, right = norm.split("/", 1)
+            return f"{int(left)}个/{int(right)}次"
         return text
 
     def _format_result_rows_performance(self, rows: list[dict]) -> list[dict]:
         for row in rows:
             strategy = str(row.get("scoring_strategy", "")).strip()
-            if strategy in {"time", "length", "count"}:
+            if strategy in {"time", "length", "count", "count_miss"}:
                 row["performance"] = self._format_performance_for_display(strategy, row.get("performance"))
         return rows

@@ -9,3 +9,4 @@ class Config:
     CSV_TEMPLATE_DIR = str(BASE_DIR / "app" / "static" / "csv")
     NOTICE_TEMPLATE_DIR = str(BASE_DIR / "app" / "static" / "notice_templates")
     NOTICE_LAYOUT_CONFIG = str(BASE_DIR / "app" / "static" / "notice_templates" / "personal_notice_layout.json")
+    TEAM_NOTICE_LAYOUT_CONFIG = str(BASE_DIR / "app" / "static" / "notice_templates" / "team_notice_layout.json")

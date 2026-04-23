@@ -336,16 +336,49 @@
     refreshHint();
   }
 
+  function initMobileShell() {
+    var toggle = document.getElementById('mobile-nav-toggle');
+    var mask = document.getElementById('mobile-side-mask');
+    if (!toggle || !mask) return;
+
+    function isMobile() {
+      return window.matchMedia('(max-width: 768px)').matches;
+    }
+
+    function closeNav() {
+      document.body.classList.remove('mobile-nav-open');
+    }
+
+    toggle.addEventListener('click', function () {
+      if (!isMobile()) return;
+      document.body.classList.toggle('mobile-nav-open');
+    });
+
+    mask.addEventListener('click', closeNav);
+
+    document.querySelectorAll('.layui-side a[href]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        closeNav();
+      });
+    });
+
+    window.addEventListener('resize', function () {
+      if (!isMobile()) closeNav();
+    });
+  }
+
   if (window.layui) {
     layui.use(['form', 'laypage', 'layer'], function () {
       initClearDataGuard();
       bindAjaxForms();
       initDataCenter();
+      initMobileShell();
       layui.form.render();
     });
   } else {
     initClearDataGuard();
     bindAjaxForms();
     initDataCenter();
+    initMobileShell();
   }
 })();

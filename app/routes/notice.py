@@ -70,3 +70,51 @@ def preview_personal_result_notice_pdf():
         )
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.get("/export/team-result-notice.xlsx")
+def export_team_result_notice():
+    try:
+        event_id = int(str(request.args.get("event_id", "")).strip())
+        template_name = str(request.args.get("template_name", "")).strip()
+        content, filename = get_service().export_team_result_notice_xlsx(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
+            layout_config_path=current_app.config["TEAM_NOTICE_LAYOUT_CONFIG"],
+        )
+        safe_ascii_name = "team_result_notice.xlsx"
+        encoded_name = quote(filename)
+        return Response(
+            content,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename={safe_ascii_name}; filename*=UTF-8''{encoded_name}"
+            },
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@main_bp.get("/preview/team-result-notice.pdf")
+def preview_team_result_notice_pdf():
+    try:
+        event_id = int(str(request.args.get("event_id", "")).strip())
+        template_name = str(request.args.get("template_name", "")).strip()
+        content, filename = get_service().export_team_result_notice_pdf(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
+            layout_config_path=current_app.config["TEAM_NOTICE_LAYOUT_CONFIG"],
+        )
+        safe_ascii_name = "team_result_notice.pdf"
+        encoded_name = quote(filename)
+        return Response(
+            content,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename={safe_ascii_name}; filename*=UTF-8''{encoded_name}"
+            },
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400

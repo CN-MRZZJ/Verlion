@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS events (
     name TEXT NOT NULL,
     category TEXT NOT NULL CHECK(category IN ('competitive','fun')),
     event_type TEXT NOT NULL CHECK(event_type IN ('track','field','fun')),
-    scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count')),
+    scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss')),
     gender TEXT NOT NULL CHECK(gender IN ('male','female','mixed')),
     age_group TEXT NOT NULL CHECK(age_group IN ('A','B','C','ALL')),
     is_individual INTEGER NOT NULL CHECK(is_individual IN (0,1))
@@ -97,6 +97,14 @@ CREATE TABLE IF NOT EXISTS results (
         OR
         (athlete_ref_id IS NULL AND athlete_type IS NULL AND team_id IS NOT NULL)
     )
+);
+
+CREATE TABLE IF NOT EXISTS event_progress (
+    event_id INTEGER PRIMARY KEY,
+    record_done INTEGER NOT NULL DEFAULT 0 CHECK(record_done IN (0,1)),
+    print_done INTEGER NOT NULL DEFAULT 0 CHECK(print_done IN (0,1)),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY(event_id) REFERENCES events(id)
 );
 """
 
@@ -367,6 +375,8 @@ class Database:
             needs_rebuild = True
         if "'all'" not in table_sql.lower():
             needs_rebuild = True
+        if "'count_miss'" not in table_sql.lower():
+            needs_rebuild = True
         if not needs_rebuild:
             return
 
@@ -378,7 +388,7 @@ class Database:
                 name TEXT NOT NULL,
                 category TEXT NOT NULL CHECK(category IN ('competitive','fun')),
                 event_type TEXT NOT NULL CHECK(event_type IN ('track','field','fun')),
-                scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count')),
+                scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss')),
                 gender TEXT NOT NULL CHECK(gender IN ('male','female','mixed')),
                 age_group TEXT NOT NULL CHECK(age_group IN ('A','B','C','ALL')),
                 is_individual INTEGER NOT NULL CHECK(is_individual IN (0,1))

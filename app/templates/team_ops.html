@@ -95,6 +95,49 @@
 
   <div class="layui-col-md6">
     <div class="layui-card">
+      <div class="layui-card-header">批量新增队伍（学院+项目+序号）</div>
+      <div class="layui-card-body">
+        <form class="layui-form js-ajax-form" method="post" action="/team/batch-add" data-ajax="true" data-no-reload="1" id="team-batch-add-form" autocomplete="off">
+          <div class="layui-form-item">
+            <label class="layui-form-label">团体项目</label>
+            <div class="layui-input-block">
+              <select name="event_id" required>
+                <option value="">请选择</option>
+                {% for e in team_events %}
+                  {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
+                  {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                  <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">学院/单位</label>
+            <div class="layui-input-block">
+              <div style="margin-bottom:8px;">
+                <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btn-dept-all">全选</button>
+                <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btn-dept-none">清空</button>
+              </div>
+              <div id="batch-dept-box" style="max-height:180px; overflow:auto; border:1px solid #eee; padding:8px 10px; border-radius:4px;">
+                {% for d in departments %}
+                  <input type="checkbox" name="department_names" value="{{ d }}" title="{{ d }}" lay-skin="primary">
+                {% endfor %}
+              </div>
+              <div class="layui-form-mid layui-word-aux">同学院同项目下，系统自动命名为“学院+项目+性别+A队/B队/C队”（如：计算机学院4x100米接力男子A队）。</div>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn layui-btn-normal">批量新增</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="layui-col-md6">
+    <div class="layui-card">
       <div class="layui-card-header">删除队伍</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/team/delete" data-ajax="true" data-no-reload="1" id="team-delete-form" autocomplete="off">
@@ -208,6 +251,10 @@ window.addEventListener('load', function(){
   var queryMeta = document.getElementById('team-query-meta');
 
   var teamDeleteForm = document.getElementById('team-delete-form');
+  var teamBatchAddForm = document.getElementById('team-batch-add-form');
+  var btnDeptAll = document.getElementById('btn-dept-all');
+  var btnDeptNone = document.getElementById('btn-dept-none');
+  var batchDeptBox = document.getElementById('batch-dept-box');
   var removeForm = document.getElementById('team-member-remove-form');
   var removeTeamIdInput = document.getElementById('remove-team-id');
   var removeMemberSelect = document.getElementById('remove-member-select');
@@ -218,7 +265,10 @@ window.addEventListener('load', function(){
   var removeLoadSeq = 0;
 
   function renderSelect(){
-    if(window.layui && layui.form){ layui.form.render('select'); }
+    if(window.layui && layui.form){
+      layui.form.render('select');
+      layui.form.render('checkbox');
+    }
   }
 
   function fillRemoveMemberSelect(items){
@@ -354,6 +404,30 @@ window.addEventListener('load', function(){
     teamDeleteForm.addEventListener('submit', function(e){
       var ok = window.confirm('将删除该队伍，并清理其相关成员/成绩记录。是否继续？');
       if(!ok) e.preventDefault();
+    });
+  }
+
+  function setBatchDepartments(checked){
+    if(!batchDeptBox) return;
+    batchDeptBox.querySelectorAll('input[name="department_names"]').forEach(function(cb){
+      cb.checked = !!checked;
+    });
+    renderSelect();
+  }
+
+  if(btnDeptAll){
+    btnDeptAll.addEventListener('click', function(){ setBatchDepartments(true); });
+  }
+  if(btnDeptNone){
+    btnDeptNone.addEventListener('click', function(){ setBatchDepartments(false); });
+  }
+  if(teamBatchAddForm){
+    teamBatchAddForm.addEventListener('submit', function(e){
+      var checkedCount = batchDeptBox ? batchDeptBox.querySelectorAll('input[name="department_names"]:checked').length : 0;
+      if(checkedCount <= 0){
+        e.preventDefault();
+        if(window.layer && layer.msg) layer.msg('请至少勾选一个学院/单位');
+      }
     });
   }
 

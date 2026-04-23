@@ -28,6 +28,7 @@ class MeetAdminMixin:
             clear_settings = "settings" in selected
             clear_departments = "departments" in selected
             clear_events = "events" in selected
+            clear_event_progress = "event_progress" in selected
             clear_comp = "competitive_athletes" in selected or clear_departments
             clear_fun = "fun_athletes" in selected or clear_departments
             clear_teams = "teams" in selected or clear_events or clear_departments
@@ -40,6 +41,7 @@ class MeetAdminMixin:
                 _exec_delete(conn, "athlete_registrations", "DELETE FROM athlete_registrations")
                 _exec_delete(conn, "team_members", "DELETE FROM team_members")
                 _exec_delete(conn, "teams", "DELETE FROM teams")
+                _exec_delete(conn, "event_progress", "DELETE FROM event_progress")
                 _exec_delete(conn, "competitive_athletes", "DELETE FROM competitive_athletes")
                 _exec_delete(conn, "fun_athletes", "DELETE FROM fun_athletes")
                 _exec_delete(conn, "departments", "DELETE FROM departments")
@@ -49,6 +51,7 @@ class MeetAdminMixin:
                     _exec_delete(conn, "athlete_registrations", "DELETE FROM athlete_registrations")
                     _exec_delete(conn, "team_members", "DELETE FROM team_members")
                     _exec_delete(conn, "teams", "DELETE FROM teams")
+                    _exec_delete(conn, "event_progress", "DELETE FROM event_progress")
                     _exec_delete(conn, "events", "DELETE FROM events")
                 else:
                     if clear_teams:
@@ -84,6 +87,8 @@ class MeetAdminMixin:
                         _exec_delete(conn, "athlete_registrations", "DELETE FROM athlete_registrations")
                     if clear_team_members and not clear_teams:
                         _exec_delete(conn, "team_members", "DELETE FROM team_members")
+                    if clear_event_progress:
+                        _exec_delete(conn, "event_progress", "DELETE FROM event_progress")
 
             if clear_settings:
                 _exec_delete(conn, "settings", "DELETE FROM settings")

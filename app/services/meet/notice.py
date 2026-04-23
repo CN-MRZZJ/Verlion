@@ -12,12 +12,77 @@ from app.models import SportsRepository
 
 
 class MeetNoticeMixin:
+    def _rank_rows_for_notice(self, scoring_strategy: str, rows: list[dict]) -> list[dict]:
+        tie_eps = 1e-9
+
+        def _sort_key(item: dict):
+            val = self._parse_performance_numeric(scoring_strategy, item.get("performance"))
+            if val is None:
+                return (1, float("inf"), int(item.get("id", 0)))
+            if scoring_strategy == "time":
+                return (0, val, int(item.get("id", 0)))
+            return (0, -val, int(item.get("id", 0)))
+
+        ranked = sorted(rows, key=_sort_key)
+        prev_val = None
+        prev_rank = 0
+        for pos, row in enumerate(ranked, start=1):
+            val = self._parse_performance_numeric(scoring_strategy, row.get("performance"))
+            if prev_val is not None and val is not None and abs(val - prev_val) <= tie_eps:
+                rank = prev_rank
+            else:
+                rank = pos
+            row["rank"] = rank
+            prev_val = val
+            prev_rank = rank
+        return ranked
+
+    def _resolve_rank_cell(self, mapping: dict) -> str:
+        return str(
+            mapping.get("rank")
+            or mapping.get("ranking")
+            or mapping.get("place")
+            or mapping.get("名次")
+            or ""
+        ).strip()
+
     def export_personal_result_notice_xlsx(
         self,
         event_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
+    ) -> tuple[bytes, str]:
+        return self._export_result_notice_xlsx(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=template_dir,
+            layout_config_path=layout_config_path,
+            personal_only=True,
+        )
+
+    def export_team_result_notice_xlsx(
+        self,
+        event_id: int,
+        template_name: str,
+        template_dir: str,
+        layout_config_path: str,
+    ) -> tuple[bytes, str]:
+        return self._export_result_notice_xlsx(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=template_dir,
+            layout_config_path=layout_config_path,
+            personal_only=False,
+        )
+
+    def _export_result_notice_xlsx(
+        self,
+        event_id: int,
+        template_name: str,
+        template_dir: str,
+        layout_config_path: str,
+        personal_only: bool,
     ) -> tuple[bytes, str]:
         safe_template_name = os.path.basename((template_name or "").strip())
         if not safe_template_name:
@@ -39,8 +104,15 @@ class MeetNoticeMixin:
         rank_rows = layout.get("rank_rows", []) or []
         if len(rank_rows) < 8:
             raise ValueError("坐标配置 rank_rows 至少需要 8 行")
+        for idx in range(8):
+            mapping = rank_rows[idx] if idx < len(rank_rows) else {}
+            if not self._resolve_rank_cell(mapping):
+                raise ValueError(f"坐标配置 rank_rows 第{idx + 1}行缺少排名坐标（rank/ranking/place/名次）")
 
-        event, rows, env = self._get_personal_notice_payload(event_id)
+        if personal_only:
+            event, rows, env = self._get_personal_notice_payload(event_id)
+        else:
+            event, rows, env = self._get_team_notice_payload(event_id)
 
         wb = load_workbook(template_path)
         ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
@@ -63,10 +135,11 @@ class MeetNoticeMixin:
         for idx in range(8):
             mapping = rank_rows[idx] if idx < len(rank_rows) else {}
             data = rows[idx] if idx < len(rows) else {}
-            if mapping.get("rank"):
-                ws[str(mapping["rank"])] = data.get("rank", idx + 1 if data else "")
+            rank_cell = self._resolve_rank_cell(mapping)
+            if rank_cell:
+                ws[rank_cell] = data.get("rank", idx + 1 if data else "")
             if mapping.get("name"):
-                ws[str(mapping["name"])] = data.get("athlete_name", "")
+                ws[str(mapping["name"])] = data.get("athlete_name") or data.get("team_name", "")
             if mapping.get("department"):
                 ws[str(mapping["department"])] = data.get("department_name", "")
             perf_cell = mapping.get("performance") or mapping.get("perGormance") or mapping.get("成绩")
@@ -76,7 +149,7 @@ class MeetNoticeMixin:
         buf = io.BytesIO()
         wb.save(buf)
         event_name_token = re.sub(r"[\\/:*?\"<>|]+", "_", self._event_display_name(event))
-        filename = f"个人成绩公示单_{event_name_token}.xlsx"
+        filename = f"{'个人' if personal_only else '团体'}成绩公示单_{event_name_token}.xlsx"
         return buf.getvalue(), filename
 
     def _get_personal_notice_payload(self, event_id: int) -> tuple[dict, list[dict], dict[str, str]]:
@@ -89,7 +162,25 @@ class MeetNoticeMixin:
             if int(event.get("is_individual", 0)) != 1:
                 raise ValueError("仅个人项目支持导出个人成绩公示单")
             scoring_strategy = str(event.get("scoring_strategy", ""))
-            rows = [dict(r) for r in repo.list_individual_results_for_event(event_id)]
+            raw_rows = [dict(r) for r in repo.list_individual_results_for_event_all(event_id)]
+            rows = self._rank_rows_for_notice(scoring_strategy, raw_rows)[:8]
+            for row in rows:
+                row["performance"] = self._format_performance_for_display(scoring_strategy, row.get("performance"))
+        env = self.get_report_environment_settings()
+        return event, rows, env
+
+    def _get_team_notice_payload(self, event_id: int) -> tuple[dict, list[dict], dict[str, str]]:
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            event_row = repo.get_event_by_id(event_id)
+            if not event_row:
+                raise ValueError(f"项目不存在: {event_id}")
+            event = dict(event_row)
+            if int(event.get("is_individual", 0)) != 0:
+                raise ValueError("仅团体项目支持导出团体成绩公示单")
+            scoring_strategy = str(event.get("scoring_strategy", ""))
+            raw_rows = [dict(r) for r in repo.list_team_results_for_event_all(event_id)]
+            rows = self._rank_rows_for_notice(scoring_strategy, raw_rows)[:8]
             for row in rows:
                 row["performance"] = self._format_performance_for_display(scoring_strategy, row.get("performance"))
         env = self.get_report_environment_settings()
@@ -182,6 +273,23 @@ class MeetNoticeMixin:
         layout_config_path: str,
     ) -> tuple[bytes, str]:
         xlsx_bytes, xlsx_filename = self.export_personal_result_notice_xlsx(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=template_dir,
+            layout_config_path=layout_config_path,
+        )
+        pdf_bytes = self._convert_xlsx_bytes_to_pdf_bytes(xlsx_bytes)
+        pdf_filename = re.sub(r"\.xlsx$", ".pdf", xlsx_filename, flags=re.IGNORECASE)
+        return pdf_bytes, pdf_filename
+
+    def export_team_result_notice_pdf(
+        self,
+        event_id: int,
+        template_name: str,
+        template_dir: str,
+        layout_config_path: str,
+    ) -> tuple[bytes, str]:
+        xlsx_bytes, xlsx_filename = self.export_team_result_notice_xlsx(
             event_id=event_id,
             template_name=template_name,
             template_dir=template_dir,

@@ -40,6 +40,9 @@ class MeetResultMixin:
         rows = [dict(r) for r in repo.list_event_results(event_id)]
         if not rows:
             return
+        event = repo.get_event_by_id(event_id)
+        multiplier = 2 if event and int(event["is_individual"]) == 0 else 1
+        tie_eps = 1e-9
 
         def _sort_key(item: dict):
             val = self._parse_performance_numeric(scoring_strategy, item.get("performance"))
@@ -50,8 +53,17 @@ class MeetResultMixin:
             return (0, -val, int(item["id"]))
 
         ranked = sorted(rows, key=_sort_key)
-        for idx, row in enumerate(ranked, start=1):
-            repo.update_result_rank_points(int(row["id"]), idx, POINT_RULE.get(idx, 0))
+        prev_val = None
+        prev_rank = 0
+        for pos, row in enumerate(ranked, start=1):
+            val = self._parse_performance_numeric(scoring_strategy, row.get("performance"))
+            if prev_val is not None and val is not None and abs(val - prev_val) <= tie_eps:
+                rank = prev_rank
+            else:
+                rank = pos
+            repo.update_result_rank_points(int(row["id"]), rank, POINT_RULE.get(rank, 0) * multiplier)
+            prev_val = val
+            prev_rank = rank
 
     def record_result(
         self,
@@ -93,6 +105,7 @@ class MeetResultMixin:
             if not event:
                 raise ValueError(f"比赛项目不存在: {event_id}")
             scoring_strategy = str(event["scoring_strategy"])
+            points_multiplier = 2 if int(event["is_individual"]) == 0 else 1
             normalized_performance = self._normalize_performance_text(scoring_strategy, performance)
             if performance and not normalized_performance:
                 if scoring_strategy == "time":
@@ -101,6 +114,8 @@ class MeetResultMixin:
                     raise ValueError("田赛成绩格式无效，请使用米数数字并用 '.' 分隔（示例：6.23）")
                 if scoring_strategy == "count":
                     raise ValueError("count 成绩必须为整数，单位个（示例：18）")
+                if scoring_strategy == "count_miss":
+                    raise ValueError("count_miss 成绩格式应为 个数/失误次数（示例：120/2）")
                 raise ValueError("成绩格式无效，请使用数字并用 '.' 分隔")
             if scoring_strategy == "time":
                 if normalized_performance:
@@ -116,6 +131,15 @@ class MeetResultMixin:
                     if cnt is None:
                         raise ValueError("count 成绩必须为整数，单位个（示例：18）")
                     normalized_performance = str(int(cnt))
+                else:
+                    normalized_performance = None
+            elif scoring_strategy == "count_miss":
+                if normalized_performance:
+                    val = self._parse_performance_numeric("count_miss", normalized_performance)
+                    if val is None or "/" not in normalized_performance:
+                        raise ValueError("count_miss 成绩格式应为 个数/失误次数（示例：120/2）")
+                    left, right = normalized_performance.split("/", 1)
+                    normalized_performance = f"{int(left)}/{int(right)}"
                 else:
                     normalized_performance = None
 
@@ -146,15 +170,30 @@ class MeetResultMixin:
             if final_rank < 1:
                 raise ValueError("rank 必须 >= 1")
 
-            result_id = repo.insert_result(
+            exists = repo.get_result_by_target(
                 event_id=event_id,
-                rank=final_rank,
-                points=POINT_RULE.get(final_rank, 0),
                 athlete_type=athlete_type if has_athlete else None,
                 athlete_ref_id=athlete_ref_id if has_athlete else None,
                 team_id=team_id if has_team else None,
-                performance=normalized_performance,
             )
+            if exists:
+                result_id = int(exists["id"])
+                repo.update_result(
+                    result_id=result_id,
+                    rank=final_rank,
+                    points=POINT_RULE.get(final_rank, 0) * points_multiplier,
+                    performance=normalized_performance,
+                )
+            else:
+                result_id = repo.insert_result(
+                    event_id=event_id,
+                    rank=final_rank,
+                    points=POINT_RULE.get(final_rank, 0) * points_multiplier,
+                    athlete_type=athlete_type if has_athlete else None,
+                    athlete_ref_id=athlete_ref_id if has_athlete else None,
+                    team_id=team_id if has_team else None,
+                    performance=normalized_performance,
+                )
             if auto_rank:
                 self._recalculate_event_ranks(repo, event_id, scoring_strategy)
             conn.commit()

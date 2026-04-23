@@ -17,6 +17,25 @@ def team_add():
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
+@main_bp.post("/team/batch-add")
+def team_batch_add():
+    try:
+        payload = request.get_json(silent=True) or request.form
+        if hasattr(payload, "getlist"):
+            department_names = payload.getlist("department_names")
+        else:
+            department_names = payload.get("department_names", [])
+            if isinstance(department_names, str):
+                department_names = [x.strip() for x in department_names.replace("，", ",").replace("\n", ",").split(",")]
+        result = get_service().batch_add_teams_by_departments(
+            event_id=int(str(payload.get("event_id", "")).strip()),
+            department_names=department_names,
+        )
+        return jsonify({"ok": True, **result})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
 @main_bp.post("/team/delete")
 def team_delete():
     try:

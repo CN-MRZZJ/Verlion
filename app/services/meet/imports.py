@@ -33,8 +33,8 @@ class MeetImportMixin:
                         raise ValueError("category 必须为 competitive 或 fun")
                     if event_type not in {"track", "field", "fun"}:
                         raise ValueError("event_type 必须为 track/field/fun")
-                    if scoring_strategy and scoring_strategy not in {"time", "length", "count"}:
-                        raise ValueError("scoring_strategy 必须为 time/length/count")
+                    if scoring_strategy and scoring_strategy not in {"time", "length", "count", "count_miss"}:
+                        raise ValueError("scoring_strategy 必须为 time/length/count/count_miss")
                     target_genders = self._expand_event_genders(gender_raw)
                     if age_group not in {"A", "B", "C", "ALL"}:
                         raise ValueError("age_group 必须为 A/B/C/ALL")

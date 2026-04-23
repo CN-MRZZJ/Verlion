@@ -1,0 +1,30 @@
+{
+  "sheet_name": "Sheet1",
+  "environment_cells": {
+    "notice_title": "A3",
+    "date": "C8",
+    "wind_direction": "C9",
+    "wind_speed": "C10",
+    "air_quality": "C11",
+    "weather": "C12",
+    "temperature_high": "E12",
+    "temperature_low": "G12",
+    "event_name": "B6"
+  },
+  "notice_title_by_event_type": {
+    "track": "团体径赛成绩单",
+    "field": "团体田赛成绩单",
+    "fun": "团体趣味成绩单",
+    "default": "团体成绩单"
+  },
+  "rank_rows": [
+    {"rank": "B15", "department": "C15", "performance": "G15"},
+    {"rank": "B16", "department": "C16", "performance": "G16"},
+    {"rank": "B17", "department": "C17", "performance": "G17"},
+    {"rank": "B18", "department": "C18", "performance": "G18"},
+    {"rank": "B19", "department": "C19", "performance": "G19"},
+    {"rank": "B20", "department": "C20", "performance": "G20"},
+    {"rank": "B21", "department": "C21", "performance": "G21"},
+    {"rank": "B22", "department": "C22", "performance": "G22"}
+  ]
+}
