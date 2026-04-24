@@ -1,6 +1,8 @@
 import sqlite3
 from typing import Optional
 
+from .crud import EVENTS, WhereClause
+
 
 class EventRepositoryMixin:
     def insert_event(
@@ -13,11 +15,18 @@ class EventRepositoryMixin:
             age_group: str,
             is_individual: int,
         ) -> int:
-            cur = self.conn.execute(
-                "INSERT INTO events(name, category, event_type, scoring_strategy, gender, age_group, is_individual) VALUES(?,?,?,?,?,?,?)",
-                (name, category, event_type, scoring_strategy, gender, age_group, is_individual),
+            return self._crud_insert(
+                EVENTS,
+                {
+                    "name": name,
+                    "category": category,
+                    "event_type": event_type,
+                    "scoring_strategy": scoring_strategy,
+                    "gender": gender,
+                    "age_group": age_group,
+                    "is_individual": is_individual,
+                },
             )
-            return int(cur.lastrowid)
 
     def event_exists(
             self,
@@ -29,22 +38,25 @@ class EventRepositoryMixin:
             age_group: str,
             is_individual: int,
         ) -> bool:
-            row = self.conn.execute(
-                """
-                SELECT id FROM events
-                WHERE name=? AND category=? AND event_type=? AND scoring_strategy=? AND gender=? AND age_group=? AND is_individual=?
-                """,
-                (name, category, event_type, scoring_strategy, gender, age_group, is_individual),
-            ).fetchone()
-            return row is not None
+            return self._crud_exists(
+                EVENTS,
+                WhereClause(
+                    """
+                    name=? AND category=? AND event_type=? AND scoring_strategy=? AND gender=? AND age_group=? AND is_individual=?
+                    """,
+                    (name, category, event_type, scoring_strategy, gender, age_group, is_individual),
+                ),
+            )
 
     def get_event_by_id(self, event_id: int):
-            return self.conn.execute("SELECT * FROM events WHERE id=?", (event_id,)).fetchone()
+            return self._crud_get_by_id(EVENTS, event_id)
 
     def list_events(self):
-            return self.conn.execute(
-                "SELECT id, name, category, event_type, scoring_strategy, gender, age_group, is_individual FROM events ORDER BY id"
-            ).fetchall()
+            return self._crud_list(
+                EVENTS,
+                columns=("id", "name", "category", "event_type", "scoring_strategy", "gender", "age_group", "is_individual"),
+                order_by="id",
+            )
 
     def list_events_with_progress(self):
             return self.conn.execute(
@@ -81,18 +93,15 @@ class EventRepositoryMixin:
             )
 
     def list_individual_events_by_category(self, category: str):
-            return self.conn.execute(
-                """
-                SELECT id, name, category, gender, age_group, is_individual
-                FROM events
-                WHERE category=? AND is_individual=1
-                ORDER BY id
-                """,
-                (category,),
-            ).fetchall()
+            return self._crud_list(
+                EVENTS,
+                columns=("id", "name", "category", "gender", "age_group", "is_individual"),
+                where=WhereClause("category=? AND is_individual=1", (category,)),
+                order_by="id",
+            )
 
     def events_count(self) -> int:
-            return int(self.conn.execute("SELECT COUNT(*) AS c FROM events").fetchone()["c"])
+            return self._crud_count(EVENTS)
 
     def page_events(
             self,

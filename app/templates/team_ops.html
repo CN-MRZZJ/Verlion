@@ -57,7 +57,7 @@
     <div class="layui-card">
       <div class="layui-card-header">新增队伍</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/team/add" data-ajax="true" data-no-reload="1" id="team-add-form" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams" data-ajax="true" data-no-reload="1" id="team-add-form" autocomplete="off">
           <div class="layui-form-item">
             <label class="layui-form-label">团体项目</label>
             <div class="layui-input-block">
@@ -97,7 +97,7 @@
     <div class="layui-card">
       <div class="layui-card-header">批量新增队伍（学院+项目+序号）</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/team/batch-add" data-ajax="true" data-no-reload="1" id="team-batch-add-form" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams/batch-add" data-ajax="true" data-no-reload="1" id="team-batch-add-form" autocomplete="off">
           <div class="layui-form-item">
             <label class="layui-form-label">团体项目</label>
             <div class="layui-input-block">
@@ -140,7 +140,7 @@
     <div class="layui-card">
       <div class="layui-card-header">删除队伍</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/team/delete" data-ajax="true" data-no-reload="1" id="team-delete-form" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams/delete" data-ajax="true" data-no-reload="1" id="team-delete-form" autocomplete="off">
           <div class="layui-form-item">
             <label class="layui-form-label">队伍ID</label>
             <div class="layui-input-block">
@@ -163,7 +163,7 @@
       <div class="layui-card-body">
         <div class="layui-row layui-col-space15">
           <div class="layui-col-md6">
-            <form class="layui-form js-ajax-form" method="post" action="/team/member/add" data-ajax="true" data-no-reload="1" autocomplete="off">
+            <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams/members/add" data-ajax="true" data-no-reload="1" autocomplete="off">
               <fieldset class="layui-elem-field">
                 <legend>增加成员</legend>
                 <div class="layui-field-box">
@@ -199,7 +199,7 @@
             </form>
           </div>
           <div class="layui-col-md6">
-            <form class="layui-form js-ajax-form" method="post" action="/team/member/remove" data-ajax="true" data-no-reload="1" autocomplete="off" id="team-member-remove-form">
+            <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams/members/remove" data-ajax="true" data-no-reload="1" autocomplete="off" id="team-member-remove-form">
               <fieldset class="layui-elem-field">
                 <legend>减少成员</legend>
                 <div class="layui-field-box">
@@ -326,7 +326,7 @@ window.addEventListener('load', function(){
       keyword: queryKeyword && queryKeyword.value ? queryKeyword.value : ''
     });
     try{
-      var resp = await fetch('/api/team/query?' + qs.toString());
+      var resp = await fetch('/api/v1/teams?' + qs.toString());
       var data = await resp.json();
       if(!resp.ok || data.ok === false){
         if(window.layer && layer.msg) layer.msg(data.error || '查询失败');
@@ -355,7 +355,7 @@ window.addEventListener('load', function(){
       return;
     }
     try{
-      var resp = await fetch('/api/team/members?team_id=' + encodeURIComponent(teamId));
+      var resp = await fetch('/api/v1/teams/members?team_id=' + encodeURIComponent(teamId));
       var data = await resp.json();
       if(seq !== removeLoadSeq) return;
       if(!resp.ok || data.ok === false){
@@ -459,7 +459,7 @@ window.addEventListener('load', function(){
         fillRemoveMemberSelect([]);
         syncHiddenFromSelect();
       }
-      if(String(form.action || '').indexOf('/team/member/') >= 0){
+      if(String(form.action || '').indexOf('/api/v1/teams/members/') >= 0){
         loadTeamMembersForRemove();
       }
     });
@@ -470,3 +470,4 @@ window.addEventListener('load', function(){
 </script>
 
 {% endblock %}
+

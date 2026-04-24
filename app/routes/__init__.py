@@ -1,4 +1,3 @@
-from .main import main_bp
-from .auth import auth_bp
+from .v1 import api_v1_bp, site_v1_bp
 
-__all__ = ["main_bp", "auth_bp"]
+__all__ = ["api_v1_bp", "site_v1_bp"]

@@ -1,6 +1,8 @@
 import sqlite3
 from typing import Optional
 
+from .crud import RESULTS
+
 
 class ResultRepositoryMixin:
     def insert_result(
@@ -13,11 +15,18 @@ class ResultRepositoryMixin:
             team_id: Optional[int],
             performance: Optional[str],
         ) -> int:
-            cur = self.conn.execute(
-                "INSERT INTO results(event_id, athlete_type, athlete_ref_id, team_id, rank, points, performance) VALUES(?,?,?,?,?,?,?)",
-                (event_id, athlete_type, athlete_ref_id, team_id, rank, points, performance),
+            return self._crud_insert(
+                RESULTS,
+                {
+                    "event_id": event_id,
+                    "athlete_type": athlete_type,
+                    "athlete_ref_id": athlete_ref_id,
+                    "team_id": team_id,
+                    "rank": rank,
+                    "points": points,
+                    "performance": performance,
+                },
             )
-            return int(cur.lastrowid)
 
     def get_result_by_target(
             self,
@@ -53,14 +62,7 @@ class ResultRepositoryMixin:
             return None
 
     def update_result(self, result_id: int, rank: int, points: int, performance: Optional[str]) -> None:
-            self.conn.execute(
-                """
-                UPDATE results
-                SET rank=?, points=?, performance=?
-                WHERE id=?
-                """,
-                (rank, points, performance, result_id),
-            )
+            self._crud_update_by_id(RESULTS, result_id, {"rank": rank, "points": points, "performance": performance})
 
     def list_event_results(self, event_id: int):
             return self.conn.execute(
@@ -130,10 +132,7 @@ class ResultRepositoryMixin:
             ).fetchall()
 
     def update_result_rank_points(self, result_id: int, rank: int, points: int) -> None:
-            self.conn.execute(
-                "UPDATE results SET rank=?, points=? WHERE id=?",
-                (rank, points, result_id),
-            )
+            self._crud_update_by_id(RESULTS, result_id, {"rank": rank, "points": points})
 
     def list_results_with_details(self):
             return self.conn.execute(

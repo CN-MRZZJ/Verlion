@@ -1,24 +1,19 @@
 import sqlite3
 from typing import Optional
 
+from .crud import SETTINGS, WhereClause
+
 
 class SettingsRepositoryMixin:
     def set_meet_date(self, meet_date_iso: str) -> None:
-            self.conn.execute(
-                "INSERT INTO settings(key, value) VALUES('meet_date', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-                (meet_date_iso,),
-            )
+            self.set_setting("meet_date", meet_date_iso)
 
     def get_meet_date_iso(self) -> Optional[str]:
-            row = self.conn.execute("SELECT value FROM settings WHERE key='meet_date'").fetchone()
-            return row["value"] if row else None
+            return self.get_setting("meet_date")
 
     def set_setting(self, key: str, value: str) -> None:
-            self.conn.execute(
-                "INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-                (key, value),
-            )
+            self._crud_upsert(SETTINGS, {"key": key, "value": value}, conflict_columns=("key",), update_columns=("value",))
 
     def get_setting(self, key: str) -> Optional[str]:
-            row = self.conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            row = self._crud_get_one(SETTINGS, WhereClause("key=?", (key,)), columns=("value",))
             return row["value"] if row else None

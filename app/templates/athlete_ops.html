@@ -46,7 +46,7 @@
     <div class="layui-card">
       <div class="layui-card-header">新增运动员</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/athlete/add" data-ajax="true" data-no-reload="1" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/athletes" data-ajax="true" data-no-reload="1" autocomplete="off">
           <div class="layui-form-item">
             <label class="layui-form-label">类型</label>
             <div class="layui-input-block">
@@ -115,7 +115,7 @@
     <div class="layui-card">
       <div class="layui-card-header">删除运动员</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/athlete/delete" data-ajax="true" data-no-reload="1" autocomplete="off" id="athlete-delete-form">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/athletes/delete" data-ajax="true" data-no-reload="1" autocomplete="off" id="athlete-delete-form">
           <div class="layui-form-item">
             <label class="layui-form-label">类型</label>
             <div class="layui-input-block">
@@ -148,7 +148,7 @@
       <div class="layui-card-body">
         <div class="layui-row layui-col-space15">
           <div class="layui-col-md6">
-            <form class="layui-form js-ajax-form" method="post" action="/athlete/registration/add" data-ajax="true" data-no-reload="1" autocomplete="off">
+            <form class="layui-form js-ajax-form" method="post" action="/api/v1/athletes/registrations/add" data-ajax="true" data-no-reload="1" autocomplete="off">
               <fieldset class="layui-elem-field">
                 <legend>增加报名项目</legend>
                 <div class="layui-field-box">
@@ -186,7 +186,7 @@
             </form>
           </div>
           <div class="layui-col-md6">
-            <form class="layui-form js-ajax-form" method="post" action="/athlete/registration/remove" data-ajax="true" data-no-reload="1" autocomplete="off">
+            <form class="layui-form js-ajax-form" method="post" action="/api/v1/athletes/registrations/remove" data-ajax="true" data-no-reload="1" autocomplete="off">
               <fieldset class="layui-elem-field">
                 <legend>减少报名项目</legend>
                 <div class="layui-field-box">
@@ -298,7 +298,7 @@ window.addEventListener('load', function(){
     }
     try{
       var qs = new URLSearchParams({ athlete_type: t, athlete_no: no });
-      var resp = await fetch('/api/athlete/registered-events?' + qs.toString());
+      var resp = await fetch('/api/v1/athletes/registered-events?' + qs.toString());
       var data = await resp.json();
       if(seq !== removeLoadSeq) return;
       if(!resp.ok || data.ok === false){
@@ -392,7 +392,7 @@ window.addEventListener('load', function(){
     var kw = queryKeyword && queryKeyword.value ? queryKeyword.value : '';
     var qs = new URLSearchParams({ athlete_type: t, keyword: kw });
     try{
-      var resp = await fetch('/api/athlete/query?' + qs.toString());
+      var resp = await fetch('/api/v1/athletes?' + qs.toString());
       var data = await resp.json();
       if(!resp.ok || data.ok === false){
         if(window.layer && layer.msg) layer.msg(data.error || '查询失败');
@@ -441,3 +441,4 @@ window.addEventListener('load', function(){
 </script>
 
 {% endblock %}
+

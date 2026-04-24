@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 
 from config import Config
 from app.models.database import Database
@@ -10,10 +10,13 @@ def create_app() -> Flask:
 
     Database(app.config["DATABASE_PATH"]).initialize()
 
-    from app.routes.main import main_bp
-    from app.routes.auth import auth_bp
+    from app.routes.v1 import api_v1_bp, site_v1_bp
 
-    app.register_blueprint(main_bp)
-    app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(site_v1_bp)
+    app.register_blueprint(api_v1_bp)
+
+    @app.get("/")
+    def root_redirect():
+        return redirect(url_for("site_v1.home"))
 
     return app

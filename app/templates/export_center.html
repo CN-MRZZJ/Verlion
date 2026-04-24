@@ -10,7 +10,7 @@
         <div class="layui-row layui-col-space10">
           {% for key, label in data_views %}
             <div class="layui-col-md3 layui-col-sm4 layui-col-xs6">
-              <a class="layui-btn layui-btn-primary layui-btn-fluid" href="/export/data/{{ key }}" target="_blank">{{ label }} CSV</a>
+              <a class="layui-btn layui-btn-primary layui-btn-fluid" href="/api/v1/exports/{{ key }}" target="_blank">{{ label }} CSV</a>
             </div>
           {% endfor %}
         </div>
@@ -128,7 +128,7 @@ window.addEventListener('load', function(){
       category: String(fd.get('category') || '').trim(),
       scoring_strategy: String(fd.get('scoring_strategy') || '').trim()
     });
-    window.open('/export/data/' + encodeURIComponent(view) + '?' + qs.toString(), '_blank');
+    window.open('/api/v1/exports/' + encodeURIComponent(view) + '?' + qs.toString(), '_blank');
   }
 
   if(btn){
@@ -144,3 +144,4 @@ window.addEventListener('load', function(){
 </script>
 
 {% endblock %}
+

@@ -1,10 +1,11 @@
 from urllib.parse import quote
+
 from flask import Response, current_app, jsonify, request
 
-from .common import get_service, main_bp
+from .common import api_v1_bp, get_service
 
 
-@main_bp.post("/settings/report-environment")
+@api_v1_bp.post("/settings/report-environment")
 def save_report_environment():
     try:
         payload = request.get_json(silent=True) or request.form
@@ -23,7 +24,7 @@ def save_report_environment():
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
-@main_bp.get("/export/personal-result-notice.xlsx")
+@api_v1_bp.get("/notices/personal-result.xlsx")
 def export_personal_result_notice():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
@@ -47,7 +48,7 @@ def export_personal_result_notice():
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
-@main_bp.get("/preview/personal-result-notice.pdf")
+@api_v1_bp.get("/notices/personal-result.pdf")
 def preview_personal_result_notice_pdf():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
@@ -71,7 +72,7 @@ def preview_personal_result_notice_pdf():
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
-@main_bp.get("/export/team-result-notice.xlsx")
+@api_v1_bp.get("/notices/team-result.xlsx")
 def export_team_result_notice():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
@@ -95,7 +96,7 @@ def export_team_result_notice():
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
-@main_bp.get("/preview/team-result-notice.pdf")
+@api_v1_bp.get("/notices/team-result.pdf")
 def preview_team_result_notice_pdf():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())

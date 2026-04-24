@@ -187,7 +187,7 @@
         sort_dir: state.sort_dir || 'desc'
       });
 
-      var resp = await fetch('/api/data/' + encodeURIComponent(view) + '?' + qs.toString());
+      var resp = await fetch('/api/v1/datasets/' + encodeURIComponent(view) + '?' + qs.toString());
       var data = await resp.json();
       if (!resp.ok || data.ok === false) {
         showMsg(data.error || '查询失败', false);
@@ -281,7 +281,7 @@
           category: filters.category || '',
           scoring_strategy: filters.scoring_strategy || ''
         });
-        window.open('/export/data/' + encodeURIComponent(view) + '?' + qs.toString(), '_blank');
+        window.open('/api/v1/exports/' + encodeURIComponent(view) + '?' + qs.toString(), '_blank');
       });
     }
 
@@ -382,3 +382,4 @@
     initMobileShell();
   }
 })();
+

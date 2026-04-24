@@ -2,16 +2,16 @@ from flask import current_app, jsonify, render_template
 
 from app.services import SportsMeetService
 
-from .common import DATA_VIEWS, get_service, main_bp
+from .common import DATA_VIEWS, get_service, site_v1_bp
 
 
-@main_bp.get("/")
+@site_v1_bp.get("/")
 def home():
     data = get_service().workbench_data()
     return render_template("home.html", active_page="home", **data)
 
 
-@main_bp.get("/import-center")
+@site_v1_bp.get("/pages/import-center")
 def import_center():
     return render_template(
         "import_center.html",
@@ -20,7 +20,7 @@ def import_center():
     )
 
 
-@main_bp.get("/result-entry")
+@site_v1_bp.get("/pages/result-entry")
 def result_entry():
     service = get_service()
     events = [dict(row) for row in service.list_events()]
@@ -39,7 +39,7 @@ def result_entry():
     )
 
 
-@main_bp.get("/notice-center")
+@site_v1_bp.get("/pages/notice-center")
 def notice_center():
     service = get_service()
     events = [dict(row) for row in service.list_events()]
@@ -54,7 +54,7 @@ def notice_center():
     )
 
 
-@main_bp.get("/athlete-ops")
+@site_v1_bp.get("/pages/athlete-ops")
 def athlete_ops():
     service = get_service()
     return render_template(
@@ -67,7 +67,7 @@ def athlete_ops():
     )
 
 
-@main_bp.get("/team-ops")
+@site_v1_bp.get("/pages/team-ops")
 def team_ops():
     service = get_service()
     return render_template(
@@ -78,7 +78,7 @@ def team_ops():
     )
 
 
-@main_bp.get("/event-progress")
+@site_v1_bp.get("/pages/event-progress")
 def event_progress():
     return render_template(
         "event_progress.html",
@@ -86,7 +86,7 @@ def event_progress():
     )
 
 
-@main_bp.get("/data")
+@site_v1_bp.get("/pages/data")
 def data_view():
     return render_template(
         "data_center.html",
@@ -96,7 +96,7 @@ def data_view():
     )
 
 
-@main_bp.get("/export-center")
+@site_v1_bp.get("/pages/export-center")
 def export_center():
     return render_template(
         "export_center.html",
@@ -106,12 +106,12 @@ def export_center():
     )
 
 
-@main_bp.get("/status")
+@site_v1_bp.get("/pages/status")
 def status():
     status = get_service().get_initialization_status()
     return render_template("status.html", active_page="status", **status)
 
 
-@main_bp.get("/api/init-status")
+@site_v1_bp.get("/pages/init-status")
 def api_init_status():
     return jsonify(get_service().get_initialization_status())

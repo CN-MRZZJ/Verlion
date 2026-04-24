@@ -5,8 +5,8 @@ from flask import Blueprint, current_app, request
 
 from app.services import SportsMeetService
 
-
-main_bp = Blueprint("main", __name__)
+api_v1_bp = Blueprint("api_v1", __name__, url_prefix="/api/v1")
+site_v1_bp = Blueprint("site_v1", __name__, url_prefix="")  # 站点相关的路由，前缀留空
 
 DATA_VIEWS = [
 	("events", "项目"),
@@ -49,3 +49,5 @@ def parse_csv_upload() -> list[dict[str, str]]:
 	if reader.fieldnames is None:
 		raise ValueError("CSV 缺少表头")
 	return rows
+
+__all__ = ["api_v1_bp", "site_v1_bp", "DATA_VIEWS", "get_service", "parse_csv_upload"]

@@ -7,7 +7,7 @@
     <div class="layui-card">
       <div class="layui-card-header">系统初始化</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/setup/init" data-ajax="true" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/setup" data-ajax="true" autocomplete="off">
           <div class="layui-form-item">
             <label class="layui-form-label">比赛日期</label>
             <div class="layui-input-block">
@@ -29,15 +29,15 @@
     <div class="layui-card">
       <div class="layui-card-header">模板下载</div>
       <div class="layui-card-body">
-        <a class="layui-btn layui-btn-primary" href="/templates/events_template.csv">下载项目模板</a>
-        <a class="layui-btn layui-btn-primary" href="/templates/competitive_athletes_template.csv">下载竞技名单模板</a>
-        <a class="layui-btn layui-btn-primary" href="/templates/fun_athletes_template.csv">下载趣味名单模板</a>
+        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/events_template.csv">下载项目模板</a>
+        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/competitive_athletes_template.csv">下载竞技名单模板</a>
+        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/fun_athletes_template.csv">下载趣味名单模板</a>
         <div style="margin-top: 10px;">
-          <form class="layui-form" method="get" action="/templates/registrations-template.csv" style="display:inline-block; margin-right: 12px;" autocomplete="off">
+          <form class="layui-form" method="get" action="/api/v1/imports/registrations/template" style="display:inline-block; margin-right: 12px;" autocomplete="off">
             <input type="hidden" name="category" value="competitive" />
             <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-sm">导出竞技报名矩阵模板</button></div>
           </form>
-          <form class="layui-form" method="get" action="/templates/registrations-template.csv" style="display:inline-block;" autocomplete="off">
+          <form class="layui-form" method="get" action="/api/v1/imports/registrations/template" style="display:inline-block;" autocomplete="off">
             <input type="hidden" name="category" value="fun" />
             <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-sm layui-btn-warm">导出趣味报名矩阵模板</button></div>
           </form>
@@ -50,7 +50,7 @@
     <div class="layui-card">
       <div class="layui-card-header">导入项目 CSV</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/import/events-csv" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/events" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
           <div class="layui-form-item">
             <input type="file" name="file" accept=".csv" class="layui-input" required />
           </div>
@@ -64,7 +64,7 @@
     <div class="layui-card">
       <div class="layui-card-header">导入竞技运动员名单 CSV</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/import/competitive-athletes-csv" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/athletes/competitive" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
           <div class="layui-form-item">
             <input type="file" name="file" accept=".csv" class="layui-input" required />
           </div>
@@ -78,7 +78,7 @@
     <div class="layui-card">
       <div class="layui-card-header">导入趣味运动员名单 CSV</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/import/fun-athletes-csv" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/athletes/fun" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
           <div class="layui-form-item">
             <input type="file" name="file" accept=".csv" class="layui-input" required />
           </div>
@@ -92,7 +92,7 @@
     <div class="layui-card">
       <div class="layui-card-header">导入竞技项目报名 CSV</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/import/competitive-registrations-csv" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/registrations/competitive" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
           <div class="layui-form-item">
             <input type="file" name="file" accept=".csv" class="layui-input" required />
           </div>
@@ -106,7 +106,7 @@
     <div class="layui-card">
       <div class="layui-card-header">导入趣味项目报名 CSV</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/import/fun-registrations-csv" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/registrations/fun" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
           <div class="layui-form-item">
             <input type="file" name="file" accept=".csv" class="layui-input" required />
           </div>
@@ -120,7 +120,7 @@
     <div class="layui-card">
       <div class="layui-card-header" style="color:#c00;">危险操作：按需清除数据</div>
       <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/admin/clear-data" data-ajax="true" id="clear-data-form" autocomplete="off">
+        <form class="layui-form js-ajax-form" method="post" action="/api/v1/maintenance/clear-data" data-ajax="true" id="clear-data-form" autocomplete="off">
           <div class="layui-form-item">
             <label class="layui-form-label">选择表</label>
             <div class="layui-input-block">
@@ -161,3 +161,4 @@
 </div>
 
 {% endblock %}
+

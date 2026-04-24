@@ -1,3 +1,3 @@
-from .meet_service import SportsMeetService
+from .core import SportsMeetService
 
 __all__ = ["SportsMeetService"]

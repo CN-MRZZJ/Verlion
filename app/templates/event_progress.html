@@ -112,7 +112,7 @@ window.addEventListener('load', function(){
 
   async function loadItems(){
     try{
-      var resp = await fetch('/api/event-progress');
+      var resp = await fetch('/api/v1/events/progress');
       var data = await resp.json();
       if(!resp.ok || data.ok === false){
         msg((data && data.error) ? data.error : '加载失败', false);
@@ -135,7 +135,7 @@ window.addEventListener('load', function(){
       fd.append('event_id', String(eventId));
       fd.append('record_done', String(recordDone));
       fd.append('print_done', String(printDone));
-      var resp = await fetch('/api/event-progress/update', { method: 'POST', body: fd });
+      var resp = await fetch('/api/v1/events/progress/update', { method: 'POST', body: fd });
       var data = await resp.json();
       if(!resp.ok || data.ok === false){
         msg((data && data.error) ? data.error : '保存失败', false);
@@ -189,3 +189,4 @@ window.addEventListener('load', function(){
 </script>
 
 {% endblock %}
+

@@ -1,14 +1,15 @@
 import sqlite3
 from typing import Optional
 
+from .crud import ATHLETE_REGISTRATIONS, WhereClause
+
 
 class RegistrationRepositoryMixin:
     def insert_athlete_registration(self, athlete_type: str, athlete_ref_id: int, event_id: int) -> int:
-            cur = self.conn.execute(
-                "INSERT INTO athlete_registrations(athlete_type, athlete_ref_id, event_id) VALUES(?,?,?)",
-                (athlete_type, athlete_ref_id, event_id),
+            return self._crud_insert(
+                ATHLETE_REGISTRATIONS,
+                {"athlete_type": athlete_type, "athlete_ref_id": athlete_ref_id, "event_id": event_id},
             )
-            return int(cur.lastrowid)
 
     def list_registration_pairs_by_type(self, athlete_type: str):
             return self.conn.execute(
@@ -37,34 +38,22 @@ class RegistrationRepositoryMixin:
             ).fetchall()
 
     def list_registration_pairs(self):
-            return self.conn.execute(
-                """
-                SELECT athlete_type, athlete_ref_id, event_id
-                FROM athlete_registrations
-                """
-            ).fetchall()
+            return self._crud_list(
+                ATHLETE_REGISTRATIONS,
+                columns=("athlete_type", "athlete_ref_id", "event_id"),
+            )
 
     def athlete_registration_exists(self, athlete_type: str, athlete_ref_id: int, event_id: int) -> bool:
-            row = self.conn.execute(
-                """
-                SELECT id
-                FROM athlete_registrations
-                WHERE athlete_type=? AND athlete_ref_id=? AND event_id=?
-                LIMIT 1
-                """,
-                (athlete_type, athlete_ref_id, event_id),
-            ).fetchone()
-            return row is not None
+            return self._crud_exists(
+                ATHLETE_REGISTRATIONS,
+                WhereClause("athlete_type=? AND athlete_ref_id=? AND event_id=?", (athlete_type, athlete_ref_id, event_id)),
+            )
 
     def delete_athlete_registration(self, athlete_type: str, athlete_ref_id: int, event_id: int) -> int:
-            cur = self.conn.execute(
-                """
-                DELETE FROM athlete_registrations
-                WHERE athlete_type=? AND athlete_ref_id=? AND event_id=?
-                """,
-                (athlete_type, athlete_ref_id, event_id),
+            return self._crud_delete_where(
+                ATHLETE_REGISTRATIONS,
+                WhereClause("athlete_type=? AND athlete_ref_id=? AND event_id=?", (athlete_type, athlete_ref_id, event_id)),
             )
-            return int(cur.rowcount or 0)
 
     def list_registrations_with_details(self):
             return self.conn.execute(

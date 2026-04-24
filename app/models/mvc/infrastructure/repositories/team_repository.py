@@ -1,63 +1,46 @@
 import sqlite3
 from typing import Optional
 
+from .crud import RESULTS, TEAMS, TEAM_MEMBERS, WhereClause
+
 
 class TeamRepositoryMixin:
     def insert_team(self, department_id: int, event_id: int, name: str) -> int:
-            cur = self.conn.execute("INSERT INTO teams(department_id, event_id, name) VALUES(?,?,?)", (department_id, event_id, name))
-            return int(cur.lastrowid)
+            return self._crud_insert(TEAMS, {"department_id": department_id, "event_id": event_id, "name": name})
 
     def get_team_by_id(self, team_id: int):
-            return self.conn.execute("SELECT * FROM teams WHERE id=?", (team_id,)).fetchone()
+            return self._crud_get_by_id(TEAMS, team_id)
 
     def team_exists(self, department_id: int, event_id: int, name: str) -> bool:
-            row = self.conn.execute(
-                "SELECT id FROM teams WHERE department_id=? AND event_id=? AND name=? LIMIT 1",
-                (department_id, event_id, name),
-            ).fetchone()
-            return row is not None
+            return self._crud_exists(TEAMS, WhereClause("department_id=? AND event_id=? AND name=?", (department_id, event_id, name)))
 
     def insert_team_member(self, team_id: int, athlete_type: str, athlete_ref_id: int) -> int:
-            cur = self.conn.execute(
-                "INSERT INTO team_members(team_id, athlete_type, athlete_ref_id) VALUES(?,?,?)",
-                (team_id, athlete_type, athlete_ref_id),
+            return self._crud_insert(
+                TEAM_MEMBERS,
+                {"team_id": team_id, "athlete_type": athlete_type, "athlete_ref_id": athlete_ref_id},
             )
-            return int(cur.lastrowid)
 
     def team_member_exists(self, team_id: int, athlete_type: str, athlete_ref_id: int) -> bool:
-            row = self.conn.execute(
-                """
-                SELECT id
-                FROM team_members
-                WHERE team_id=? AND athlete_type=? AND athlete_ref_id=?
-                LIMIT 1
-                """,
-                (team_id, athlete_type, athlete_ref_id),
-            ).fetchone()
-            return row is not None
+            return self._crud_exists(
+                TEAM_MEMBERS,
+                WhereClause("team_id=? AND athlete_type=? AND athlete_ref_id=?", (team_id, athlete_type, athlete_ref_id)),
+            )
 
     def delete_team_member(self, team_id: int, athlete_type: str, athlete_ref_id: int) -> int:
-            cur = self.conn.execute(
-                """
-                DELETE FROM team_members
-                WHERE team_id=? AND athlete_type=? AND athlete_ref_id=?
-                """,
-                (team_id, athlete_type, athlete_ref_id),
+            return self._crud_delete_where(
+                TEAM_MEMBERS,
+                WhereClause("team_id=? AND athlete_type=? AND athlete_ref_id=?", (team_id, athlete_type, athlete_ref_id)),
             )
-            return int(cur.rowcount or 0)
 
     def delete_team_related_data(self, team_id: int) -> dict[str, int]:
             counts = {"results": 0, "team_members": 0}
-            cur_results = self.conn.execute("DELETE FROM results WHERE team_id=?", (team_id,))
-            counts["results"] = int(cur_results.rowcount or 0)
+            counts["results"] = self._crud_delete_where(RESULTS, WhereClause("team_id=?", (team_id,)))
 
-            cur_members = self.conn.execute("DELETE FROM team_members WHERE team_id=?", (team_id,))
-            counts["team_members"] = int(cur_members.rowcount or 0)
+            counts["team_members"] = self._crud_delete_where(TEAM_MEMBERS, WhereClause("team_id=?", (team_id,)))
             return counts
 
     def delete_team_by_id(self, team_id: int) -> int:
-            cur = self.conn.execute("DELETE FROM teams WHERE id=?", (team_id,))
-            return int(cur.rowcount or 0)
+            return self._crud_delete_by_id(TEAMS, team_id)
 
     def list_team_members_with_details(self, team_id: int):
             return self.conn.execute(

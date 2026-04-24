@@ -1,6 +1,8 @@
 import sqlite3
 from typing import Optional
 
+from .crud import ATHLETE_REGISTRATIONS, RESULTS, TEAM_MEMBERS, WhereClause
+
 
 class AthleteRepositoryMixin:
     def insert_athlete(
@@ -13,20 +15,23 @@ class AthleteRepositoryMixin:
             age_group: Optional[str],
             birth_date_iso: Optional[str] = None,
         ) -> int:
-            table = self._athlete_table(athlete_type)
-            cur = self.conn.execute(
-                f"INSERT INTO {table}(athlete_no, name, gender, birth_date, department_id, age_group) VALUES(?,?,?,?,?,?)",
-                (athlete_no, name, gender, birth_date_iso, department_id, age_group),
+            return self._crud_insert(
+                self._athlete_schema(athlete_type),
+                {
+                    "athlete_no": athlete_no,
+                    "name": name,
+                    "gender": gender,
+                    "birth_date": birth_date_iso,
+                    "department_id": department_id,
+                    "age_group": age_group,
+                },
             )
-            return int(cur.lastrowid)
 
     def update_athlete_age_group(self, athlete_type: str, athlete_ref_id: int, age_group: str) -> None:
-            table = self._athlete_table(athlete_type)
-            self.conn.execute(f"UPDATE {table} SET age_group=? WHERE id=?", (age_group, athlete_ref_id))
+            self._crud_update_by_id(self._athlete_schema(athlete_type), athlete_ref_id, {"age_group": age_group})
 
     def get_athlete_by_id(self, athlete_type: str, athlete_ref_id: int):
-            table = self._athlete_table(athlete_type)
-            row = self.conn.execute(f"SELECT * FROM {table} WHERE id=?", (athlete_ref_id,)).fetchone()
+            row = self._crud_get_by_id(self._athlete_schema(athlete_type), athlete_ref_id)
             if not row:
                 return None
             payload = dict(row)
@@ -35,8 +40,10 @@ class AthleteRepositoryMixin:
             return payload
 
     def get_athlete_by_no(self, athlete_type: str, athlete_no: str):
-            table = self._athlete_table(athlete_type)
-            row = self.conn.execute(f"SELECT * FROM {table} WHERE athlete_no=?", (athlete_no,)).fetchone()
+            row = self._crud_get_one(
+                self._athlete_schema(athlete_type),
+                WhereClause("athlete_no=?", (athlete_no,)),
+            )
             if not row:
                 return None
             payload = dict(row)
@@ -45,16 +52,11 @@ class AthleteRepositoryMixin:
             return payload
 
     def get_athlete_by_profile(self, athlete_type: str, name: str, gender: str, department_id: int):
-            table = self._athlete_table(athlete_type)
-            row = self.conn.execute(
-                f"""
-                SELECT * FROM {table}
-                WHERE name=? AND gender=? AND department_id=?
-                ORDER BY id ASC
-                LIMIT 1
-                """,
-                (name, gender, department_id),
-            ).fetchone()
+            row = self._crud_get_one(
+                self._athlete_schema(athlete_type),
+                WhereClause("name=? AND gender=? AND department_id=?", (name, gender, department_id)),
+                order_by="id ASC",
+            )
             if not row:
                 return None
             payload = dict(row)
@@ -122,29 +124,24 @@ class AthleteRepositoryMixin:
 
     def delete_athlete_related_data(self, athlete_type: str, athlete_ref_id: int) -> dict[str, int]:
             counts = {"results": 0, "registrations": 0, "team_members": 0}
-            cur_results = self.conn.execute(
-                "DELETE FROM results WHERE athlete_type=? AND athlete_ref_id=?",
-                (athlete_type, athlete_ref_id),
+            counts["results"] = self._crud_delete_where(
+                RESULTS,
+                WhereClause("athlete_type=? AND athlete_ref_id=?", (athlete_type, athlete_ref_id)),
             )
-            counts["results"] = int(cur_results.rowcount or 0)
 
-            cur_regs = self.conn.execute(
-                "DELETE FROM athlete_registrations WHERE athlete_type=? AND athlete_ref_id=?",
-                (athlete_type, athlete_ref_id),
+            counts["registrations"] = self._crud_delete_where(
+                ATHLETE_REGISTRATIONS,
+                WhereClause("athlete_type=? AND athlete_ref_id=?", (athlete_type, athlete_ref_id)),
             )
-            counts["registrations"] = int(cur_regs.rowcount or 0)
 
-            cur_team_members = self.conn.execute(
-                "DELETE FROM team_members WHERE athlete_type=? AND athlete_ref_id=?",
-                (athlete_type, athlete_ref_id),
+            counts["team_members"] = self._crud_delete_where(
+                TEAM_MEMBERS,
+                WhereClause("athlete_type=? AND athlete_ref_id=?", (athlete_type, athlete_ref_id)),
             )
-            counts["team_members"] = int(cur_team_members.rowcount or 0)
             return counts
 
     def delete_athlete_by_id(self, athlete_type: str, athlete_ref_id: int) -> int:
-            table = self._athlete_table(athlete_type)
-            cur = self.conn.execute(f"DELETE FROM {table} WHERE id=?", (athlete_ref_id,))
-            return int(cur.rowcount or 0)
+            return self._crud_delete_by_id(self._athlete_schema(athlete_type), athlete_ref_id)
 
     def count_fun_individual_registrations(self, athlete_type: str, athlete_ref_id: int) -> int:
             row = self.conn.execute(
