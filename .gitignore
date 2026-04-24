@@ -1,2 +1,9 @@
 __pycache__/
 *.db
+*.code-workspace
+*.log
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo
