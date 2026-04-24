@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 
-from app.models import SportsRepository
+from app.models.repositories import SportsRepository
 from .validators import require_text
 
 

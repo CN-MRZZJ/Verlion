@@ -1,7 +1,7 @@
 import csv
 import io
 
-from app.models import SportsRepository
+from app.models.repositories import SportsRepository
 
 
 class MeetViewMixin:

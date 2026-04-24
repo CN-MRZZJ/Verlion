@@ -1,13 +1,30 @@
-from .legacy import legacy_interface
-from .mvc.infrastructure.database import Database as _MvcDatabase
-from .mvc.infrastructure.database import SCHEMA_SQL
+import sqlite3
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator
+
+SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
-@legacy_interface("app.models.database.Database 是兼容旧接口，将在未来前后端分离阶段移除，请改用 app.models.mvc.infrastructure.Database")
-class Database(_MvcDatabase):
-    """Legacy compatibility wrapper for the MVC infrastructure Database."""
-
-    pass
+def load_schema_sql() -> str:
+    return SCHEMA_PATH.read_text(encoding="utf-8")
 
 
-__all__ = ["Database", "SCHEMA_SQL"]
+class Database:
+    def __init__(self, db_path: str) -> None:
+        self.db_path = db_path
+
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute("PRAGMA foreign_keys = ON;")
+            yield conn
+        finally:
+            conn.close()
+
+    def initialize(self) -> None:
+        with self.connect() as conn:
+            conn.executescript(load_schema_sql())
+            conn.commit()

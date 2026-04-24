@@ -8,7 +8,7 @@ import tempfile
 
 from openpyxl import load_workbook
 
-from app.models import SportsRepository
+from app.models.repositories import SportsRepository
 
 
 class MeetNoticeMixin:

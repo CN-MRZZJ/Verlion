@@ -3,7 +3,8 @@ import os
 import re
 from typing import Callable, Optional, TypeVar
 
-from app.models import Database, SportsRepository, calc_age_group
+from app.models.database import Database
+from app.models.repositories import SportsRepository
 
 T = TypeVar("T")
 
@@ -58,9 +59,6 @@ class MeetServiceBase:
         with self.db.connect() as conn:
             iso = SportsRepository(conn).get_meet_date_iso()
             return date.fromisoformat(iso) if iso else date(2026, 4, 23)
-
-    def calc_age_group(self, gender: str, birth_date: date) -> str:
-        return calc_age_group(gender, birth_date, self.get_meet_date())
 
     def set_report_environment_settings(self, payload: dict[str, str]) -> None:
         with self.db.connect() as conn:

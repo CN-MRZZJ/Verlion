@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.models import SportsRepository
+from app.models.repositories import SportsRepository
 from .validators import ensure_in, optional_text, require_text
 
 

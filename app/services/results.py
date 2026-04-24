@@ -1,6 +1,7 @@
 from typing import Optional
 
-from app.models import POINT_RULE, SportsRepository
+from app.rules import points_for_rank
+from app.models.repositories import SportsRepository
 
 
 class MeetResultMixin:
@@ -41,7 +42,7 @@ class MeetResultMixin:
         if not rows:
             return
         event = repo.get_event_by_id(event_id)
-        multiplier = 2 if event and int(event["is_individual"]) == 0 else 1
+        is_individual = int(event["is_individual"]) if event else 1
         tie_eps = 1e-9
 
         def _sort_key(item: dict):
@@ -61,7 +62,7 @@ class MeetResultMixin:
                 rank = prev_rank
             else:
                 rank = pos
-            repo.update_result_rank_points(int(row["id"]), rank, POINT_RULE.get(rank, 0) * multiplier)
+            repo.update_result_rank_points(int(row["id"]), rank, points_for_rank(rank, is_individual))
             prev_val = val
             prev_rank = rank
 
@@ -105,7 +106,6 @@ class MeetResultMixin:
             if not event:
                 raise ValueError(f"比赛项目不存在: {event_id}")
             scoring_strategy = str(event["scoring_strategy"])
-            points_multiplier = 2 if int(event["is_individual"]) == 0 else 1
             normalized_performance = self._normalize_performance_text(scoring_strategy, performance)
             if performance and not normalized_performance:
                 if scoring_strategy == "time":
@@ -181,14 +181,14 @@ class MeetResultMixin:
                 repo.update_result(
                     result_id=result_id,
                     rank=final_rank,
-                    points=POINT_RULE.get(final_rank, 0) * points_multiplier,
+                    points=points_for_rank(final_rank, int(event["is_individual"])),
                     performance=normalized_performance,
                 )
             else:
                 result_id = repo.insert_result(
                     event_id=event_id,
                     rank=final_rank,
-                    points=POINT_RULE.get(final_rank, 0) * points_multiplier,
+                    points=points_for_rank(final_rank, int(event["is_individual"])),
                     athlete_type=athlete_type if has_athlete else None,
                     athlete_ref_id=athlete_ref_id if has_athlete else None,
                     team_id=team_id if has_team else None,

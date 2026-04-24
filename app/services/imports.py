@@ -2,7 +2,8 @@ import csv
 import io
 import re
 
-from app.models import SportsRepository, scoring_strategy_for_event_type
+from app.rules import scoring_strategy_for_event_type
+from app.models.repositories import SportsRepository
 
 
 class MeetImportMixin:
