@@ -19,6 +19,7 @@ class AthleteRepositoryMixin:
                 self._athlete_schema(athlete_type),
                 {
                     "athlete_no": athlete_no,
+                    "athlete_type": athlete_type,
                     "name": name,
                     "gender": gender,
                     "birth_date": birth_date_iso,
@@ -28,76 +29,70 @@ class AthleteRepositoryMixin:
             )
 
     def update_athlete_age_group(self, athlete_type: str, athlete_ref_id: int, age_group: str) -> None:
-            self._crud_update_by_id(self._athlete_schema(athlete_type), athlete_ref_id, {"age_group": age_group})
+            self._crud_update_where(
+                self._athlete_schema(athlete_type),
+                {"age_group": age_group},
+                WhereClause("id=? AND athlete_type=?", (athlete_ref_id, athlete_type)),
+            )
 
     def get_athlete_by_id(self, athlete_type: str, athlete_ref_id: int):
-            row = self._crud_get_by_id(self._athlete_schema(athlete_type), athlete_ref_id)
+            row = self._crud_get_one(
+                self._athlete_schema(athlete_type),
+                WhereClause("id=? AND athlete_type=?", (athlete_ref_id, athlete_type)),
+            )
             if not row:
                 return None
             payload = dict(row)
-            payload["athlete_type"] = athlete_type
             payload["athlete_ref_id"] = payload["id"]
             return payload
 
     def get_athlete_by_no(self, athlete_type: str, athlete_no: str):
             row = self._crud_get_one(
                 self._athlete_schema(athlete_type),
-                WhereClause("athlete_no=?", (athlete_no,)),
+                WhereClause("athlete_type=? AND athlete_no=?", (athlete_type, athlete_no)),
             )
             if not row:
                 return None
             payload = dict(row)
-            payload["athlete_type"] = athlete_type
             payload["athlete_ref_id"] = payload["id"]
             return payload
 
     def get_athlete_by_profile(self, athlete_type: str, name: str, gender: str, department_id: int):
             row = self._crud_get_one(
                 self._athlete_schema(athlete_type),
-                WhereClause("name=? AND gender=? AND department_id=?", (name, gender, department_id)),
+                WhereClause(
+                    "athlete_type=? AND name=? AND gender=? AND department_id=?",
+                    (athlete_type, name, gender, department_id),
+                ),
                 order_by="id ASC",
             )
             if not row:
                 return None
             payload = dict(row)
-            payload["athlete_type"] = athlete_type
             payload["athlete_ref_id"] = payload["id"]
             return payload
 
     def list_athletes_with_department(self):
             return self.conn.execute(
                 """
-                SELECT * FROM (
-                    SELECT
-                        'competitive' AS athlete_type,
-                        a.id AS athlete_ref_id,
-                        a.athlete_no,
-                        a.name,
-                        a.gender,
-                        a.age_group,
-                        d.name AS department_name
-                    FROM competitive_athletes a
-                    JOIN departments d ON d.id = a.department_id
-                    UNION ALL
-                    SELECT
-                        'fun' AS athlete_type,
-                        a.id AS athlete_ref_id,
-                        a.athlete_no,
-                        a.name,
-                        a.gender,
-                        a.age_group,
-                        d.name AS department_name
-                    FROM fun_athletes a
-                    JOIN departments d ON d.id = a.department_id
-                ) t
-                ORDER BY t.athlete_type, t.athlete_ref_id
+                SELECT
+                    a.athlete_type,
+                    a.id AS athlete_ref_id,
+                    a.athlete_no,
+                    a.name,
+                    a.gender,
+                    a.age_group,
+                    d.name AS department_name
+                FROM athletes a
+                JOIN departments d ON d.id = a.department_id
+                ORDER BY a.athlete_type, a.id
                 """
             ).fetchall()
 
     def list_athletes_by_type_with_department(self, athlete_type: str):
-            table = self._athlete_table(athlete_type)
+            self._athlete_schema(athlete_type)
             return self.conn.execute(
-                f"""
+                """
                 SELECT
                     a.id AS athlete_ref_id,
                     a.athlete_no,
@@ -105,22 +100,16 @@ class AthleteRepositoryMixin:
                     a.gender,
                     a.age_group,
                     d.name AS department_name
-                FROM {table} a
+                FROM athletes a
                 JOIN departments d ON d.id = a.department_id
+                WHERE a.athlete_type=?
                 ORDER BY a.id
-                """
+                """,
+                (athlete_type,),
             ).fetchall()
 
     def athletes_count(self) -> int:
-            row = self.conn.execute(
-                """
-                SELECT
-                    (SELECT COUNT(*) FROM competitive_athletes)
-                    +
-                    (SELECT COUNT(*) FROM fun_athletes) AS c
-                """
-            ).fetchone()
-            return int(row["c"])
+            return self._crud_count(self._athlete_schema("competitive"))
 
     def delete_athlete_related_data(self, athlete_type: str, athlete_ref_id: int) -> dict[str, int]:
             counts = {"results": 0, "registrations": 0, "team_members": 0}
@@ -141,7 +130,10 @@ class AthleteRepositoryMixin:
             return counts
 
     def delete_athlete_by_id(self, athlete_type: str, athlete_ref_id: int) -> int:
-            return self._crud_delete_by_id(self._athlete_schema(athlete_type), athlete_ref_id)
+            return self._crud_delete_where(
+                self._athlete_schema(athlete_type),
+                WhereClause("id=? AND athlete_type=?", (athlete_ref_id, athlete_type)),
+            )
 
     def count_fun_individual_registrations(self, athlete_type: str, athlete_ref_id: int) -> int:
             row = self.conn.execute(

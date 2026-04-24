@@ -16,6 +16,14 @@ def import_center():
     return render_template(
         "import_center.html",
         active_page="import_center",
+    )
+
+
+@site_v1_bp.get("/pages/clear-data")
+def clear_data_page():
+    return render_template(
+        "clear_data.html",
+        active_page="clear_data",
         clear_table_options=SportsMeetService.CLEAR_TABLES,
     )
 

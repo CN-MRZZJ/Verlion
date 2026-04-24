@@ -2,9 +2,9 @@
 {% block title %}工作台{% endblock %}
 {% block content %}
 
-<div class="layui-row layui-col-space15">
+<div class="sp-grid-page layui-row layui-col-space15">
   <div class="layui-col-md8">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">今日待办</div>
       <div class="layui-card-body">
         {% if alerts|length == 0 %}
@@ -18,7 +18,7 @@
     </div>
   </div>
   <div class="layui-col-md4">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">初始化状态</div>
       <div class="layui-card-body">
         {% if init_completed %}
@@ -26,13 +26,13 @@
         {% else %}
           <span class="layui-badge">未完成</span>
         {% endif %}
-        <a class="layui-btn layui-btn-xs layui-btn-primary" href="/status" style="margin-left:10px;">查看详情</a>
+        <a class="layui-btn layui-btn-xs layui-btn-primary" href="/pages/status" style="margin-left:10px;">查看详情</a>
       </div>
     </div>
   </div>
 
   <div class="layui-col-md12">
-    <div class="layui-row layui-col-space10">
+    <div class="sp-form-grid layui-row layui-col-space10">
       <div class="layui-col-md4">
         <div class="metric-card">
           <div class="metric-title">项目总数</div>
@@ -55,7 +55,7 @@
   </div>
 
   <div class="layui-col-md6">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">积分榜（前10）</div>
       <div class="layui-card-body table-scroll">
         <table class="layui-table" lay-even>
@@ -71,7 +71,7 @@
   </div>
 
   <div class="layui-col-md6">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">最近成绩（前10）</div>
       <div class="layui-card-body table-scroll">
         <table class="layui-table" lay-even>
@@ -95,3 +95,4 @@
 </div>
 
 {% endblock %}
+

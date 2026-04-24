@@ -50,15 +50,14 @@ class TeamRepositoryMixin:
                     tm.team_id,
                     tm.athlete_type,
                     tm.athlete_ref_id,
-                    COALESCE(ca.athlete_no, fa.athlete_no) AS athlete_no,
-                    COALESCE(ca.name, fa.name) AS athlete_name,
-                    COALESCE(ca.gender, fa.gender) AS gender,
-                    COALESCE(ca.age_group, fa.age_group) AS age_group,
+                    a.athlete_no,
+                    a.name AS athlete_name,
+                    a.gender,
+                    a.age_group,
                     d.name AS department_name
                 FROM team_members tm
-                LEFT JOIN competitive_athletes ca ON tm.athlete_type='competitive' AND ca.id = tm.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON tm.athlete_type='fun' AND fa.id = tm.athlete_ref_id
-                LEFT JOIN departments d ON d.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = tm.athlete_type AND a.id = tm.athlete_ref_id
+                LEFT JOIN departments d ON d.id = a.department_id
                 WHERE tm.team_id=?
                 ORDER BY tm.id
                 """,

@@ -11,27 +11,17 @@ CREATE TABLE IF NOT EXISTS departments (
     total_members INTEGER NOT NULL CHECK(total_members >= 0)
 );
 
-CREATE TABLE IF NOT EXISTS competitive_athletes (
+CREATE TABLE IF NOT EXISTS athletes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    athlete_no TEXT UNIQUE,
+    athlete_type TEXT NOT NULL CHECK(athlete_type IN ('competitive','fun')),
+    athlete_no TEXT,
     name TEXT NOT NULL,
     gender TEXT NOT NULL CHECK(gender IN ('male','female')),
     birth_date TEXT,
     department_id INTEGER NOT NULL,
-    age_group TEXT CHECK(age_group IN ('A','B','C') OR age_group IS NULL),
+    age_group TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY(department_id) REFERENCES departments(id)
-);
-
-CREATE TABLE IF NOT EXISTS fun_athletes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    athlete_no TEXT UNIQUE,
-    name TEXT NOT NULL,
-    gender TEXT NOT NULL CHECK(gender IN ('male','female')),
-    birth_date TEXT,
-    department_id INTEGER NOT NULL,
-    age_group TEXT CHECK(age_group IN ('A','B','C') OR age_group IS NULL),
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(athlete_type, athlete_no),
     FOREIGN KEY(department_id) REFERENCES departments(id)
 );
 
@@ -42,7 +32,7 @@ CREATE TABLE IF NOT EXISTS events (
     event_type TEXT NOT NULL CHECK(event_type IN ('track','field','fun')),
     scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss')),
     gender TEXT NOT NULL CHECK(gender IN ('male','female','mixed')),
-    age_group TEXT NOT NULL CHECK(age_group IN ('A','B','C','ALL')),
+    age_group TEXT NOT NULL,
     is_individual INTEGER NOT NULL CHECK(is_individual IN (0,1))
 );
 

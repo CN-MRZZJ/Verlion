@@ -2,6 +2,7 @@ import csv
 import io
 import re
 
+from app.rules import age_group_values, team_event_default_age_group
 from app.rules import scoring_strategy_for_event_type
 from app.models.repositories import SportsRepository
 
@@ -37,16 +38,18 @@ class MeetImportMixin:
                     if scoring_strategy and scoring_strategy not in {"time", "length", "count", "count_miss"}:
                         raise ValueError("scoring_strategy 必须为 time/length/count/count_miss")
                     target_genders = self._expand_event_genders(gender_raw)
-                    if age_group not in {"A", "B", "C", "ALL"}:
-                        raise ValueError("age_group 必须为 A/B/C/ALL")
+                    allowed_event_age_groups = age_group_values("event")
+                    if age_group not in allowed_event_age_groups:
+                        raise ValueError(f"age_group 必须为 {'/'.join(sorted(allowed_event_age_groups))}")
                     if is_individual not in {0, 1}:
                         raise ValueError("is_individual 必须为 0 或 1")
                     if category == "fun" and event_type != "fun":
                         raise ValueError("趣味项目的 event_type 必须为 fun")
                     if category == "competitive" and event_type == "fun":
                         raise ValueError("竞技项目的 event_type 不能为 fun")
-                    if (category == "fun" or is_individual == 0) and age_group != "ALL":
-                        raise ValueError("趣味项目和集体项目必须使用 age_group=ALL")
+                    team_default_age_group = team_event_default_age_group()
+                    if (category == "fun" or is_individual == 0) and age_group != team_default_age_group:
+                        raise ValueError(f"趣味项目和集体项目必须使用 age_group={team_default_age_group}")
                     if event_type in {"track", "field"}:
                         fixed = scoring_strategy_for_event_type(event_type)
                         if scoring_strategy and scoring_strategy != fixed:
@@ -125,8 +128,9 @@ class MeetImportMixin:
 
                     age_group_raw = (row.get("age_group") or "").strip()
                     age_group = age_group_raw if age_group_raw else None
-                    if age_group and age_group not in {"A", "B", "C"}:
-                        raise ValueError("age_group 必须为 A/B/C")
+                    allowed_athlete_age_groups = age_group_values("athlete")
+                    if age_group and age_group not in allowed_athlete_age_groups:
+                        raise ValueError(f"age_group 必须为 {'/'.join(sorted(allowed_athlete_age_groups))}")
 
                     total_members_text = (row.get("total_members") or "0").strip()
                     total_members = int(total_members_text) if total_members_text else 0

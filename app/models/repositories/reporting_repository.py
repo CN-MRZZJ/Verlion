@@ -7,12 +7,11 @@ class ReportingRepositoryMixin:
             return self.conn.execute(
                 """
                 WITH athlete_points AS (
-                    SELECT COALESCE(ca.department_id, fa.department_id) AS department_id, SUM(r.points) AS p
+                    SELECT a.department_id AS department_id, SUM(r.points) AS p
                     FROM results r
-                    LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                    LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
+                    JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
                     WHERE r.athlete_ref_id IS NOT NULL
-                    GROUP BY COALESCE(ca.department_id, fa.department_id)
+                    GROUP BY a.department_id
                 ),
                 team_points AS (
                     SELECT t.department_id AS department_id, SUM(r.points) AS p
@@ -34,11 +33,10 @@ class ReportingRepositoryMixin:
                 """
                 WITH personal_competitors AS (
                     SELECT DISTINCT r.athlete_type, r.athlete_ref_id,
-                        COALESCE(ca.department_id, fa.department_id) AS department_id
+                        a.department_id AS department_id
                     FROM athlete_registrations r
                     JOIN events e ON e.id = r.event_id
-                    LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                    LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
+                    JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
                     WHERE e.is_individual = 1
                 )
                 SELECT d.id,
@@ -72,12 +70,11 @@ class ReportingRepositoryMixin:
             )
             data_sql = """
                 WITH athlete_points AS (
-                    SELECT COALESCE(ca.department_id, fa.department_id) AS department_id, SUM(r.points) AS p
+                    SELECT a.department_id AS department_id, SUM(r.points) AS p
                     FROM results r
-                    LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                    LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
+                    JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
                     WHERE r.athlete_ref_id IS NOT NULL
-                    GROUP BY COALESCE(ca.department_id, fa.department_id)
+                    GROUP BY a.department_id
                 ),
                 team_points AS (
                     SELECT t.department_id AS department_id, SUM(r.points) AS p
@@ -117,11 +114,10 @@ class ReportingRepositoryMixin:
             data_sql = """
                 WITH personal_competitors AS (
                     SELECT DISTINCT r.athlete_type, r.athlete_ref_id,
-                        COALESCE(ca.department_id, fa.department_id) AS department_id
+                        a.department_id AS department_id
                     FROM athlete_registrations r
                     JOIN events e ON e.id = r.event_id
-                    LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                    LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
+                    JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
                     WHERE e.is_individual = 1
                 )
                 SELECT d.id, d.name, d.total_members, COUNT(pc.athlete_ref_id) AS active_members,

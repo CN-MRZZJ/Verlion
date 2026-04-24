@@ -12,10 +12,9 @@ class BaseRepositoryMixin(CrudRepositoryMixin):
             return self._athlete_schema(athlete_type).name
 
     def _athlete_schema(self, athlete_type: str):
-            try:
-                return ATHLETE_TABLES[athlete_type]
-            except KeyError as exc:
-                raise ValueError("athlete_type 必须为 competitive 或 fun") from exc
+            if athlete_type not in ATHLETE_TABLES:
+                raise ValueError("athlete_type 必须为 competitive 或 fun")
+            return ATHLETE_TABLES[athlete_type]
 
     def _paged_query(self, count_sql: str, data_sql: str, params: tuple, page: int, page_size: int):
             page = max(page, 1)

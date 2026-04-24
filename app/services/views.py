@@ -2,6 +2,7 @@ import csv
 import io
 
 from app.models.repositories import SportsRepository
+from app.rules import athlete_age_group_label, event_age_group_label
 
 
 class MeetViewMixin:
@@ -36,7 +37,7 @@ class MeetViewMixin:
         }
         return mapping.get(key, key)
 
-    def _export_readable_value(self, key: str, value):
+    def _export_readable_value(self, key: str, value, age_group_scope: str = "event"):
         if value is None:
             return ""
         text = str(value)
@@ -47,7 +48,9 @@ class MeetViewMixin:
         if key == "gender":
             return {"male": "男", "female": "女", "mixed": "混合"}.get(text, text)
         if key == "age_group":
-            return {"A": "甲组", "B": "乙组", "C": "丙组", "ALL": "不限组"}.get(text, text)
+            if age_group_scope == "athlete":
+                return athlete_age_group_label(text) or text
+            return event_age_group_label(text) or text
         if key == "is_individual":
             return "个人" if text in {"1", "True", "true"} else ("团体" if text in {"0", "False", "false"} else text)
         if key == "scoring_strategy":
@@ -67,10 +70,10 @@ class MeetViewMixin:
             return "是" if text in {"1", "True", "true"} else ("否" if text in {"0", "False", "false"} else text)
         return value
 
-    def _readable_item(self, item: dict) -> dict:
+    def _readable_item(self, item: dict, age_group_scope: str = "event") -> dict:
         out = {}
         for k, v in item.items():
-            out[k] = self._export_readable_value(k, v)
+            out[k] = self._export_readable_value(k, v, age_group_scope)
         return out
 
     def list_events(self):
@@ -251,7 +254,8 @@ class MeetViewMixin:
             items = [dict(r) for r in rows]
             if view_name == "results":
                 self._format_result_rows_performance(items)
-            items = [self._readable_item(i) for i in items]
+            age_group_scope = "athlete" if view_name == "athletes" else "event"
+            items = [self._readable_item(i, age_group_scope) for i in items]
             return {
                 "view": view_name,
                 "page": page,
@@ -294,7 +298,8 @@ class MeetViewMixin:
         for row in items:
             readable_row = {}
             for col, header in zip(columns, headers):
-                readable_row[header] = self._export_readable_value(col, row.get(col))
+                age_group_scope = "athlete" if view_name == "athletes" else "event"
+                readable_row[header] = self._export_readable_value(col, row.get(col), age_group_scope)
             writer.writerow(readable_row)
         return output.getvalue()
 

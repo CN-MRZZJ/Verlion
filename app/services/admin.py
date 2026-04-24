@@ -29,8 +29,7 @@ class MeetAdminMixin:
             clear_departments = "departments" in selected
             clear_events = "events" in selected
             clear_event_progress = "event_progress" in selected
-            clear_comp = "competitive_athletes" in selected or clear_departments
-            clear_fun = "fun_athletes" in selected or clear_departments
+            clear_athletes = "athletes" in selected or clear_departments
             clear_teams = "teams" in selected or clear_events or clear_departments
             clear_team_members = "team_members" in selected
             clear_regs = "athlete_registrations" in selected
@@ -42,8 +41,7 @@ class MeetAdminMixin:
                 _exec_delete(conn, "team_members", "DELETE FROM team_members")
                 _exec_delete(conn, "teams", "DELETE FROM teams")
                 _exec_delete(conn, "event_progress", "DELETE FROM event_progress")
-                _exec_delete(conn, "competitive_athletes", "DELETE FROM competitive_athletes")
-                _exec_delete(conn, "fun_athletes", "DELETE FROM fun_athletes")
+                _exec_delete(conn, "athletes", "DELETE FROM athletes")
                 _exec_delete(conn, "departments", "DELETE FROM departments")
             else:
                 if clear_events:
@@ -61,25 +59,11 @@ class MeetAdminMixin:
                     elif clear_team_members:
                         _exec_delete(conn, "team_members", "DELETE FROM team_members")
 
-                    if clear_comp:
-                        _exec_delete(conn, "results", "DELETE FROM results WHERE athlete_type='competitive'")
-                        _exec_delete(
-                            conn,
-                            "athlete_registrations",
-                            "DELETE FROM athlete_registrations WHERE athlete_type='competitive'",
-                        )
-                        _exec_delete(conn, "team_members", "DELETE FROM team_members WHERE athlete_type='competitive'")
-                        _exec_delete(conn, "competitive_athletes", "DELETE FROM competitive_athletes")
-
-                    if clear_fun:
-                        _exec_delete(conn, "results", "DELETE FROM results WHERE athlete_type='fun'")
-                        _exec_delete(
-                            conn,
-                            "athlete_registrations",
-                            "DELETE FROM athlete_registrations WHERE athlete_type='fun'",
-                        )
-                        _exec_delete(conn, "team_members", "DELETE FROM team_members WHERE athlete_type='fun'")
-                        _exec_delete(conn, "fun_athletes", "DELETE FROM fun_athletes")
+                    if clear_athletes:
+                        _exec_delete(conn, "results", "DELETE FROM results WHERE athlete_ref_id IS NOT NULL")
+                        _exec_delete(conn, "athlete_registrations", "DELETE FROM athlete_registrations")
+                        _exec_delete(conn, "team_members", "DELETE FROM team_members")
+                        _exec_delete(conn, "athletes", "DELETE FROM athletes")
 
                     if clear_results:
                         _exec_delete(conn, "results", "DELETE FROM results")

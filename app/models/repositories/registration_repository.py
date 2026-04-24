@@ -61,17 +61,16 @@ class RegistrationRepositoryMixin:
                 SELECT
                     r.id,
                     r.athlete_type,
-                    COALESCE(ca.name, fa.name) AS athlete_name,
-                    COALESCE(ca.gender, fa.gender) AS gender,
-                    COALESCE(ca.age_group, fa.age_group) AS age_group,
+                    a.name AS athlete_name,
+                    a.gender,
+                    a.age_group,
                     d.name AS department_name,
                     e.name AS event_name,
                     e.category,
                     r.created_at
                 FROM athlete_registrations r
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
-                LEFT JOIN departments d ON d.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+                LEFT JOIN departments d ON d.id = a.department_id
                 JOIN events e ON e.id = r.event_id
                 ORDER BY r.id DESC
                 """
@@ -93,16 +92,16 @@ class RegistrationRepositoryMixin:
             where = ["1=1"]
             params: list = []
             if keyword:
-                where.append("(COALESCE(ca.name, fa.name) LIKE ? OR e.name LIKE ?)")
+                where.append("(a.name LIKE ? OR e.name LIKE ?)")
                 params.extend([f"%{keyword}%", f"%{keyword}%"])
             if department_name:
                 where.append("d.name = ?")
                 params.append(department_name)
             if gender:
-                where.append("COALESCE(ca.gender, fa.gender) = ?")
+                where.append("a.gender = ?")
                 params.append(gender)
             if age_group:
-                where.append("COALESCE(ca.age_group, fa.age_group) = ?")
+                where.append("a.age_group = ?")
                 params.append(age_group)
             if category:
                 where.append("e.category = ?")
@@ -131,27 +130,25 @@ class RegistrationRepositoryMixin:
                 SELECT COUNT(*) AS c
                 FROM athlete_registrations r
                 JOIN events e ON e.id = r.event_id
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
-                LEFT JOIN departments d ON d.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+                LEFT JOIN departments d ON d.id = a.department_id
                 WHERE {where_sql}
             """
             data_sql = f"""
                 SELECT
                     r.id,
                     r.athlete_type,
-                    COALESCE(ca.name, fa.name) AS athlete_name,
-                    COALESCE(ca.gender, fa.gender) AS gender,
-                    COALESCE(ca.age_group, fa.age_group) AS age_group,
+                    a.name AS athlete_name,
+                    a.gender,
+                    a.age_group,
                     d.name AS department_name,
                     e.name AS event_name,
                     e.category,
                     r.created_at
                 FROM athlete_registrations r
                 JOIN events e ON e.id = r.event_id
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
-                LEFT JOIN departments d ON d.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+                LEFT JOIN departments d ON d.id = a.department_id
                 WHERE {where_sql}
                 ORDER BY {order_sql}
             """

@@ -13,23 +13,16 @@ DEPARTMENTS = TableSchema(
     columns=("id", "name", "total_members"),
 )
 
-COMPETITIVE_ATHLETES = TableSchema(
-    name="competitive_athletes",
-    columns=("id", "athlete_no", "name", "gender", "birth_date", "department_id", "age_group", "created_at"),
-    insert_columns=("athlete_no", "name", "gender", "birth_date", "department_id", "age_group"),
-    update_columns=("athlete_no", "name", "gender", "birth_date", "department_id", "age_group"),
-)
-
-FUN_ATHLETES = TableSchema(
-    name="fun_athletes",
-    columns=("id", "athlete_no", "name", "gender", "birth_date", "department_id", "age_group", "created_at"),
-    insert_columns=("athlete_no", "name", "gender", "birth_date", "department_id", "age_group"),
-    update_columns=("athlete_no", "name", "gender", "birth_date", "department_id", "age_group"),
+ATHLETES = TableSchema(
+    name="athletes",
+    columns=("id", "athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "age_group", "created_at"),
+    insert_columns=("athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "age_group"),
+    update_columns=("athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "age_group"),
 )
 
 ATHLETE_TABLES = {
-    "competitive": COMPETITIVE_ATHLETES,
-    "fun": FUN_ATHLETES,
+    "competitive": ATHLETES,
+    "fun": ATHLETES,
 }
 
 EVENTS = TableSchema(

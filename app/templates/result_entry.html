@@ -2,9 +2,9 @@
 {% block title %}成绩录入{% endblock %}
 {% block content %}
 
-<div class="layui-row layui-col-space15 result-entry-page" id="result-entry-app">
+<div class="sp-grid-page layui-row layui-col-space15 result-entry-page" id="result-entry-app">
   <div class="layui-col-md6">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">个人成绩录入</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/api/v1/results" data-ajax="true" data-no-reload="1" id="individual-result-form" autocomplete="off">
@@ -16,7 +16,7 @@
                 {% for e in events %}
                   {% if e['is_individual'] == 1 %}
                     {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
-                    {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                    {% set group_label = event_age_group_label(e['age_group']) %}
                     <option value="{{ e['id'] }}" data-category="{{ e['category'] }}" data-gender="{{ e['gender'] }}" data-age-group="{{ e['age_group'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
                   {% endif %}
                 {% endfor %}
@@ -81,7 +81,7 @@
   </div>
 
   <div class="layui-col-md6">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">团体成绩录入</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/api/v1/results" data-ajax="true" data-no-reload="1" id="team-result-form" autocomplete="off">
@@ -93,7 +93,7 @@
                 {% for e in events %}
                   {% if e['is_individual'] == 0 %}
                     {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
-                    {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                    {% set group_label = event_age_group_label(e['age_group']) %}
                     <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
                   {% endif %}
                 {% endfor %}
@@ -108,7 +108,7 @@
                 <option value="">请选择队伍</option>
                 {% for t in teams %}
                   {% set t_gender = '男子' if t['gender'] == 'male' else ('女子' if t['gender'] == 'female' else '混合') %}
-                  {% set t_group = '甲组' if t['age_group'] == 'A' else ('乙组' if t['age_group'] == 'B' else ('丙组' if t['age_group'] == 'C' else '')) %}
+                  {% set t_group = event_age_group_label(t['age_group']) %}
                   <option value="{{ t['id'] }}" data-event-id="{{ t['event_id'] if 'event_id' in t else '' }}">
                     {{ t['team_name'] }} · {{ t['department_name'] }} · {{ t['event_name'] }}{{ t_gender }}{{ t_group }}
                   </option>
@@ -147,7 +147,7 @@
   </div>
 
   <div class="layui-col-md12">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">最近成绩（30条）</div>
       <div class="layui-card-body table-scroll">
         <table class="layui-table" lay-even>
@@ -183,6 +183,7 @@ window.addEventListener('load', function(){
   if(!app) return;
   var athletesData = {{ athletes|tojson }};
   var registrationsData = {{ registrations|tojson }};
+  var athleteAgeGroupLabels = {{ athlete_age_group_labels|tojson }};
   var athleteMap = {};
   var registrationMap = {};
   (athletesData || []).forEach(function(a){
@@ -336,7 +337,7 @@ window.addEventListener('load', function(){
     previewText.textContent =
       '姓名：' + String(found.name || '') +
       ' ｜ 性别：' + genderLabel(found.gender) +
-      ' ｜ 组别：' + String(found.age_group || '') +
+      ' ｜ 组别：' + String(athleteAgeGroupLabels[String(found.age_group || '')] || found.age_group || '') +
       ' ｜ 单位：' + String(found.department_name || '') +
       regText;
     if(indAthleteSelect){
@@ -475,4 +476,5 @@ window.addEventListener('load', function(){
 </script>
 
 {% endblock %}
+
 

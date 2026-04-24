@@ -125,6 +125,7 @@
     var metricTotal = document.getElementById('dc-metric-total');
     var metricPage = document.getElementById('dc-metric-page');
     var metricSort = document.getElementById('dc-metric-sort');
+    var ageGroupSelect = document.getElementById('grid-age-group-select');
     var state = {
       page: 1,
       page_size: 20,
@@ -132,9 +133,31 @@
       sort_dir: 'desc'
     };
 
+    function ageGroupScopeForView(view) {
+      return view === 'athletes' ? 'athlete' : 'event';
+    }
+
+    function updateAgeGroupOptions(view) {
+      if (!ageGroupSelect) return;
+      var current = ageGroupSelect.value || '';
+      var optionsByScope = window.SPORTS_POINT_AGE_GROUP_OPTIONS || {};
+      var items = optionsByScope[ageGroupScopeForView(view)] || [];
+      ageGroupSelect.innerHTML = '';
+      ageGroupSelect.add(new Option('全部组别', ''));
+      items.forEach(function (item) {
+        ageGroupSelect.add(new Option(String(item.label || item.value || ''), String(item.value || '')));
+      });
+      var found = Array.prototype.some.call(ageGroupSelect.options, function (opt) {
+        return opt.value === current;
+      });
+      ageGroupSelect.value = found ? current : '';
+      if (window.layui && layui.form) layui.form.render('select');
+    }
+
     function setActiveView(view) {
       var viewInput = document.getElementById('view-select');
       if (viewInput) viewInput.value = view;
+      updateAgeGroupOptions(view);
       app.querySelectorAll('.dc-view-btn').forEach(function (btn) {
         if ((btn.getAttribute('data-view') || '') === view) btn.classList.add('is-active');
         else btn.classList.remove('is-active');

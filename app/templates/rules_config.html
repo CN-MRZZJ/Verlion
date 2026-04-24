@@ -1,0 +1,396 @@
+{% extends "layout.html" %}
+{% block title %}规则配置{% endblock %}
+{% block content %}
+
+<style>
+  .rules-shell { max-width: 1180px; min-width: 0; }
+  .rules-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .rules-title { margin: 0; font-size: 22px; font-weight: 600; }
+  .rules-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .rules-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .rules-subgrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .rules-card {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .rules-card-wide { grid-column: 1 / -1; }
+  .rules-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .rules-card-title { font-size: 16px; font-weight: 600; }
+  .rules-muted { color: #777; font-size: 12px; line-height: 1.7; }
+  .rules-table-wrap { width: 100%; overflow-x: auto; }
+  .rules-table { width: 100%; min-width: 360px; table-layout: fixed; }
+  .rules-table th,
+  .rules-table td { padding: 7px 8px; vertical-align: middle; }
+  .rules-table th:last-child,
+  .rules-table td:last-child { width: 72px; text-align: right; }
+  .rules-table input,
+  .rules-table select { height: 34px; }
+  @media (max-width: 900px) {
+    .rules-grid { grid-template-columns: 1fr; }
+    .rules-subgrid { grid-template-columns: 1fr; }
+    .rules-header { align-items: flex-start; flex-direction: column; }
+  }
+</style>
+
+<div class="rules-shell layui-form" id="rules-config-app">
+  <div class="rules-header">
+    <div>
+      <h2 class="rules-title">规则配置</h2>
+      <div class="rules-muted">保存后立即写入规则配置文件，后续导入和成绩录入会读取新规则。</div>
+    </div>
+    <div class="rules-actions">
+      <button type="button" class="layui-btn" id="btn-save-rules">保存规则</button>
+      <button type="button" class="layui-btn layui-btn-primary" id="btn-reload-rules">重新载入</button>
+    </div>
+  </div>
+
+  <div class="rules-grid">
+    <section class="rules-card">
+      <div class="rules-card-head">
+        <div>
+          <div class="rules-card-title">个人项目积分</div>
+          <div class="rules-muted">未配置的名次按 0 分处理。</div>
+        </div>
+        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-point="individual">新增名次</button>
+      </div>
+      <div class="rules-table-wrap">
+        <table class="layui-table rules-table" id="individual-points-table">
+          <thead><tr><th>名次</th><th>积分</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="rules-card">
+      <div class="rules-card-head">
+        <div>
+          <div class="rules-card-title">团体项目积分</div>
+          <div class="rules-muted">团体项目不再用代码乘倍数，直接读取这里。</div>
+        </div>
+        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-point="team">新增名次</button>
+      </div>
+      <div class="rules-table-wrap">
+        <table class="layui-table rules-table" id="team-points-table">
+          <thead><tr><th>名次</th><th>积分</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="rules-card">
+      <div class="rules-card-head">
+        <div>
+          <div class="rules-card-title">项目成绩策略</div>
+          <div class="rules-muted">导入项目时使用；成绩录入时读取数据库中的项目策略。</div>
+        </div>
+        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btn-add-scoring">新增类型</button>
+      </div>
+      <div class="rules-table-wrap">
+        <table class="layui-table rules-table" id="scoring-table">
+          <thead><tr><th>项目类型</th><th>成绩策略</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="rules-card">
+      <div class="rules-card-head">
+        <div>
+          <div class="rules-card-title">特殊组别</div>
+          <div class="rules-muted">趣味项目和团体项目默认使用的项目组别值。</div>
+        </div>
+      </div>
+      <div class="layui-form-item">
+        <label class="layui-form-label">默认值</label>
+        <div class="layui-input-block">
+          <select id="team-event-default"></select>
+        </div>
+      </div>
+    </section>
+
+    <section class="rules-card rules-card-wide">
+      <div class="rules-card-head">
+        <div>
+          <div class="rules-card-title">组别选项</div>
+          <div class="rules-muted">可新增任意组别值，数据库按这里的配置校验和显示。</div>
+        </div>
+      </div>
+      <div class="rules-subgrid">
+        <div>
+          <div class="rules-card-head">
+            <div class="rules-card-title">运动员组别</div>
+            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-age="athlete">新增组别</button>
+          </div>
+          <div class="rules-table-wrap">
+            <table class="layui-table rules-table" id="athlete-age-table">
+              <thead><tr><th>值</th><th>显示名</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="rules-card-head">
+            <div class="rules-card-title">项目组别</div>
+            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-age="event">新增组别</button>
+          </div>
+          <div class="rules-table-wrap">
+            <table class="layui-table rules-table" id="event-age-table">
+              <thead><tr><th>值</th><th>显示名</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function(){
+  var config = {{ rule_config|tojson }};
+  var app = document.getElementById('rules-config-app');
+  if(!app) return;
+
+  function escapeHtml(value){
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function nonCommentEntries(obj){
+    return Object.keys(obj || {}).filter(function(k){ return k.charAt(0) !== '_'; });
+  }
+
+  function nextNumericKey(obj){
+    var nums = nonCommentEntries(obj).map(Number).filter(function(n){ return Number.isFinite(n); });
+    return String(nums.length ? Math.max.apply(null, nums) + 1 : 1);
+  }
+
+  function renderSelect(){
+    if(window.layui && layui.form) layui.form.render('select');
+  }
+
+  function renderPointTable(tableId, typeName){
+    var tbody = document.querySelector('#' + tableId + ' tbody');
+    var rule = (config.point_rule || {})[typeName] || {};
+    tbody.innerHTML = nonCommentEntries(rule).sort(function(a, b){ return Number(a) - Number(b); }).map(function(rank){
+      return '<tr>'
+        + '<td><input type="number" min="1" class="layui-input js-rank" value="' + escapeHtml(rank) + '"></td>'
+        + '<td><input type="number" min="0" class="layui-input js-point" value="' + escapeHtml(rule[rank] || 0) + '"></td>'
+        + '<td><button type="button" class="layui-btn layui-btn-danger layui-btn-sm js-remove-row">删除</button></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function renderScoringTable(){
+    var tbody = document.querySelector('#scoring-table tbody');
+    var scoring = config.event_scoring_strategy || {};
+    tbody.innerHTML = nonCommentEntries(scoring).map(function(eventType){
+      var val = scoring[eventType] || '';
+      return '<tr>'
+        + '<td><input type="text" class="layui-input js-event-type" value="' + escapeHtml(eventType) + '"></td>'
+        + '<td><select class="js-scoring">'
+        + ['time','length','count','count_miss'].map(function(strategy){
+          return '<option value="' + strategy + '"' + (strategy === val ? ' selected' : '') + '>' + strategy + '</option>';
+        }).join('')
+        + '</select></td>'
+        + '<td><button type="button" class="layui-btn layui-btn-danger layui-btn-sm js-remove-row">删除</button></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function renderAgeTable(tableId, scope){
+    var tbody = document.querySelector('#' + tableId + ' tbody');
+    var items = ((config.age_group_options || {})[scope] || []);
+    tbody.innerHTML = items.map(function(item){
+      return '<tr>'
+        + '<td><input type="text" class="layui-input js-age-value" value="' + escapeHtml(item.value || '') + '"></td>'
+        + '<td><input type="text" class="layui-input js-age-label" value="' + escapeHtml(item.label || '') + '"></td>'
+        + '<td><button type="button" class="layui-btn layui-btn-danger layui-btn-sm js-remove-row">删除</button></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function renderTeamDefault(){
+    var sel = document.getElementById('team-event-default');
+    var selected = ((config.age_group_options || {}).team_event_default || 'ALL');
+    var rows = document.querySelectorAll('#event-age-table tbody tr');
+    var items = rows.length ? collectAgeOptions('event-age-table') : ((config.age_group_options || {}).event || []);
+    if(sel.value) selected = sel.value;
+    sel.innerHTML = items.map(function(item){
+      var value = String(item.value || '');
+      return '<option value="' + escapeHtml(value) + '"' + (value === selected ? ' selected' : '') + '>'
+        + escapeHtml(item.label || value)
+        + '</option>';
+    }).join('');
+  }
+
+  function render(){
+    renderPointTable('individual-points-table', 'individual');
+    renderPointTable('team-points-table', 'team');
+    renderScoringTable();
+    renderAgeTable('athlete-age-table', 'athlete');
+    renderAgeTable('event-age-table', 'event');
+    renderTeamDefault();
+    renderSelect();
+  }
+
+  function copyComments(source){
+    var out = {};
+    Object.keys(source || {}).forEach(function(k){
+      if(k.charAt(0) === '_') out[k] = source[k];
+    });
+    return out;
+  }
+
+  function collectPointRule(tableId, originalRule){
+    var out = copyComments(originalRule);
+    document.querySelectorAll('#' + tableId + ' tbody tr').forEach(function(tr){
+      var rank = tr.querySelector('.js-rank').value.trim();
+      if(rank) out[rank] = Number(tr.querySelector('.js-point').value || 0);
+    });
+    return out;
+  }
+
+  function collectScoring(original){
+    var out = copyComments(original);
+    document.querySelectorAll('#scoring-table tbody tr').forEach(function(tr){
+      var eventType = tr.querySelector('.js-event-type').value.trim();
+      if(eventType) out[eventType] = tr.querySelector('.js-scoring').value;
+    });
+    return out;
+  }
+
+  function collectAgeOptions(tableId){
+    var out = [];
+    document.querySelectorAll('#' + tableId + ' tbody tr').forEach(function(tr){
+      var value = tr.querySelector('.js-age-value').value.trim();
+      var label = tr.querySelector('.js-age-label').value.trim();
+      if(value || label) out.push({value: value, label: label});
+    });
+    return out;
+  }
+
+  function collectConfig(){
+    var next = JSON.parse(JSON.stringify(config));
+    next.point_rule.individual = collectPointRule('individual-points-table', config.point_rule.individual || {});
+    next.point_rule.team = collectPointRule('team-points-table', config.point_rule.team || {});
+    next.event_scoring_strategy = collectScoring(config.event_scoring_strategy || {});
+    next.age_group_options.athlete = collectAgeOptions('athlete-age-table');
+    next.age_group_options.event = collectAgeOptions('event-age-table');
+    next.age_group_options.team_event_default = document.getElementById('team-event-default').value || '';
+    return next;
+  }
+
+  async function save(){
+    var resp = await fetch('/api/v1/rules', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({config: collectConfig()})
+    });
+    var data = await resp.json();
+    if(!resp.ok || data.ok === false){
+      if(window.layer && layer.msg) layer.msg(data.error || '保存失败');
+      return;
+    }
+    config = data.config;
+    render();
+    if(window.layer && layer.msg) layer.msg('已保存');
+  }
+
+  async function reload(){
+    var resp = await fetch('/api/v1/rules');
+    var data = await resp.json();
+    if(data.ok){
+      config = data.config;
+      render();
+    }
+  }
+
+  app.addEventListener('click', function(evt){
+    var removeBtn = evt.target.closest('.js-remove-row');
+    if(removeBtn){
+      removeBtn.closest('tr').remove();
+      renderTeamDefault();
+      return;
+    }
+
+    var pointType = evt.target.getAttribute('data-add-point');
+    if(pointType){
+      var tableId = pointType === 'team' ? 'team-points-table' : 'individual-points-table';
+      var original = (config.point_rule || {})[pointType] || {};
+      var tbody = document.querySelector('#' + tableId + ' tbody');
+      var nextRank = nextNumericKey(collectPointRule(tableId, original));
+      tbody.insertAdjacentHTML('beforeend',
+        '<tr><td><input type="number" min="1" class="layui-input js-rank" value="' + escapeHtml(nextRank) + '"></td>'
+        + '<td><input type="number" min="0" class="layui-input js-point" value="0"></td>'
+        + '<td><button type="button" class="layui-btn layui-btn-danger layui-btn-sm js-remove-row">删除</button></td></tr>'
+      );
+      return;
+    }
+
+    var ageScope = evt.target.getAttribute('data-add-age');
+    if(ageScope){
+      var ageTableId = ageScope === 'event' ? 'event-age-table' : 'athlete-age-table';
+      document.querySelector('#' + ageTableId + ' tbody').insertAdjacentHTML('beforeend',
+        '<tr><td><input type="text" class="layui-input js-age-value" placeholder="值"></td>'
+        + '<td><input type="text" class="layui-input js-age-label" placeholder="显示名"></td>'
+        + '<td><button type="button" class="layui-btn layui-btn-danger layui-btn-sm js-remove-row">删除</button></td></tr>'
+      );
+      return;
+    }
+
+    if(evt.target.id === 'btn-add-scoring'){
+      document.querySelector('#scoring-table tbody').insertAdjacentHTML('beforeend',
+        '<tr><td><input type="text" class="layui-input js-event-type" placeholder="event_type"></td>'
+        + '<td><select class="js-scoring"><option value="time">time</option><option value="length">length</option><option value="count">count</option><option value="count_miss">count_miss</option></select></td>'
+        + '<td><button type="button" class="layui-btn layui-btn-danger layui-btn-sm js-remove-row">删除</button></td></tr>'
+      );
+      renderSelect();
+    }
+  });
+
+  app.addEventListener('input', function(evt){
+    if(evt.target.classList.contains('js-age-value') || evt.target.classList.contains('js-age-label')){
+      renderTeamDefault();
+    }
+  });
+
+  document.getElementById('btn-save-rules').addEventListener('click', save);
+  document.getElementById('btn-reload-rules').addEventListener('click', reload);
+
+  if(window.layui && layui.use){
+    layui.use(['form'], render);
+  } else {
+    render();
+  }
+});
+</script>
+
+{% endblock %}

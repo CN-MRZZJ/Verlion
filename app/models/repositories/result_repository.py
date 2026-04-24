@@ -80,13 +80,12 @@ class ResultRepositoryMixin:
                 """
                 SELECT
                     r.rank,
-                    COALESCE(ca.name, fa.name) AS athlete_name,
+                    a.name AS athlete_name,
                     COALESCE(d1.name, '') AS department_name,
                     r.performance
                 FROM results r
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
-                LEFT JOIN departments d1 ON d1.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+                LEFT JOIN departments d1 ON d1.id = a.department_id
                 WHERE r.event_id=? AND r.athlete_ref_id IS NOT NULL
                 ORDER BY r.rank ASC, r.id ASC
                 LIMIT 8
@@ -100,13 +99,12 @@ class ResultRepositoryMixin:
                 SELECT
                     r.id,
                     r.rank,
-                    COALESCE(ca.name, fa.name) AS athlete_name,
+                    a.name AS athlete_name,
                     COALESCE(d1.name, '') AS department_name,
                     r.performance
                 FROM results r
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
-                LEFT JOIN departments d1 ON d1.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+                LEFT JOIN departments d1 ON d1.id = a.department_id
                 WHERE r.event_id=? AND r.athlete_ref_id IS NOT NULL
                 ORDER BY r.id ASC
                 """,
@@ -152,7 +150,7 @@ class ResultRepositoryMixin:
                         ELSE ''
                     END AS athlete_type,
                     CASE
-                        WHEN r.athlete_ref_id IS NOT NULL THEN COALESCE(ca.name, fa.name)
+                        WHEN r.athlete_ref_id IS NOT NULL THEN a.name
                         ELSE t.name
                     END AS target_name,
                     CASE
@@ -165,9 +163,8 @@ class ResultRepositoryMixin:
                     r.created_at
                 FROM results r
                 JOIN events e ON e.id = r.event_id
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
-                LEFT JOIN departments d1 ON d1.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+                LEFT JOIN departments d1 ON d1.id = a.department_id
                 LEFT JOIN teams t ON t.id = r.team_id
                 LEFT JOIN departments d2 ON d2.id = t.department_id
                 ORDER BY r.id DESC
@@ -182,7 +179,7 @@ class ResultRepositoryMixin:
                     e.name AS event_name,
                     e.scoring_strategy,
                     CASE
-                        WHEN r.athlete_ref_id IS NOT NULL THEN COALESCE(ca.name, fa.name)
+                        WHEN r.athlete_ref_id IS NOT NULL THEN a.name
                         ELSE t.name
                     END AS target_name,
                     r.rank,
@@ -190,8 +187,7 @@ class ResultRepositoryMixin:
                     r.performance
                 FROM results r
                 JOIN events e ON e.id = r.event_id
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
                 LEFT JOIN teams t ON t.id = r.team_id
                 ORDER BY r.id DESC
                 LIMIT ?
@@ -215,7 +211,7 @@ class ResultRepositoryMixin:
             where = ["1=1"]
             params: list = []
             if keyword:
-                where.append("(e.name LIKE ? OR COALESCE(ca.name, fa.name, t.name) LIKE ?)")
+                where.append("(e.name LIKE ? OR COALESCE(a.name, t.name) LIKE ?)")
                 params.extend([f"%{keyword}%", f"%{keyword}%"])
             if department_name:
                 where.append("(d1.name = ? OR d2.name = ?)")
@@ -257,9 +253,8 @@ class ResultRepositoryMixin:
                 SELECT COUNT(*) AS c
                 FROM results r
                 JOIN events e ON e.id = r.event_id
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
-                LEFT JOIN departments d1 ON d1.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+                LEFT JOIN departments d1 ON d1.id = a.department_id
                 LEFT JOIN teams t ON t.id = r.team_id
                 LEFT JOIN departments d2 ON d2.id = t.department_id
                 WHERE {where_sql}
@@ -273,7 +268,7 @@ class ResultRepositoryMixin:
                     e.age_group,
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN 'athlete' ELSE 'team' END AS result_type,
                     COALESCE(r.athlete_type, '') AS athlete_type,
-                    CASE WHEN r.athlete_ref_id IS NOT NULL THEN COALESCE(ca.name, fa.name) ELSE t.name END AS target_name,
+                    CASE WHEN r.athlete_ref_id IS NOT NULL THEN a.name ELSE t.name END AS target_name,
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN d1.name ELSE d2.name END AS department_name,
                     r.rank,
                     r.points,
@@ -281,9 +276,8 @@ class ResultRepositoryMixin:
                     r.created_at
                 FROM results r
                 JOIN events e ON e.id = r.event_id
-                LEFT JOIN competitive_athletes ca ON r.athlete_type='competitive' AND ca.id = r.athlete_ref_id
-                LEFT JOIN fun_athletes fa ON r.athlete_type='fun' AND fa.id = r.athlete_ref_id
-                LEFT JOIN departments d1 ON d1.id = COALESCE(ca.department_id, fa.department_id)
+                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+                LEFT JOIN departments d1 ON d1.id = a.department_id
                 LEFT JOIN teams t ON t.id = r.team_id
                 LEFT JOIN departments d2 ON d2.id = t.department_id
                 WHERE {where_sql}

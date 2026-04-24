@@ -2,163 +2,166 @@
 {% block title %}数据导入{% endblock %}
 {% block content %}
 
-<div class="layui-row layui-col-space15">
-  <div class="layui-col-md6">
-    <div class="layui-card">
-      <div class="layui-card-header">系统初始化</div>
-      <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/setup" data-ajax="true" autocomplete="off">
-          <div class="layui-form-item">
-            <label class="layui-form-label">比赛日期</label>
-            <div class="layui-input-block">
-              <input type="text" name="meet_date" value="2026-04-23" placeholder="YYYY-MM-DD" class="layui-input" />
-            </div>
-          </div>
-          <div class="layui-form-item">
-            <div class="layui-input-block">
-              <button type="submit" class="layui-btn">保存</button>
-              <a class="layui-btn layui-btn-primary" href="/init-status">查看状态</a>
-            </div>
-          </div>
-        </form>
-      </div>
+<style>
+  .import-shell { max-width: 1180px; }
+  .import-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .import-title { margin: 0; font-size: 22px; font-weight: 600; }
+  .import-muted { color: #777; font-size: 12px; line-height: 1.7; }
+  .import-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .import-card {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .import-card-wide { grid-column: 1 / -1; }
+  .import-card-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .import-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .import-upload-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+  .import-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .import-step-index {
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    border-radius: 50%;
+    background: #1e9fff;
+    color: #fff;
+    font-size: 12px;
+  }
+  @media (max-width: 900px) {
+    .import-grid { grid-template-columns: 1fr; }
+    .import-header { flex-direction: column; }
+    .import-upload-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="import-shell">
+  <div class="import-header">
+    <div>
+      <h2 class="import-title">数据导入</h2>
+      <div class="import-muted">建议先完成规则配置，再按项目、运动员、报名的顺序导入 CSV。</div>
+    </div>
+    <div class="import-actions">
+      <a class="layui-btn layui-btn-primary" href="/pages/rules">规则配置</a>
+      <a class="layui-btn layui-btn-primary" href="/pages/status">初始化状态</a>
     </div>
   </div>
 
-  <div class="layui-col-md6">
-    <div class="layui-card">
-      <div class="layui-card-header">模板下载</div>
-      <div class="layui-card-body">
-        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/events_template.csv">下载项目模板</a>
-        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/competitive_athletes_template.csv">下载竞技名单模板</a>
-        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/fun_athletes_template.csv">下载趣味名单模板</a>
-        <div style="margin-top: 10px;">
-          <form class="layui-form" method="get" action="/api/v1/imports/registrations/template" style="display:inline-block; margin-right: 12px;" autocomplete="off">
-            <input type="hidden" name="category" value="competitive" />
-            <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-sm">导出竞技报名矩阵模板</button></div>
-          </form>
-          <form class="layui-form" method="get" action="/api/v1/imports/registrations/template" style="display:inline-block;" autocomplete="off">
-            <input type="hidden" name="category" value="fun" />
-            <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-sm layui-btn-warm">导出趣味报名矩阵模板</button></div>
-          </form>
+  <div class="import-grid">
+    <section class="import-card">
+      <div class="import-card-title">系统初始化</div>
+      <div class="import-muted" style="margin-bottom:10px;">保存比赛日期后，导入和公示会使用该基础信息。</div>
+      <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/setup" data-ajax="true" autocomplete="off">
+        <div class="layui-form-item">
+          <label class="layui-form-label">比赛日期</label>
+          <div class="layui-input-block">
+            <input type="text" name="meet_date" value="2026-04-23" placeholder="YYYY-MM-DD" class="layui-input" />
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="layui-col-md6">
-    <div class="layui-card">
-      <div class="layui-card-header">导入项目 CSV</div>
-      <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/events" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
-          <div class="layui-form-item">
-            <input type="file" name="file" accept=".csv" class="layui-input" required />
+        <div class="layui-form-item">
+          <div class="layui-input-block">
+            <button type="submit" class="layui-btn">保存日期</button>
           </div>
+        </div>
+      </form>
+    </section>
+
+    <section class="import-card">
+      <div class="import-card-title">模板下载</div>
+      <div class="import-actions">
+        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/events_template.csv">项目模板</a>
+        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/competitive_athletes_template.csv">竞技名单模板</a>
+        <a class="layui-btn layui-btn-primary" href="/api/v1/imports/templates/fun_athletes_template.csv">趣味名单模板</a>
+      </div>
+      <div class="import-actions" style="margin-top:10px;">
+        <form class="layui-form" method="get" action="/api/v1/imports/registrations/template" autocomplete="off">
+          <input type="hidden" name="category" value="competitive" />
+          <button type="submit" class="layui-btn layui-btn-sm">竞技报名矩阵模板</button>
+        </form>
+        <form class="layui-form" method="get" action="/api/v1/imports/registrations/template" autocomplete="off">
+          <input type="hidden" name="category" value="fun" />
+          <button type="submit" class="layui-btn layui-btn-sm layui-btn-warm">趣味报名矩阵模板</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="import-card import-card-wide">
+      <div class="import-card-title">导入步骤</div>
+      <div class="import-muted">报名矩阵依赖项目和运动员数据，请在前两类数据导入完成后再导入报名。</div>
+    </section>
+
+    <section class="import-card">
+      <div class="import-step"><span class="import-step-index">1</span><div class="import-card-title" style="margin:0;">导入项目 CSV</div></div>
+      <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/events" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <div class="import-upload-row">
+          <input type="file" name="file" accept=".csv" class="layui-input" required />
           <button type="submit" class="layui-btn layui-btn-normal">上传并导入</button>
-        </form>
-      </div>
-    </div>
-  </div>
+        </div>
+      </form>
+    </section>
 
-  <div class="layui-col-md6">
-    <div class="layui-card">
-      <div class="layui-card-header">导入竞技运动员名单 CSV</div>
-      <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/athletes/competitive" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
-          <div class="layui-form-item">
-            <input type="file" name="file" accept=".csv" class="layui-input" required />
-          </div>
-          <button type="submit" class="layui-btn layui-btn-normal">上传并导入名单</button>
-        </form>
-      </div>
-    </div>
-  </div>
+    <section class="import-card">
+      <div class="import-step"><span class="import-step-index">2</span><div class="import-card-title" style="margin:0;">导入竞技运动员名单 CSV</div></div>
+      <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/athletes/competitive" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <div class="import-upload-row">
+          <input type="file" name="file" accept=".csv" class="layui-input" required />
+          <button type="submit" class="layui-btn layui-btn-normal">上传名单</button>
+        </div>
+      </form>
+    </section>
 
-  <div class="layui-col-md6">
-    <div class="layui-card">
-      <div class="layui-card-header">导入趣味运动员名单 CSV</div>
-      <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/athletes/fun" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
-          <div class="layui-form-item">
-            <input type="file" name="file" accept=".csv" class="layui-input" required />
-          </div>
-          <button type="submit" class="layui-btn layui-btn-normal">上传并导入名单</button>
-        </form>
-      </div>
-    </div>
-  </div>
+    <section class="import-card">
+      <div class="import-step"><span class="import-step-index">3</span><div class="import-card-title" style="margin:0;">导入趣味运动员名单 CSV</div></div>
+      <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/athletes/fun" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <div class="import-upload-row">
+          <input type="file" name="file" accept=".csv" class="layui-input" required />
+          <button type="submit" class="layui-btn layui-btn-normal">上传名单</button>
+        </div>
+      </form>
+    </section>
 
-  <div class="layui-col-md6">
-    <div class="layui-card">
-      <div class="layui-card-header">导入竞技项目报名 CSV</div>
-      <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/registrations/competitive" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
-          <div class="layui-form-item">
-            <input type="file" name="file" accept=".csv" class="layui-input" required />
-          </div>
-          <button type="submit" class="layui-btn layui-btn-warm">上传并导入报名矩阵</button>
-        </form>
-      </div>
-    </div>
-  </div>
+    <section class="import-card">
+      <div class="import-step"><span class="import-step-index">4</span><div class="import-card-title" style="margin:0;">导入竞技项目报名 CSV</div></div>
+      <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/registrations/competitive" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <div class="import-upload-row">
+          <input type="file" name="file" accept=".csv" class="layui-input" required />
+          <button type="submit" class="layui-btn layui-btn-warm">导入报名矩阵</button>
+        </div>
+      </form>
+    </section>
 
-  <div class="layui-col-md6">
-    <div class="layui-card">
-      <div class="layui-card-header">导入趣味项目报名 CSV</div>
-      <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/registrations/fun" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
-          <div class="layui-form-item">
-            <input type="file" name="file" accept=".csv" class="layui-input" required />
-          </div>
-          <button type="submit" class="layui-btn layui-btn-warm">上传并导入报名矩阵</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <div class="layui-col-md12">
-    <div class="layui-card">
-      <div class="layui-card-header" style="color:#c00;">危险操作：按需清除数据</div>
-      <div class="layui-card-body">
-        <form class="layui-form js-ajax-form" method="post" action="/api/v1/maintenance/clear-data" data-ajax="true" id="clear-data-form" autocomplete="off">
-          <div class="layui-form-item">
-            <label class="layui-form-label">选择表</label>
-            <div class="layui-input-block">
-              {% for key, label in clear_table_options.items() %}
-                <input type="checkbox" name="tables" value="{{ key }}" title="{{ label }} ({{ key }})" lay-skin="primary">
-              {% endfor %}
-            </div>
-          </div>
-          <div class="layui-form-item">
-            <label class="layui-form-label">确认口令</label>
-            <div class="layui-input-inline">
-              <input type="text" name="confirm_text" placeholder="请输入 DELETE" class="layui-input" />
-            </div>
-            <div class="layui-form-mid layui-word-aux">必须输入大写 DELETE</div>
-          </div>
-          <div class="layui-form-item">
-            <label class="layui-form-label">校验码</label>
-            <div class="layui-input-inline">
-              <input type="text" name="confirm_code" placeholder="请输入 CLEAR-N" class="layui-input" />
-            </div>
-            <div class="layui-form-mid layui-word-aux">N = 所选表数量</div>
-          </div>
-          <div class="layui-form-item">
-            <div class="layui-input-block">
-              <input type="checkbox" name="acknowledged" value="1" title="我已确认这是不可逆操作" lay-skin="primary">
-            </div>
-          </div>
-          <div class="layui-form-item">
-            <div class="layui-input-block">
-              <button type="submit" class="layui-btn layui-btn-danger">执行清除</button>
-            </div>
-          </div>
-          <p class="layui-word-aux">系统会按依赖关系安全清理关联数据，防止外键冲突。请先备份数据库。</p>
-        </form>
-      </div>
-    </div>
+    <section class="import-card">
+      <div class="import-step"><span class="import-step-index">5</span><div class="import-card-title" style="margin:0;">导入趣味项目报名 CSV</div></div>
+      <form class="layui-form js-ajax-form" method="post" action="/api/v1/imports/registrations/fun" enctype="multipart/form-data" data-ajax="true" autocomplete="off">
+        <div class="import-upload-row">
+          <input type="file" name="file" accept=".csv" class="layui-input" required />
+          <button type="submit" class="layui-btn layui-btn-warm">导入报名矩阵</button>
+        </div>
+      </form>
+    </section>
   </div>
 </div>
 
 {% endblock %}
-

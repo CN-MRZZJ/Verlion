@@ -2,19 +2,19 @@
 {% block title %}组队管理{% endblock %}
 {% block content %}
 
-<div class="layui-row layui-col-space15" id="team-ops-app">
+<div class="sp-grid-page layui-row layui-col-space15" id="team-ops-app">
   <div class="layui-col-md12">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">查询队伍</div>
       <div class="layui-card-body">
         <form class="layui-form" id="team-query-form" autocomplete="off">
-          <div class="layui-row layui-col-space10">
+          <div class="sp-form-grid layui-row layui-col-space10">
             <div class="layui-col-md3">
               <select name="event_id" id="query-event-id">
                 <option value="">全部团体项目</option>
                 {% for e in team_events %}
                   {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
-                  {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                  {% set group_label = event_age_group_label(e['age_group']) %}
                   <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
                 {% endfor %}
               </select>
@@ -54,7 +54,7 @@
   </div>
 
   <div class="layui-col-md6">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">新增队伍</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams" data-ajax="true" data-no-reload="1" id="team-add-form" autocomplete="off">
@@ -65,7 +65,7 @@
                 <option value="">请选择</option>
                 {% for e in team_events %}
                   {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
-                  {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                  {% set group_label = event_age_group_label(e['age_group']) %}
                   <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
                 {% endfor %}
               </select>
@@ -94,7 +94,7 @@
   </div>
 
   <div class="layui-col-md6">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">批量新增队伍（学院+项目+序号）</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams/batch-add" data-ajax="true" data-no-reload="1" id="team-batch-add-form" autocomplete="off">
@@ -105,7 +105,7 @@
                 <option value="">请选择</option>
                 {% for e in team_events %}
                   {% set gender_label = '男子' if e['gender'] == 'male' else ('女子' if e['gender'] == 'female' else '混合') %}
-                  {% set group_label = '甲组' if e['age_group'] == 'A' else ('乙组' if e['age_group'] == 'B' else ('丙组' if e['age_group'] == 'C' else '')) %}
+                  {% set group_label = event_age_group_label(e['age_group']) %}
                   <option value="{{ e['id'] }}">{{ e['name'] }}{{ gender_label }}{{ group_label }}</option>
                 {% endfor %}
               </select>
@@ -137,7 +137,7 @@
   </div>
 
   <div class="layui-col-md6">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">删除队伍</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams/delete" data-ajax="true" data-no-reload="1" id="team-delete-form" autocomplete="off">
@@ -158,10 +158,10 @@
   </div>
 
   <div class="layui-col-md12">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">队伍成员增减</div>
       <div class="layui-card-body">
-        <div class="layui-row layui-col-space15">
+        <div class="sp-grid-page layui-row layui-col-space15">
           <div class="layui-col-md6">
             <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams/members/add" data-ajax="true" data-no-reload="1" autocomplete="off">
               <fieldset class="layui-elem-field">
@@ -470,4 +470,5 @@ window.addEventListener('load', function(){
 </script>
 
 {% endblock %}
+
 

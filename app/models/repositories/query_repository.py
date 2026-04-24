@@ -30,31 +30,20 @@ class QueryRepositoryMixin:
                 params.append(age_group)
             where_sql = " AND ".join(where)
 
-            union_sql = """
+            athlete_sql = """
                 SELECT
-                    'competitive' AS athlete_type,
+                    a.athlete_type,
                     a.id AS athlete_ref_id,
                     a.athlete_no,
                     a.name,
                     a.gender,
                     a.age_group,
                     d.name AS department_name
-                FROM competitive_athletes a
-                JOIN departments d ON d.id = a.department_id
-                UNION ALL
-                SELECT
-                    'fun' AS athlete_type,
-                    a.id AS athlete_ref_id,
-                    a.athlete_no,
-                    a.name,
-                    a.gender,
-                    a.age_group,
-                    d.name AS department_name
-                FROM fun_athletes a
+                FROM athletes a
                 JOIN departments d ON d.id = a.department_id
             """
 
-            count_sql = f"SELECT COUNT(*) AS c FROM ({union_sql}) u WHERE {where_sql}"
+            count_sql = f"SELECT COUNT(*) AS c FROM ({athlete_sql}) u WHERE {where_sql}"
             order_sql = self._resolve_order(
                 sort_by,
                 sort_dir,
@@ -71,7 +60,7 @@ class QueryRepositoryMixin:
             )
             data_sql = f"""
                 SELECT u.athlete_type, u.athlete_ref_id, u.athlete_no, u.name, u.gender, u.age_group, u.department_name
-                FROM ({union_sql}) u
+                FROM ({athlete_sql}) u
                 WHERE {where_sql}
                 ORDER BY {order_sql}
             """

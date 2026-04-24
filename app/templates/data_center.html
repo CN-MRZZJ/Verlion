@@ -73,12 +73,11 @@
           </div>
           <div class="dc-filter-item">
             <label class="dc-filter-label">组别</label>
-            <select name="age_group">
+            <select name="age_group" id="grid-age-group-select">
               <option value="">全部组别</option>
-              <option value="ALL">不分组</option>
-              <option value="A">甲组</option>
-              <option value="B">乙组</option>
-              <option value="C">丙组</option>
+              {% for option in event_age_group_options %}
+                <option value="{{ option.value }}">{{ option.label }}</option>
+              {% endfor %}
             </select>
           </div>
           <div class="dc-filter-item">
@@ -129,5 +128,12 @@
     </section>
   </div>
 </div>
+
+<script>
+window.SPORTS_POINT_AGE_GROUP_OPTIONS = {
+  athlete: {{ athlete_age_group_options|tojson }},
+  event: {{ event_age_group_options|tojson }}
+};
+</script>
 
 {% endblock %}

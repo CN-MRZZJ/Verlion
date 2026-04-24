@@ -1,5 +1,6 @@
 from typing import Optional
 
+from app.rules import age_group_values
 from app.models.repositories import SportsRepository
 from .validators import ensure_in, optional_text, require_text
 
@@ -19,8 +20,9 @@ class MeetAthleteMixin:
     ) -> int:
         athlete_type = self._validate_athlete_type(athlete_type)
         ensure_in(gender, {"male", "female"}, "gender 必须是 male 或 female")
-        if age_group is not None and age_group != "" and age_group not in ("A", "B", "C"):
-            raise ValueError("age_group 必须是 A/B/C")
+        allowed_age_groups = age_group_values("athlete")
+        if age_group is not None and age_group != "" and age_group not in allowed_age_groups:
+            raise ValueError(f"age_group 必须是 {'/'.join(sorted(allowed_age_groups))}")
         resolved_group = age_group if age_group else None
 
         def _action(repo: SportsRepository) -> int:
@@ -146,8 +148,9 @@ class MeetAthleteMixin:
         ensure_in(gender, {"male", "female"}, "gender 必须是 male 或 female")
         dept_name = require_text(department_name, "department_name")
         age_group_text = optional_text(age_group)
-        if age_group_text and age_group_text not in {"A", "B", "C"}:
-            raise ValueError("age_group 必须是 A/B/C")
+        allowed_age_groups = age_group_values("athlete")
+        if age_group_text and age_group_text not in allowed_age_groups:
+            raise ValueError(f"age_group 必须是 {'/'.join(sorted(allowed_age_groups))}")
 
         with self.db.connect() as conn:
             repo = SportsRepository(conn)

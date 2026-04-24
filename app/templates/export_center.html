@@ -2,12 +2,12 @@
 {% block title %}数据导出{% endblock %}
 {% block content %}
 
-<div class="layui-row layui-col-space15" id="export-center-app">
+<div class="sp-grid-page layui-row layui-col-space15" id="export-center-app">
   <div class="layui-col-md12">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">快速导出</div>
       <div class="layui-card-body">
-        <div class="layui-row layui-col-space10">
+        <div class="sp-form-grid layui-row layui-col-space10">
           {% for key, label in data_views %}
             <div class="layui-col-md3 layui-col-sm4 layui-col-xs6">
               <a class="layui-btn layui-btn-primary layui-btn-fluid" href="/api/v1/exports/{{ key }}" target="_blank">{{ label }} CSV</a>
@@ -19,11 +19,11 @@
   </div>
 
   <div class="layui-col-md12">
-    <div class="layui-card">
+    <div class="layui-card sp-card">
       <div class="layui-card-header">条件导出</div>
       <div class="layui-card-body">
         <form class="layui-form" id="export-filter-form" autocomplete="off">
-          <div class="layui-row layui-col-space10">
+          <div class="sp-form-grid layui-row layui-col-space10">
             <div class="layui-col-md2">
               <label class="layui-form-label">数据类型</label>
               <div class="layui-input-block">
@@ -87,12 +87,11 @@
             <div class="layui-col-md1">
               <label class="layui-form-label">组别</label>
               <div class="layui-input-block">
-                <select name="age_group">
+                <select name="age_group" id="exp-age-group">
                   <option value="">全部</option>
-                  <option value="ALL">不分组</option>
-                  <option value="A">甲组</option>
-                  <option value="B">乙组</option>
-                  <option value="C">丙组</option>
+                  {% for option in event_age_group_options %}
+                    <option value="{{ option.value }}">{{ option.label }}</option>
+                  {% endfor %}
                 </select>
               </div>
             </div>
@@ -115,6 +114,34 @@ window.addEventListener('load', function(){
   if(!app) return;
   var form = document.getElementById('export-filter-form');
   var btn = document.getElementById('btn-export-filter');
+  var viewSelect = document.getElementById('exp-view');
+  var ageGroupSelect = document.getElementById('exp-age-group');
+  var ageGroupOptions = {
+    athlete: {{ athlete_age_group_options|tojson }},
+    event: {{ event_age_group_options|tojson }}
+  };
+
+  function renderSelect(){
+    if(window.layui && layui.form) layui.form.render('select');
+  }
+
+  function ageGroupScopeForView(view){
+    return view === 'athletes' ? 'athlete' : 'event';
+  }
+
+  function updateAgeGroupOptions(){
+    if(!ageGroupSelect || !viewSelect) return;
+    var current = ageGroupSelect.value || '';
+    var items = ageGroupOptions[ageGroupScopeForView(viewSelect.value || '')] || [];
+    ageGroupSelect.innerHTML = '';
+    ageGroupSelect.add(new Option('全部', ''));
+    items.forEach(function(item){
+      ageGroupSelect.add(new Option(String(item.label || item.value || ''), String(item.value || '')));
+    });
+    var found = Array.prototype.some.call(ageGroupSelect.options, function(opt){ return opt.value === current; });
+    ageGroupSelect.value = found ? current : '';
+    renderSelect();
+  }
 
   function exportWithFilter(){
     if(!form) return;
@@ -134,14 +161,23 @@ window.addEventListener('load', function(){
   if(btn){
     btn.addEventListener('click', exportWithFilter);
   }
+  if(viewSelect){
+    viewSelect.addEventListener('change', updateAgeGroupOptions);
+  }
 
   if(window.layui && layui.use){
     layui.use(['form'], function(){
-      if(layui.form) layui.form.render('select');
+      if(layui.form){
+        layui.form.on('select', function(){ updateAgeGroupOptions(); });
+      }
+      updateAgeGroupOptions();
     });
+  } else {
+    updateAgeGroupOptions();
   }
 });
 </script>
 
 {% endblock %}
+
 

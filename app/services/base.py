@@ -5,6 +5,7 @@ from typing import Callable, Optional, TypeVar
 
 from app.models.database import Database
 from app.models.repositories import SportsRepository
+from app.rules import event_age_group_label
 
 T = TypeVar("T")
 
@@ -15,8 +16,7 @@ class MeetServiceBase:
         "departments": "部门",
         "events": "项目",
         "event_progress": "流程勾选",
-        "competitive_athletes": "竞技运动员",
-        "fun_athletes": "趣味运动员",
+        "athletes": "运动员",
         "teams": "队伍",
         "team_members": "队伍成员",
         "athlete_registrations": "报名记录",
@@ -95,13 +95,7 @@ class MeetServiceBase:
         return "混合"
 
     def _event_group_label(self, age_group: str) -> str:
-        if age_group == "A":
-            return "甲组"
-        if age_group == "B":
-            return "乙组"
-        if age_group == "C":
-            return "丙组"
-        return "不限组"
+        return event_age_group_label(age_group) or event_age_group_label("ALL")
 
     def _event_display_name(self, event: dict) -> str:
         return f"{event.get('name', '')}{self._event_gender_label(str(event.get('gender', '')))}{self._event_group_label(str(event.get('age_group', '')))}"
