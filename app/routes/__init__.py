@@ -1,3 +1,3 @@
-from .v1 import api_v1_bp, site_v1_bp
+from .v1 import api_v1_bp
 
-__all__ = ["api_v1_bp", "site_v1_bp"]
+__all__ = ["api_v1_bp"]

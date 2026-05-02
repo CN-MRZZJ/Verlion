@@ -545,7 +545,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 request_body=_json_body({"team_id": team_id_prop, "athlete_type": athlete_type_prop, "athlete_no": athlete_no_prop}, ["team_id", "athlete_type", "athlete_no"]),
             )
         },
-        "/pages/init-status": {
+        "/api/v1/status": {
             "get": _operation("系统状态", "查询初始化状态", "查询系统初始化检查结果。")
         },
     }
@@ -583,32 +583,3 @@ def get_openapi_spec() -> dict[str, Any]:
         },
     }
 
-
-def swagger_ui_html(openapi_url: str = "/api/v1/openapi.json") -> str:
-    return f"""<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <title>Sports-Point API Docs</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css">
-  <style>
-    body {{ margin: 0; background: #fff; }}
-    .swagger-ui .topbar {{ display: none; }}
-  </style>
-</head>
-<body>
-  <div id="swagger-ui"></div>
-  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
-  <script>
-    window.onload = function() {{
-      window.ui = SwaggerUIBundle({{
-        url: "{openapi_url}",
-        dom_id: "#swagger-ui",
-        deepLinking: true,
-        presets: [SwaggerUIBundle.presets.apis],
-        layout: "BaseLayout"
-      }});
-    }};
-  </script>
-</body>
-</html>"""

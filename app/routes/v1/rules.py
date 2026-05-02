@@ -1,17 +1,8 @@
-from flask import jsonify, render_template, request
+from flask import jsonify, request
 
 from app.rules import load_rule_config, save_rule_config
 
-from .common import api_v1_bp, site_v1_bp
-
-
-@site_v1_bp.get("/pages/rules")
-def rules_page():
-    return render_template(
-        "rules_config.html",
-        active_page="rules_config",
-        rule_config=load_rule_config(),
-    )
+from .common import api_v1_bp
 
 
 @api_v1_bp.get("/rules")
