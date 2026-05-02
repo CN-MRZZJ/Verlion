@@ -2,12 +2,39 @@
 {% block title %}成绩录入{% endblock %}
 {% block content %}
 
-<div class="sp-grid-page layui-row layui-col-space15 result-entry-page" id="result-entry-app">
+<div class="layui-row layui-col-space15 result-entry-page" id="result-entry-app">
+  <div class="layui-col-md12">
+    <div class="layui-card sp-card">
+      <div class="layui-card-header">录入设置</div>
+      <div class="layui-card-body">
+        <div class="layui-form">
+          <div class="layui-form-item" style="margin-bottom:0;">
+            <label class="layui-form-label">录入人</label>
+            <div class="layui-input-block">
+              <div class="layui-row layui-col-space10">
+                <div class="layui-col-md8 layui-col-xs12">
+                  <input type="text" id="result-entered-by" class="layui-input" placeholder="请输入录入人员姓名或编号" required />
+                </div>
+                <div class="layui-col-md2 layui-col-xs6">
+                  <button type="button" class="layui-btn layui-btn-fluid" id="btn-confirm-entered-by">确认</button>
+                </div>
+                <div class="layui-col-md2 layui-col-xs6">
+                  <div class="layui-word-aux" id="entered-by-status" style="line-height:38px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="layui-col-md6">
     <div class="layui-card sp-card">
       <div class="layui-card-header">个人成绩录入</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/api/v1/results" data-ajax="true" data-no-reload="1" id="individual-result-form" autocomplete="off">
+          <input type="hidden" name="entered_by" class="js-entered-by-value" />
           <div class="layui-form-item">
             <label class="layui-form-label">项目</label>
             <div class="layui-input-block">
@@ -85,6 +112,7 @@
       <div class="layui-card-header">团体成绩录入</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/api/v1/results" data-ajax="true" data-no-reload="1" id="team-result-form" autocomplete="off">
+          <input type="hidden" name="entered_by" class="js-entered-by-value" />
           <div class="layui-form-item">
             <label class="layui-form-label">项目</label>
             <div class="layui-input-block">
@@ -153,7 +181,7 @@
         <table class="layui-table" lay-even>
           <thead>
             <tr>
-              <th>ID</th><th>项目</th><th>类别</th><th>对象</th><th>部门</th><th>名次</th><th>积分</th><th>成绩</th><th>时间</th>
+              <th>ID</th><th>项目</th><th>类别</th><th>对象</th><th>部门</th><th>名次</th><th>积分</th><th>成绩</th><th>录入人</th><th>时间</th>
             </tr>
           </thead>
           <tbody>
@@ -167,6 +195,7 @@
                 <td>{{ r['rank'] }}</td>
                 <td>{{ r['points'] }}</td>
                 <td>{{ r['performance'] or '' }}</td>
+                <td>{{ r['entered_by'] or '' }}</td>
                 <td>{{ r['created_at'] }}</td>
               </tr>
             {% endfor %}
@@ -184,6 +213,11 @@ window.addEventListener('load', function(){
   var athletesData = {{ athletes|tojson }};
   var registrationsData = {{ registrations|tojson }};
   var athleteAgeGroupLabels = {{ athlete_age_group_labels|tojson }};
+  var enteredByInput = document.getElementById('result-entered-by');
+  var btnConfirmEnteredBy = document.getElementById('btn-confirm-entered-by');
+  var enteredByStatus = document.getElementById('entered-by-status');
+  var enteredByStorageKey = 'sports_point_result_entered_by';
+  var confirmedEnteredBy = '';
   var athleteMap = {};
   var registrationMap = {};
   (athletesData || []).forEach(function(a){
@@ -202,6 +236,88 @@ window.addEventListener('load', function(){
 
   function renderSelect(){
     if(window.layui && layui.form){ layui.form.render('select'); }
+  }
+
+  function currentEnteredBy(){
+    return enteredByInput && enteredByInput.value ? enteredByInput.value.trim() : '';
+  }
+
+  function syncEnteredByFields(){
+    app.querySelectorAll('.js-entered-by-value').forEach(function(input){
+      input.value = confirmedEnteredBy;
+    });
+    return confirmedEnteredBy;
+  }
+
+  function updateEnteredByStatus(){
+    if(!enteredByStatus) return;
+    var current = currentEnteredBy();
+    if(!confirmedEnteredBy){
+      enteredByStatus.textContent = '未确认';
+      return;
+    }
+    enteredByStatus.textContent = current === confirmedEnteredBy ? '已确认' : '待确认';
+  }
+
+  function confirmEnteredBy(){
+    var value = currentEnteredBy();
+    if(!value){
+      if(window.layer && layer.msg){
+        layer.msg('请先填写录入人');
+      } else {
+        alert('请先填写录入人');
+      }
+      if(enteredByInput) enteredByInput.focus();
+      return false;
+    }
+    confirmedEnteredBy = value;
+    syncEnteredByFields();
+    updateEnteredByStatus();
+    try {
+      localStorage.setItem(enteredByStorageKey, confirmedEnteredBy);
+    } catch (_) {}
+    if(window.layer && layer.msg){
+      layer.msg('录入人已确认');
+    }
+    return true;
+  }
+
+  function requireEnteredBy(evt){
+    var value = syncEnteredByFields();
+    if(value && currentEnteredBy() === value){
+      return true;
+    }
+    evt.preventDefault();
+    if(window.layer && layer.msg){
+      layer.msg('请先确认录入人');
+    } else {
+      alert('请先确认录入人');
+    }
+    if(enteredByInput) enteredByInput.focus();
+    return false;
+  }
+
+  try {
+    var storedEnteredBy = localStorage.getItem(enteredByStorageKey);
+    if(storedEnteredBy){
+      confirmedEnteredBy = storedEnteredBy.trim();
+      if(enteredByInput) enteredByInput.value = confirmedEnteredBy;
+    }
+  } catch (_) {}
+  syncEnteredByFields();
+  updateEnteredByStatus();
+  if(enteredByInput){
+    enteredByInput.addEventListener('input', function(){
+      updateEnteredByStatus();
+    });
+    enteredByInput.addEventListener('keydown', function(evt){
+      if(evt.key !== 'Enter') return;
+      evt.preventDefault();
+      confirmEnteredBy();
+    });
+  }
+  if(btnConfirmEnteredBy){
+    btnConfirmEnteredBy.addEventListener('click', confirmEnteredBy);
   }
 
   var indEvent = document.getElementById('ind-event');
@@ -381,6 +497,7 @@ window.addEventListener('load', function(){
   }
   if(individualForm){
     individualForm.addEventListener('submit', function(evt){
+      if(!requireEnteredBy(evt)) return;
       var t = (indType && indType.value ? indType.value : '').trim();
       var no = (indAthleteNo && indAthleteNo.value ? indAthleteNo.value : '').trim();
       var eid = (indEvent && indEvent.value ? String(indEvent.value).trim() : '');
@@ -396,7 +513,7 @@ window.addEventListener('load', function(){
           alert('该运动员未报名此项目');
         }
       }
-    });
+    }, true);
     individualForm.addEventListener('ajax:success', function(){
       if(indPerformance) indPerformance.value = '';
       if(indRankInput) indRankInput.value = '';
@@ -438,6 +555,20 @@ window.addEventListener('load', function(){
     renderSelect();
   }
   if(teamEvent){ teamEvent.addEventListener('change', filterTeams); } // 原生兜底
+  var teamForm = document.getElementById('team-result-form');
+  var teamPerformance = document.getElementById('team-performance');
+  var teamRankInput = teamForm ? teamForm.querySelector('input[name="rank"]') : null;
+  var teamRankDetails = teamForm ? teamForm.querySelector('.result-rank-collapse') : null;
+  if(teamForm){
+    teamForm.addEventListener('submit', function(evt){
+      requireEnteredBy(evt);
+    }, true);
+    teamForm.addEventListener('ajax:success', function(){
+      if(teamPerformance) teamPerformance.value = '';
+      if(teamRankInput) teamRankInput.value = '';
+      if(teamRankDetails) teamRankDetails.open = false;
+    });
+  }
 
   function bindLayuiSelectEvents(){
     if(!(window.layui && layui.form)) return;

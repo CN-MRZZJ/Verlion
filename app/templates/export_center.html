@@ -2,12 +2,12 @@
 {% block title %}数据导出{% endblock %}
 {% block content %}
 
-<div class="sp-grid-page layui-row layui-col-space15" id="export-center-app">
+<div class="layui-row layui-col-space15" id="export-center-app">
   <div class="layui-col-md12">
     <div class="layui-card sp-card">
       <div class="layui-card-header">快速导出</div>
       <div class="layui-card-body">
-        <div class="sp-form-grid layui-row layui-col-space10">
+        <div class="layui-row layui-col-space10">
           {% for key, label in data_views %}
             <div class="layui-col-md3 layui-col-sm4 layui-col-xs6">
               <a class="layui-btn layui-btn-primary layui-btn-fluid" href="/api/v1/exports/{{ key }}" target="_blank">{{ label }} CSV</a>
@@ -23,7 +23,7 @@
       <div class="layui-card-header">条件导出</div>
       <div class="layui-card-body">
         <form class="layui-form" id="export-filter-form" autocomplete="off">
-          <div class="sp-form-grid layui-row layui-col-space10">
+          <div class="layui-row layui-col-space10">
             <div class="layui-col-md2">
               <label class="layui-form-label">数据类型</label>
               <div class="layui-input-block">

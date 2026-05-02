@@ -2,92 +2,12 @@
   padding: 15px 0;
 }
 
-.sp-grid-page {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.sp-grid-page.layui-row,
-.sp-form-grid.layui-row {
-  margin: 0;
-}
-
-.sp-grid-page > [class*="layui-col-"] {
-  float: none;
-  width: auto;
-  padding: 0 !important;
-  min-width: 0;
-}
-
-.sp-grid-page > .layui-col-md12 {
-  grid-column: 1 / -1;
-}
-
-.sp-grid-page > .layui-col-md8 {
-  grid-column: span 8;
-}
-
-.sp-grid-page > .layui-col-md6 {
-  grid-column: span 6;
-}
-
-.sp-grid-page > .layui-col-md4 {
-  grid-column: span 4;
-}
-
-.sp-grid-page > .layui-col-md3 {
-  grid-column: span 3;
-}
-
 .sp-card {
   min-width: 0;
 }
 
 .sp-card .layui-card-body {
   min-width: 0;
-}
-
-.sp-form-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 10px;
-  align-items: end;
-}
-
-.sp-form-grid > [class*="layui-col-"] {
-  float: none;
-  width: auto;
-  padding: 0 !important;
-  min-width: 0;
-}
-
-.sp-form-grid > .layui-col-md6 {
-  grid-column: span 6;
-}
-
-.sp-form-grid > .layui-col-md5 {
-  grid-column: span 5;
-}
-
-.sp-form-grid > .layui-col-md4 {
-  grid-column: span 4;
-}
-
-.sp-form-grid > .layui-col-md3 {
-  grid-column: span 3;
-}
-
-.sp-form-grid > .layui-col-md2 {
-  grid-column: span 2;
-}
-
-.sp-form-grid > .layui-col-md1 {
-  grid-column: span 1;
-}
-
-.sp-form-grid > .layui-col-md12 {
-  grid-column: 1 / -1;
 }
 
 .mobile-nav-toggle {
@@ -351,34 +271,6 @@
 }
 
 @media (max-width: 768px) {
-  .sp-grid-page {
-    grid-template-columns: 1fr;
-  }
-
-  .sp-grid-page > [class*="layui-col-"],
-  .sp-grid-page > .layui-col-md12,
-  .sp-grid-page > .layui-col-md8,
-  .sp-grid-page > .layui-col-md6,
-  .sp-grid-page > .layui-col-md4,
-  .sp-grid-page > .layui-col-md3 {
-    grid-column: 1 / -1;
-  }
-
-  .sp-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .sp-form-grid > [class*="layui-col-"],
-  .sp-form-grid > .layui-col-md12,
-  .sp-form-grid > .layui-col-md6,
-  .sp-form-grid > .layui-col-md5,
-  .sp-form-grid > .layui-col-md4,
-  .sp-form-grid > .layui-col-md3,
-  .sp-form-grid > .layui-col-md2,
-  .sp-form-grid > .layui-col-md1 {
-    grid-column: 1 / -1;
-  }
-
   .layui-layout-admin .layui-header .layui-layout-left {
     display: none;
   }

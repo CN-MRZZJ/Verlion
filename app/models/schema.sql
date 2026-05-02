@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS results (
     rank INTEGER NOT NULL CHECK(rank >= 1),
     points INTEGER NOT NULL DEFAULT 0,
     performance TEXT,
+    entered_by TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY(event_id) REFERENCES events(id),
     FOREIGN KEY(team_id) REFERENCES teams(id),

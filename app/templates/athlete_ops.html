@@ -2,13 +2,13 @@
 {% block title %}运动员操作{% endblock %}
 {% block content %}
 
-<div class="sp-grid-page layui-row layui-col-space15" id="athlete-ops-app">
+<div class="layui-row layui-col-space15" id="athlete-ops-app">
   <div class="layui-col-md12">
     <div class="layui-card sp-card">
       <div class="layui-card-header">查询运动员</div>
       <div class="layui-card-body">
         <form class="layui-form" id="athlete-query-form" autocomplete="off">
-          <div class="sp-form-grid layui-row layui-col-space10">
+          <div class="layui-row layui-col-space10">
             <div class="layui-col-md2">
               <select name="athlete_type" id="query-athlete-type">
                 <option value="">全部类型</option>
@@ -146,7 +146,7 @@
     <div class="layui-card sp-card">
       <div class="layui-card-header">报名项目增减</div>
       <div class="layui-card-body">
-        <div class="sp-grid-page layui-row layui-col-space15">
+        <div class="layui-row layui-col-space15">
           <div class="layui-col-md6">
             <form class="layui-form js-ajax-form" method="post" action="/api/v1/athletes/registrations/add" data-ajax="true" data-no-reload="1" autocomplete="off">
               <fieldset class="layui-elem-field">

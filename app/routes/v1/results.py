@@ -58,6 +58,7 @@ def create_result():
             athlete_no=athlete_no_text if athlete_no_text else None,
             team_id=int(str(team_id_text).strip()) if team_id_text else None,
             performance=str(performance).strip() if performance else None,
+            entered_by=str(payload.get("entered_by", "")).strip(),
         )
         return jsonify({"ok": True, "result_id": result_id})
     except Exception as exc:

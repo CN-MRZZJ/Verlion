@@ -29,6 +29,7 @@ class Database:
             conn.executescript(load_schema_sql())
             self._migrate_split_athlete_tables(conn)
             self._migrate_age_group_constraints(conn)
+            self._migrate_results_entered_by(conn)
             conn.commit()
 
     def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
@@ -44,6 +45,13 @@ class Database:
             (table_name,),
         ).fetchone()
         return str(row["sql"] or "") if row else ""
+
+    def _table_columns(self, conn: sqlite3.Connection, table_name: str) -> set[str]:
+        return {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()}
+
+    def _migrate_results_entered_by(self, conn: sqlite3.Connection) -> None:
+        if self._table_exists(conn, "results") and "entered_by" not in self._table_columns(conn, "results"):
+            conn.execute("ALTER TABLE results ADD COLUMN entered_by TEXT NOT NULL DEFAULT ''")
 
     def _migrate_age_group_constraints(self, conn: sqlite3.Connection) -> None:
         if self._table_exists(conn, "athletes") and "age_group IN ('A','B','C')" in self._table_sql(conn, "athletes"):

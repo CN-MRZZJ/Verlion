@@ -75,6 +75,7 @@ class MeetResultMixin:
         athlete_no: Optional[str] = None,
         team_id: Optional[int] = None,
         performance: Optional[str] = None,
+        entered_by: Optional[str] = None,
     ) -> int:
         athlete_no_text = (athlete_no or "").strip()
         if athlete_ref_id is not None and athlete_no_text:
@@ -99,6 +100,7 @@ class MeetResultMixin:
             if not athlete_type:
                 raise ValueError("录入个人成绩时，athlete_type 必填")
             athlete_type = self._validate_athlete_type(athlete_type)
+        entered_by_text = str(entered_by or "").strip()
 
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
@@ -183,6 +185,7 @@ class MeetResultMixin:
                     rank=final_rank,
                     points=points_for_rank(final_rank, int(event["is_individual"])),
                     performance=normalized_performance,
+                    entered_by=entered_by_text if entered_by_text else None,
                 )
             else:
                 result_id = repo.insert_result(
@@ -193,6 +196,7 @@ class MeetResultMixin:
                     athlete_ref_id=athlete_ref_id if has_athlete else None,
                     team_id=team_id if has_team else None,
                     performance=normalized_performance,
+                    entered_by=entered_by_text,
                 )
             if auto_rank:
                 self._recalculate_event_ranks(repo, event_id, scoring_strategy)

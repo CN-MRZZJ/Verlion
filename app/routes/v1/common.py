@@ -15,6 +15,7 @@ DATA_VIEWS = [
 	("teams", "队伍"),
 	("registrations", "报名记录"),
 	("results", "成绩记录"),
+	("result_details", "成绩总明细"),
 	("standings", "积分榜"),
 	("participation", "参赛率"),
 ]

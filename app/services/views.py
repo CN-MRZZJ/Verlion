@@ -6,20 +6,57 @@ from app.rules import athlete_age_group_label, event_age_group_label
 
 
 class MeetViewMixin:
+    RESULT_DETAIL_COLUMNS = [
+        "id",
+        "event_id",
+        "event_full_name",
+        "event_name",
+        "category",
+        "event_type",
+        "scoring_strategy",
+        "event_gender",
+        "age_group",
+        "is_individual",
+        "result_type",
+        "athlete_type",
+        "athlete_ref_id",
+        "athlete_no",
+        "athlete_name",
+        "athlete_gender",
+        "team_id",
+        "team_name",
+        "team_member_athlete_nos",
+        "team_member_names",
+        "team_member_genders",
+        "department_name",
+        "rank",
+        "points",
+        "performance",
+        "entered_by",
+        "created_at",
+    ]
+
     def _export_header_alias(self, key: str) -> str:
         mapping = {
             "id": "ID",
             "event_id": "项目ID",
+            "event_full_name": "项目全名",
             "athlete_ref_id": "运动员ID",
             "athlete_no": "运动员号",
             "athlete_name": "运动员姓名",
+            "athlete_gender": "运动员性别",
+            "team_id": "队伍ID",
             "team_name": "队伍名称",
+            "team_member_athlete_nos": "队伍成员运动员号",
+            "team_member_names": "队伍成员姓名",
+            "team_member_genders": "队伍成员性别",
             "department_name": "单位",
             "name": "名称",
             "event_name": "项目名称",
             "category": "类别",
             "event_type": "项目类型",
             "gender": "性别",
+            "event_gender": "项目性别",
             "age_group": "组别",
             "is_individual": "项目属性",
             "scoring_strategy": "计分策略",
@@ -29,6 +66,7 @@ class MeetViewMixin:
             "rank": "名次",
             "points": "积分",
             "performance": "成绩",
+            "entered_by": "录入人",
             "created_at": "创建时间",
             "total_members": "总人数",
             "active_members": "参赛人数",
@@ -45,7 +83,7 @@ class MeetViewMixin:
             return {"competitive": "竞技", "fun": "趣味"}.get(text, text)
         if key == "event_type":
             return {"track": "径赛", "field": "田赛", "fun": "趣味"}.get(text, text)
-        if key == "gender":
+        if key in {"gender", "event_gender", "athlete_gender"}:
             return {"male": "男", "female": "女", "mixed": "混合"}.get(text, text)
         if key == "age_group":
             if age_group_scope == "athlete":
@@ -75,6 +113,17 @@ class MeetViewMixin:
         for k, v in item.items():
             out[k] = self._export_readable_value(k, v, age_group_scope)
         return out
+
+    def _add_result_detail_fields(self, rows: list[dict]) -> list[dict]:
+        for row in rows:
+            row["event_full_name"] = self._event_display_name(
+                {
+                    "name": row.get("event_name", ""),
+                    "gender": row.get("event_gender", ""),
+                    "age_group": row.get("age_group", ""),
+                }
+            )
+        return rows
 
     def list_events(self):
         with self.db.connect() as conn:
@@ -168,6 +217,8 @@ class MeetViewMixin:
                 rows = repo.list_registrations_with_details()
             elif view_name == "results":
                 rows = repo.list_results_with_details()
+            elif view_name == "result_details":
+                rows = repo.list_result_details()
             elif view_name == "standings":
                 rows = repo.standings()
             elif view_name == "participation":
@@ -175,8 +226,10 @@ class MeetViewMixin:
             else:
                 raise ValueError(f"不支持的数据视图: {view_name}")
             items = [dict(row) for row in rows]
-            if view_name == "results":
+            if view_name in {"results", "result_details"}:
                 self._format_result_rows_performance(items)
+            if view_name == "result_details":
+                self._add_result_detail_fields(items)
             return items
 
     def get_grid_page(
@@ -244,6 +297,19 @@ class MeetViewMixin:
                     sort_by,
                     sort_dir,
                 )
+            elif view_name == "result_details":
+                total, rows = repo.page_result_details(
+                    page,
+                    page_size,
+                    keyword,
+                    department_name,
+                    gender,
+                    age_group,
+                    category,
+                    scoring_strategy,
+                    sort_by,
+                    sort_dir,
+                )
             elif view_name == "standings":
                 total, rows = repo.page_standings(page, page_size, keyword, sort_by, sort_dir)
             elif view_name == "participation":
@@ -252,8 +318,11 @@ class MeetViewMixin:
                 raise ValueError(f"不支持的数据视图: {view_name}")
 
             items = [dict(r) for r in rows]
-            if view_name == "results":
+            if view_name in {"results", "result_details"}:
                 self._format_result_rows_performance(items)
+            if view_name == "result_details":
+                self._add_result_detail_fields(items)
+                items = [{col: item.get(col, "") for col in self.RESULT_DETAIL_COLUMNS} for item in items]
             age_group_scope = "athlete" if view_name == "athletes" else "event"
             items = [self._readable_item(i, age_group_scope) for i in items]
             return {
@@ -264,7 +333,7 @@ class MeetViewMixin:
                 "pages": (total + page_size - 1) // page_size if page_size > 0 else 0,
                 "sort_by": sort_by,
                 "sort_dir": sort_dir,
-                "columns": list(items[0].keys()) if items else [],
+                "columns": self.RESULT_DETAIL_COLUMNS if view_name == "result_details" else (list(items[0].keys()) if items else []),
                 "items": items,
             }
 

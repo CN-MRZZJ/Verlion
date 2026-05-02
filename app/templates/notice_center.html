@@ -2,13 +2,13 @@
 {% block title %}成绩公示{% endblock %}
 {% block content %}
 
-<div class="sp-grid-page layui-row layui-col-space15 notice-center-page" id="notice-center-app">
+<div class="layui-row layui-col-space15 notice-center-page" id="notice-center-app">
   <div class="layui-col-md12">
     <div class="layui-card sp-card">
       <div class="layui-card-header">公示单环境信息</div>
       <div class="layui-card-body">
         <form class="layui-form js-ajax-form" method="post" action="/api/v1/settings/report-environment" data-ajax="true" data-no-reload="1" autocomplete="off">
-          <div class="sp-form-grid layui-row layui-col-space10">
+          <div class="layui-row layui-col-space10">
             <div class="layui-col-md3"><input type="text" name="date" class="layui-input" value="{{ report_env.get('date', '') }}" placeholder="日期" /></div>
             <div class="layui-col-md2"><input type="text" name="wind_direction" class="layui-input" value="{{ report_env.get('wind_direction', '') }}" placeholder="风向" /></div>
             <div class="layui-col-md2"><input type="text" name="wind_speed" class="layui-input" value="{{ report_env.get('wind_speed', '') }}" placeholder="风速" /></div>
@@ -30,7 +30,7 @@
       <div class="layui-card-header">个人成绩公示单导出与预览</div>
       <div class="layui-card-body">
         <form class="layui-form" id="notice-export-form" method="get" action="/api/v1/notices/personal-result.xlsx" autocomplete="off">
-          <div class="sp-form-grid layui-row layui-col-space10">
+          <div class="layui-row layui-col-space10">
             <div class="layui-col-md4">
               <select name="event_id" id="notice-event-id" required>
                 <option value="">请选择个人项目</option>
@@ -74,7 +74,7 @@
       <div class="layui-card-header">团体成绩公示单导出与预览</div>
       <div class="layui-card-body">
         <form class="layui-form" id="team-notice-export-form" method="get" action="/api/v1/notices/team-result.xlsx" autocomplete="off">
-          <div class="sp-form-grid layui-row layui-col-space10">
+          <div class="layui-row layui-col-space10">
             <div class="layui-col-md4">
               <select name="event_id" id="team-notice-event-id" required>
                 <option value="">请选择团体项目</option>

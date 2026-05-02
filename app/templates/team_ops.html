@@ -2,13 +2,13 @@
 {% block title %}组队管理{% endblock %}
 {% block content %}
 
-<div class="sp-grid-page layui-row layui-col-space15" id="team-ops-app">
+<div class="layui-row layui-col-space15" id="team-ops-app">
   <div class="layui-col-md12">
     <div class="layui-card sp-card">
       <div class="layui-card-header">查询队伍</div>
       <div class="layui-card-body">
         <form class="layui-form" id="team-query-form" autocomplete="off">
-          <div class="sp-form-grid layui-row layui-col-space10">
+          <div class="layui-row layui-col-space10">
             <div class="layui-col-md3">
               <select name="event_id" id="query-event-id">
                 <option value="">全部团体项目</option>
@@ -161,7 +161,7 @@
     <div class="layui-card sp-card">
       <div class="layui-card-header">队伍成员增减</div>
       <div class="layui-card-body">
-        <div class="sp-grid-page layui-row layui-col-space15">
+        <div class="layui-row layui-col-space15">
           <div class="layui-col-md6">
             <form class="layui-form js-ajax-form" method="post" action="/api/v1/teams/members/add" data-ajax="true" data-no-reload="1" autocomplete="off">
               <fieldset class="layui-elem-field">

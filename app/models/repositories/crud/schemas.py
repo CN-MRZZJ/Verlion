@@ -49,9 +49,9 @@ TEAM_MEMBERS = TableSchema(
 
 RESULTS = TableSchema(
     name="results",
-    columns=("id", "event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "created_at"),
-    insert_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance"),
-    update_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance"),
+    columns=("id", "event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by", "created_at"),
+    insert_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by"),
+    update_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by"),
 )
 
 EVENT_PROGRESS = TableSchema(

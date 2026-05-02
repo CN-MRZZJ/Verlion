@@ -3,34 +3,6 @@
 {% block content %}
 
 <style>
-  .rules-shell { max-width: 1180px; min-width: 0; }
-  .rules-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-  .rules-title { margin: 0; font-size: 22px; font-weight: 600; }
-  .rules-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .rules-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-  .rules-subgrid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(280px, 1fr));
-    gap: 14px;
-  }
-  .rules-card {
-    min-width: 0;
-    background: #fff;
-    border: 1px solid #e8e8e8;
-    border-radius: 6px;
-    padding: 14px;
-  }
-  .rules-card-wide { grid-column: 1 / -1; }
   .rules-card-head {
     display: flex;
     justify-content: space-between;
@@ -49,122 +21,146 @@
   .rules-table input,
   .rules-table select { height: 34px; }
   @media (max-width: 900px) {
-    .rules-grid { grid-template-columns: 1fr; }
-    .rules-subgrid { grid-template-columns: 1fr; }
-    .rules-header { align-items: flex-start; flex-direction: column; }
+    .rules-toolbar { text-align: left !important; }
   }
 </style>
 
-<div class="rules-shell layui-form" id="rules-config-app">
-  <div class="rules-header">
-    <div>
-      <h2 class="rules-title">规则配置</h2>
-      <div class="rules-muted">保存后立即写入规则配置文件，后续导入和成绩录入会读取新规则。</div>
+<div class="layui-form" id="rules-config-app">
+  <div class="layui-row layui-col-space15">
+    <div class="layui-col-md12">
+      <div class="layui-card sp-card">
+        <div class="layui-card-header">规则配置</div>
+        <div class="layui-card-body">
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md8">
+              <div class="rules-muted">保存后立即写入规则配置文件，后续导入和成绩录入会读取新规则。</div>
+            </div>
+            <div class="layui-col-md4 rules-toolbar" style="text-align:right;">
+              <button type="button" class="layui-btn" id="btn-save-rules">保存规则</button>
+              <button type="button" class="layui-btn layui-btn-primary" id="btn-reload-rules">重新载入</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="rules-actions">
-      <button type="button" class="layui-btn" id="btn-save-rules">保存规则</button>
-      <button type="button" class="layui-btn layui-btn-primary" id="btn-reload-rules">重新载入</button>
-    </div>
-  </div>
 
-  <div class="rules-grid">
-    <section class="rules-card">
-      <div class="rules-card-head">
-        <div>
-          <div class="rules-card-title">个人项目积分</div>
-          <div class="rules-muted">未配置的名次按 0 分处理。</div>
-        </div>
-        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-point="individual">新增名次</button>
-      </div>
-      <div class="rules-table-wrap">
-        <table class="layui-table rules-table" id="individual-points-table">
-          <thead><tr><th>名次</th><th>积分</th><th>操作</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="rules-card">
-      <div class="rules-card-head">
-        <div>
-          <div class="rules-card-title">团体项目积分</div>
-          <div class="rules-muted">团体项目不再用代码乘倍数，直接读取这里。</div>
-        </div>
-        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-point="team">新增名次</button>
-      </div>
-      <div class="rules-table-wrap">
-        <table class="layui-table rules-table" id="team-points-table">
-          <thead><tr><th>名次</th><th>积分</th><th>操作</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="rules-card">
-      <div class="rules-card-head">
-        <div>
-          <div class="rules-card-title">项目成绩策略</div>
-          <div class="rules-muted">导入项目时使用；成绩录入时读取数据库中的项目策略。</div>
-        </div>
-        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btn-add-scoring">新增类型</button>
-      </div>
-      <div class="rules-table-wrap">
-        <table class="layui-table rules-table" id="scoring-table">
-          <thead><tr><th>项目类型</th><th>成绩策略</th><th>操作</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="rules-card">
-      <div class="rules-card-head">
-        <div>
-          <div class="rules-card-title">特殊组别</div>
-          <div class="rules-muted">趣味项目和团体项目默认使用的项目组别值。</div>
-        </div>
-      </div>
-      <div class="layui-form-item">
-        <label class="layui-form-label">默认值</label>
-        <div class="layui-input-block">
-          <select id="team-event-default"></select>
-        </div>
-      </div>
-    </section>
-
-    <section class="rules-card rules-card-wide">
-      <div class="rules-card-head">
-        <div>
-          <div class="rules-card-title">组别选项</div>
-          <div class="rules-muted">可新增任意组别值，数据库按这里的配置校验和显示。</div>
-        </div>
-      </div>
-      <div class="rules-subgrid">
-        <div>
+    <div class="layui-col-md6">
+      <div class="layui-card sp-card">
+        <div class="layui-card-body">
           <div class="rules-card-head">
-            <div class="rules-card-title">运动员组别</div>
-            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-age="athlete">新增组别</button>
+            <div>
+              <div class="rules-card-title">个人项目积分</div>
+              <div class="rules-muted">未配置的名次按 0 分处理。</div>
+            </div>
+            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-point="individual">新增名次</button>
           </div>
           <div class="rules-table-wrap">
-            <table class="layui-table rules-table" id="athlete-age-table">
-              <thead><tr><th>值</th><th>显示名</th><th>操作</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-        <div>
-          <div class="rules-card-head">
-            <div class="rules-card-title">项目组别</div>
-            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-age="event">新增组别</button>
-          </div>
-          <div class="rules-table-wrap">
-            <table class="layui-table rules-table" id="event-age-table">
-              <thead><tr><th>值</th><th>显示名</th><th>操作</th></tr></thead>
+            <table class="layui-table rules-table" id="individual-points-table">
+              <thead><tr><th>名次</th><th>积分</th><th>操作</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+
+    <div class="layui-col-md6">
+      <div class="layui-card sp-card">
+        <div class="layui-card-body">
+          <div class="rules-card-head">
+            <div>
+              <div class="rules-card-title">团体项目积分</div>
+              <div class="rules-muted">团体项目不再用代码乘倍数，直接读取这里。</div>
+            </div>
+            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-point="team">新增名次</button>
+          </div>
+          <div class="rules-table-wrap">
+            <table class="layui-table rules-table" id="team-points-table">
+              <thead><tr><th>名次</th><th>积分</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layui-col-md6">
+      <div class="layui-card sp-card">
+        <div class="layui-card-body">
+          <div class="rules-card-head">
+            <div>
+              <div class="rules-card-title">项目成绩策略</div>
+              <div class="rules-muted">导入项目时使用；成绩录入时读取数据库中的项目策略。</div>
+            </div>
+            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btn-add-scoring">新增类型</button>
+          </div>
+          <div class="rules-table-wrap">
+            <table class="layui-table rules-table" id="scoring-table">
+              <thead><tr><th>项目类型</th><th>成绩策略</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layui-col-md6">
+      <div class="layui-card sp-card">
+        <div class="layui-card-body">
+          <div class="rules-card-head">
+            <div>
+              <div class="rules-card-title">特殊组别</div>
+              <div class="rules-muted">趣味项目和团体项目默认使用的项目组别值。</div>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">默认值</label>
+            <div class="layui-input-block">
+              <select id="team-event-default"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layui-col-md12">
+      <div class="layui-card sp-card">
+        <div class="layui-card-body">
+          <div class="rules-card-head">
+            <div>
+              <div class="rules-card-title">组别选项</div>
+              <div class="rules-muted">可新增任意组别值，数据库按这里的配置校验和显示。</div>
+            </div>
+          </div>
+          <div class="layui-row layui-col-space15">
+            <div class="layui-col-md6">
+              <div class="rules-card-head">
+                <div class="rules-card-title">运动员组别</div>
+                <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-age="athlete">新增组别</button>
+              </div>
+              <div class="rules-table-wrap">
+                <table class="layui-table rules-table" id="athlete-age-table">
+                  <thead><tr><th>值</th><th>显示名</th><th>操作</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="layui-col-md6">
+              <div class="rules-card-head">
+                <div class="rules-card-title">项目组别</div>
+                <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" data-add-age="event">新增组别</button>
+              </div>
+              <div class="rules-table-wrap">
+                <table class="layui-table rules-table" id="event-age-table">
+                  <thead><tr><th>值</th><th>显示名</th><th>操作</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
