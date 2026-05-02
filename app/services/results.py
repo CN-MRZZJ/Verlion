@@ -1,10 +1,37 @@
 from typing import Optional
 
-from app.rules import points_for_rank
+from app.rules import attempt_policy, points_for_rank
 from app.models.repositories import SportsRepository
 
 
 class MeetResultMixin:
+    def _pick_best_attempt(
+        self,
+        scoring_strategy: str,
+        attempts: list,
+    ) -> int:
+        if not attempts:
+            raise ValueError("内部错误：没有可用的尝试记录")
+
+        policy = attempt_policy()
+
+        if policy == "latest" or len(attempts) == 1:
+            return int(attempts[-1]["id"])
+
+        def _key(attempt) -> tuple:
+            perf = attempt["performance"] if "performance" in attempt.keys() else None
+            val = self._parse_performance_numeric(scoring_strategy, perf)
+            rank = int(attempt["rank"])
+            attempt_id = int(attempt["id"])
+            if val is None:
+                return (1, rank, -attempt_id)
+            if scoring_strategy == "time":
+                return (0, val, rank, attempt_id)
+            return (0, -val, rank, attempt_id)
+
+        best = min(attempts, key=_key)
+        return int(best["id"])
+
     def _auto_rank_for_result(
         self,
         repo: SportsRepository,
@@ -172,6 +199,27 @@ class MeetResultMixin:
             if final_rank < 1:
                 raise ValueError("rank 必须 >= 1")
 
+            repo.insert_attempt(
+                event_id=event_id,
+                rank=final_rank,
+                athlete_type=athlete_type if has_athlete else None,
+                athlete_ref_id=athlete_ref_id if has_athlete else None,
+                team_id=team_id if has_team else None,
+                performance=normalized_performance,
+                entered_by=entered_by_text,
+            )
+
+            all_attempts = repo.list_attempts_for_target(
+                event_id=event_id,
+                athlete_type=athlete_type if has_athlete else None,
+                athlete_ref_id=athlete_ref_id if has_athlete else None,
+                team_id=team_id if has_team else None,
+            )
+            best_id = self._pick_best_attempt(scoring_strategy, all_attempts)
+            best = next((a for a in all_attempts if int(a["id"]) == best_id), None)
+            best_rank = int(best["rank"]) if best else final_rank
+            best_perf = best["performance"] if best else normalized_performance
+
             exists = repo.get_result_by_target(
                 event_id=event_id,
                 athlete_type=athlete_type if has_athlete else None,
@@ -182,20 +230,20 @@ class MeetResultMixin:
                 result_id = int(exists["id"])
                 repo.update_result(
                     result_id=result_id,
-                    rank=final_rank,
-                    points=points_for_rank(final_rank, int(event["is_individual"])),
-                    performance=normalized_performance,
+                    rank=best_rank,
+                    points=points_for_rank(best_rank, int(event["is_individual"])),
+                    performance=best_perf,
                     entered_by=entered_by_text if entered_by_text else None,
                 )
             else:
                 result_id = repo.insert_result(
                     event_id=event_id,
-                    rank=final_rank,
-                    points=points_for_rank(final_rank, int(event["is_individual"])),
+                    rank=best_rank,
+                    points=points_for_rank(best_rank, int(event["is_individual"])),
                     athlete_type=athlete_type if has_athlete else None,
                     athlete_ref_id=athlete_ref_id if has_athlete else None,
                     team_id=team_id if has_team else None,
-                    performance=normalized_performance,
+                    performance=best_perf,
                     entered_by=entered_by_text,
                 )
             if auto_rank:

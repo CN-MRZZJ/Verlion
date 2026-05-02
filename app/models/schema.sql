@@ -85,6 +85,25 @@ CREATE TABLE IF NOT EXISTS results (
     )
 );
 
+CREATE TABLE IF NOT EXISTS attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL,
+    athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
+    athlete_ref_id INTEGER,
+    team_id INTEGER,
+    rank INTEGER NOT NULL CHECK(rank >= 1),
+    performance TEXT,
+    entered_by TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY(event_id) REFERENCES events(id),
+    FOREIGN KEY(team_id) REFERENCES teams(id),
+    CHECK(
+        (athlete_ref_id IS NOT NULL AND athlete_type IS NOT NULL AND team_id IS NULL)
+        OR
+        (athlete_ref_id IS NULL AND athlete_type IS NULL AND team_id IS NOT NULL)
+    )
+);
+
 CREATE TABLE IF NOT EXISTS event_progress (
     event_id INTEGER PRIMARY KEY,
     record_done INTEGER NOT NULL DEFAULT 0 CHECK(record_done IN (0,1)),

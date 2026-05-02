@@ -3,39 +3,40 @@
     "_comment": "组别显示配置。athlete 用于运动员组别；event 用于项目组别和筛选，其中 ALL 表示不分组。",
     "athlete": [
       {
-        "value": "A",
-        "label": "甲组"
+        "label": "甲组",
+        "value": "A"
       },
       {
-        "value": "B",
-        "label": "乙组"
+        "label": "乙组",
+        "value": "B"
       },
       {
-        "value": "C",
-        "label": "丙组"
+        "label": "丙组",
+        "value": "C"
       }
     ],
     "event": [
       {
-        "value": "ALL",
-        "label": "不分组"
+        "label": "不分组",
+        "value": "ALL"
       },
       {
-        "value": "A",
-        "label": "甲组"
+        "label": "甲组",
+        "value": "A"
       },
       {
-        "value": "B",
-        "label": "乙组"
+        "label": "乙组",
+        "value": "B"
       },
       {
-        "value": "C",
-        "label": "丙组"
+        "label": "丙组",
+        "value": "C"
       }
     ],
     "fallback_label": "不限组",
     "team_event_default": "ALL"
   },
+  "attempt_policy": "best",
   "event_scoring_strategy": {
     "_comment": "项目导入规则：导入 events CSV 时，根据 event_type 决定固定的 scoring_strategy。成绩录入时使用数据库 events.scoring_strategy，不会再动态读取这里。",
     "field": "length",

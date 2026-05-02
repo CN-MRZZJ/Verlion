@@ -1,5 +1,6 @@
 from .base import CrudRepositoryMixin
 from .schemas import (
+    ATTEMPTS,
     ATHLETE_TABLES,
     ATHLETES,
     ATHLETE_REGISTRATIONS,
@@ -14,6 +15,7 @@ from .schemas import (
 from .types import TableSchema, WhereClause
 
 __all__ = [
+    "ATTEMPTS",
     "ATHLETE_TABLES",
     "ATHLETES",
     "ATHLETE_REGISTRATIONS",

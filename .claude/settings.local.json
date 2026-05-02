@@ -17,7 +17,26 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'OpenAPI: {d[\\\\\"info\\\\\"][\\\\\"title\\\\\"]} v{d[\\\\\"info\\\\\"][\\\\\"version\\\\\"]}, paths: {len\\(d[\\\\\"paths\\\\\"]\\)}'\\)\")",
       "Bash(curl -s http://localhost:5000/api/v1/rules)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Rules: ok={d.get\\(\\\\\"ok\\\\\"\\)}, age_groups: {len\\(d.get\\(\\\\\"config\\\\\",{}\\).get\\(\\\\\"age_groups\\\\\",[]\\)\\)}'\\)\")",
-      "Bash(taskkill //F //IM python.exe)"
+      "Bash(taskkill //F //IM python.exe)",
+      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\('App created successfully'\\)\")",
+      "Bash(curl -s http://localhost:5000/docs)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f'OpenAPI {d[\\\\\"openapi\\\\\"]}'\\); print\\(f'Title: {d[\\\\\"info\\\\\"][\\\\\"title\\\\\"]}'\\); print\\(f'Paths: {len\\(d[\\\\\"paths\\\\\"]\\)}'\\); print\\('Valid JSON: OK'\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/docs)",
+      "Bash(pkill -f \"python run_dev.py\")",
+      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('attempt_policy:', d.get\\('ok'\\) and d.get\\('config',{}\\).get\\('attempt_policy'\\)\\)\")",
+      "Bash(curl -s \"http://localhost:5000/api/v1/athletes?athlete_type=competitive&keyword=001\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); items=d.get\\('data',[]\\); print\\(f'Found {len\\(items\\)} athletes'\\); [print\\(f'  {a[\\\\\"athlete_no\\\\\"]} {a[\\\\\"name\\\\\"]} id={a[\\\\\"id\\\\\"]}'\\) for a in items[:3]]\")",
+      "Bash(curl -s \"http://localhost:5000/api/v1/athletes?athlete_type=competitive\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); items=d.get\\('data',[]\\); print\\(f'Found {len\\(items\\)} athletes'\\); [print\\(f'  no={a[\\\\\"athlete_no\\\\\"]} name={a[\\\\\"name\\\\\"]} id={a[\\\\\"id\\\\\"]}'\\) for a in items[:3]]\")",
+      "Bash(curl -s \"http://localhost:5000/api/v1/events\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); events=d.get\\('data',[]\\); individual=[e for e in events if e.get\\('is_individual'\\)==1 and e.get\\('category'\\)=='competitive'][:3]; [print\\(f'  id={e[\\\\\"id\\\\\"]} {e[\\\\\"name\\\\\"]} strategy={e[\\\\\"scoring_strategy\\\\\"]}'\\) for e in individual]\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(f'  id={e[\\\\\"id\\\\\"]} {e[\\\\\"name\\\\\"]} {e[\\\\\"age_group\\\\\"]} {e[\\\\\"gender\\\\\"]}'\\) for e in d['items'] if '100' in e['name']]\")",
+      "Bash(curl -s \"http://localhost:5000/api/v1/athletes/competitive/8001/registrations\")",
+      "Bash(curl -s -X POST http://localhost:5000/api/v1/results -H 'Content-Type: application/json' -d '{\"event_id\": 11, \"athlete_type\": \"competitive\", \"athlete_no\": \"8001\", \"performance\": \"12.30\", \"entered_by\": \"test\"}')",
+      "Bash(curl -s -X POST http://localhost:5000/api/v1/results -H 'Content-Type: application/json' -d '{\"event_id\": 11, \"athlete_type\": \"competitive\", \"athlete_no\": \"8001\", \"performance\": \"11.50\", \"entered_by\": \"test2\"}')",
+      "Bash(curl -s \"http://localhost:5000/api/v1/results?event_id=11\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); items=d.get\\('items',[]\\); [print\\(f'  result_id={i[\\\\\"id\\\\\"]} rank={i[\\\\\"rank\\\\\"]} perf={i[\\\\\"performance\\\\\"]} target={i[\\\\\"target_name\\\\\"]}'\\) for i in items]\")"
     ]
   }
 }

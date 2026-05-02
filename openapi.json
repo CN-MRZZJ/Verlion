@@ -1,0 +1,3206 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sports-Point API",
+    "version": "1.0.0",
+    "description": "运动会积分与成绩管理系统对外 API 文档。"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "数据查询"
+    },
+    {
+      "name": "运动员"
+    },
+    {
+      "name": "运动员报名"
+    },
+    {
+      "name": "项目"
+    },
+    {
+      "name": "项目流程"
+    },
+    {
+      "name": "导入"
+    },
+    {
+      "name": "导出"
+    },
+    {
+      "name": "成绩"
+    },
+    {
+      "name": "队伍"
+    },
+    {
+      "name": "队伍成员"
+    },
+    {
+      "name": "公示"
+    },
+    {
+      "name": "规则"
+    },
+    {
+      "name": "维护"
+    },
+    {
+      "name": "系统状态"
+    }
+  ],
+  "paths": {
+    "/api/v1/datasets/{view}": {
+      "get": {
+        "tags": [
+          "数据查询"
+        ],
+        "summary": "分页查询数据视图",
+        "description": "查询项目、运动员、部门、队伍、报名、成绩、积分榜等数据视图。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "view",
+            "in": "path",
+            "required": true,
+            "description": "数据视图名称",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "页码，从 1 开始",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "每页数量",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "description": "关键词筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "department_name",
+            "in": "query",
+            "required": false,
+            "description": "部门名称筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "description": "性别筛选：male/female/mixed",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "age_group",
+            "in": "query",
+            "required": false,
+            "description": "组别筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "项目类别筛选：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scoring_strategy",
+            "in": "query",
+            "required": false,
+            "description": "成绩策略筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "description": "排序字段",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "required": false,
+            "description": "排序方向：asc/desc",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/athletes": {
+      "get": {
+        "tags": [
+          "运动员"
+        ],
+        "summary": "查询运动员",
+        "description": "按类型和关键词查询运动员列表。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Athlete"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "page_size": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "athlete_type",
+            "in": "query",
+            "required": false,
+            "description": "运动员类型：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "description": "运动员号、姓名或单位关键词",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "运动员"
+        ],
+        "summary": "新增运动员",
+        "description": "按单位名称新增竞技或趣味运动员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAthleteRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAthleteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/athletes/delete": {
+      "post": {
+        "tags": [
+          "运动员"
+        ],
+        "summary": "删除运动员（表单兼容）",
+        "description": "通过运动员类型和运动员号删除运动员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAthleteRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAthleteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/athletes/{athlete_type}/{athlete_no}": {
+      "delete": {
+        "tags": [
+          "运动员"
+        ],
+        "summary": "删除运动员",
+        "description": "通过路径参数删除运动员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "athlete_type",
+            "in": "path",
+            "required": true,
+            "description": "运动员类型：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "athlete_no",
+            "in": "path",
+            "required": true,
+            "description": "运动员号",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/athletes/{athlete_type}/{athlete_no}/registrations": {
+      "get": {
+        "tags": [
+          "运动员报名"
+        ],
+        "summary": "查询运动员已报名项目",
+        "description": "查询指定运动员已经报名的个人项目。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Registration"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "athlete_type",
+            "in": "path",
+            "required": true,
+            "description": "运动员类型：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "athlete_no",
+            "in": "path",
+            "required": true,
+            "description": "运动员号",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/athletes/registered-events": {
+      "get": {
+        "tags": [
+          "运动员报名"
+        ],
+        "summary": "查询运动员已报名项目（兼容）",
+        "description": "通过查询参数查询指定运动员已经报名的个人项目。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Registration"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "athlete_type",
+            "in": "query",
+            "required": true,
+            "description": "运动员类型：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "athlete_no",
+            "in": "query",
+            "required": true,
+            "description": "运动员号",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/athletes/{athlete_type}/{athlete_no}/registrations/{event_id}": {
+      "post": {
+        "tags": [
+          "运动员报名"
+        ],
+        "summary": "增加运动员报名",
+        "description": "为指定运动员增加一个个人项目报名。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "athlete_type",
+            "in": "path",
+            "required": true,
+            "description": "运动员类型：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "athlete_no",
+            "in": "path",
+            "required": true,
+            "description": "运动员号",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "description": "项目 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "运动员报名"
+        ],
+        "summary": "删除运动员报名",
+        "description": "移除指定运动员的一个个人项目报名。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "athlete_type",
+            "in": "path",
+            "required": true,
+            "description": "运动员类型：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "athlete_no",
+            "in": "path",
+            "required": true,
+            "description": "运动员号",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "description": "项目 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/athletes/registrations/add": {
+      "post": {
+        "tags": [
+          "运动员报名"
+        ],
+        "summary": "增加运动员报名（表单兼容）",
+        "description": "通过表单或 JSON 为运动员增加个人项目报名。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/athletes/registrations/remove": {
+      "post": {
+        "tags": [
+          "运动员报名"
+        ],
+        "summary": "删除运动员报名（表单兼容）",
+        "description": "通过表单或 JSON 移除运动员个人项目报名。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "tags": [
+          "项目"
+        ],
+        "summary": "查询项目列表",
+        "description": "返回全部比赛项目。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/progress": {
+      "get": {
+        "tags": [
+          "项目流程"
+        ],
+        "summary": "查询项目流程状态",
+        "description": "查询所有项目的成绩录入和公示打印完成状态。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventProgress"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{event_id}/progress": {
+      "put": {
+        "tags": [
+          "项目流程"
+        ],
+        "summary": "更新项目流程状态",
+        "description": "更新指定项目的成绩录入完成和打印完成状态。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "description": "项目 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProgressRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProgressRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/progress/update": {
+      "post": {
+        "tags": [
+          "项目流程"
+        ],
+        "summary": "更新项目流程状态（表单兼容）",
+        "description": "通过表单或 JSON 更新项目流程状态。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProgressRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProgressRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exports/{view}": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "导出数据视图 CSV",
+        "description": "按筛选条件导出指定数据视图的 CSV 文件。",
+        "responses": {
+          "200": {
+            "description": "CSV 文件",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "view",
+            "in": "path",
+            "required": true,
+            "description": "数据视图名称",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "description": "关键词筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "department_name",
+            "in": "query",
+            "required": false,
+            "description": "部门名称筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "description": "性别筛选：male/female/mixed",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "age_group",
+            "in": "query",
+            "required": false,
+            "description": "组别筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "项目类别筛选：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scoring_strategy",
+            "in": "query",
+            "required": false,
+            "description": "成绩策略筛选",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/imports/setup": {
+      "post": {
+        "tags": [
+          "导入"
+        ],
+        "summary": "设置比赛日期",
+        "description": "初始化或更新比赛日期。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMeetDateRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMeetDateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/templates/{name}": {
+      "get": {
+        "tags": [
+          "导入"
+        ],
+        "summary": "下载导入模板",
+        "description": "下载静态 CSV 导入模板文件。",
+        "responses": {
+          "200": {
+            "description": "CSV 模板文件",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "description": "模板文件名或路径",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/imports/registrations/template": {
+      "get": {
+        "tags": [
+          "导入"
+        ],
+        "summary": "下载报名矩阵模板",
+        "description": "按项目类别生成报名矩阵 CSV 模板。",
+        "responses": {
+          "200": {
+            "description": "CSV 模板文件",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "description": "项目类别：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/imports/events": {
+      "post": {
+        "tags": [
+          "导入"
+        ],
+        "summary": "导入项目 CSV",
+        "description": "上传并导入项目 CSV 文件。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV 文件"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/athletes/{athlete_type}": {
+      "post": {
+        "tags": [
+          "导入"
+        ],
+        "summary": "导入运动员 CSV",
+        "description": "上传并导入竞技或趣味运动员名单 CSV 文件。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "athlete_type",
+            "in": "path",
+            "required": true,
+            "description": "运动员类型：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV 文件"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/registrations/{target_category}": {
+      "post": {
+        "tags": [
+          "导入"
+        ],
+        "summary": "导入报名矩阵 CSV",
+        "description": "上传并导入竞技或趣味项目报名矩阵 CSV 文件。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "target_category",
+            "in": "path",
+            "required": true,
+            "description": "项目类别：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV 文件"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/clear-data": {
+      "post": {
+        "tags": [
+          "维护"
+        ],
+        "summary": "清空指定数据表",
+        "description": "按确认文本、确认码和勾选状态清空指定业务表数据。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClearDataRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ClearDataRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/report-environment": {
+      "post": {
+        "tags": [
+          "公示"
+        ],
+        "summary": "保存公示环境信息",
+        "description": "保存成绩公示单使用的日期、天气、风向、温度等环境信息。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportEnvironmentRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportEnvironmentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notices/personal-result.xlsx": {
+      "get": {
+        "tags": [
+          "公示"
+        ],
+        "summary": "导出个人成绩公示 XLSX",
+        "description": "按项目和模板导出个人项目成绩公示单。",
+        "responses": {
+          "200": {
+            "description": "XLSX 文件",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": true,
+            "description": "项目 ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "template_name",
+            "in": "query",
+            "required": true,
+            "description": "XLSX 模板文件名",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/notices/personal-result.pdf": {
+      "get": {
+        "tags": [
+          "公示"
+        ],
+        "summary": "预览个人成绩公示 PDF",
+        "description": "按项目和模板生成个人项目成绩公示 PDF。",
+        "responses": {
+          "200": {
+            "description": "PDF 文件",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": true,
+            "description": "项目 ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "template_name",
+            "in": "query",
+            "required": true,
+            "description": "XLSX 模板文件名",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/notices/team-result.xlsx": {
+      "get": {
+        "tags": [
+          "公示"
+        ],
+        "summary": "导出团体成绩公示 XLSX",
+        "description": "按项目和模板导出团体项目成绩公示单。",
+        "responses": {
+          "200": {
+            "description": "XLSX 文件",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": true,
+            "description": "项目 ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "template_name",
+            "in": "query",
+            "required": true,
+            "description": "XLSX 模板文件名",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/notices/team-result.pdf": {
+      "get": {
+        "tags": [
+          "公示"
+        ],
+        "summary": "预览团体成绩公示 PDF",
+        "description": "按项目和模板生成团体项目成绩公示 PDF。",
+        "responses": {
+          "200": {
+            "description": "PDF 文件",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": true,
+            "description": "项目 ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "template_name",
+            "in": "query",
+            "required": true,
+            "description": "XLSX 模板文件名",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/results": {
+      "get": {
+        "tags": [
+          "成绩"
+        ],
+        "summary": "分页查询成绩",
+        "description": "分页查询成绩记录。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Result"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "page_size": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "页码，从 1 开始",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "每页数量",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "description": "关键词筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "department_name",
+            "in": "query",
+            "required": false,
+            "description": "部门名称筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "description": "性别筛选：male/female/mixed",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "age_group",
+            "in": "query",
+            "required": false,
+            "description": "组别筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "项目类别筛选：competitive/fun",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scoring_strategy",
+            "in": "query",
+            "required": false,
+            "description": "成绩策略筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "description": "排序字段",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "required": false,
+            "description": "排序方向：asc/desc",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "成绩"
+        ],
+        "summary": "录入成绩",
+        "description": "录入个人或团体项目成绩，并按规则计算积分。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResultRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResultRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules": {
+      "get": {
+        "tags": [
+          "规则"
+        ],
+        "summary": "读取规则配置",
+        "description": "读取当前积分、成绩策略和组别规则配置。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "规则"
+        ],
+        "summary": "保存规则配置",
+        "description": "保存完整规则配置对象。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleSaveRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleSaveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams": {
+      "get": {
+        "tags": [
+          "队伍"
+        ],
+        "summary": "查询队伍",
+        "description": "按项目、部门和关键词查询队伍列表。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Team"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "description": "队伍或成员关键词",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "department_name",
+            "in": "query",
+            "required": false,
+            "description": "部门名称",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": false,
+            "description": "项目 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "队伍"
+        ],
+        "summary": "新增队伍",
+        "description": "为指定部门和团体项目新增队伍。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTeamRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTeamRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams/batch-add": {
+      "post": {
+        "tags": [
+          "队伍"
+        ],
+        "summary": "批量新增队伍",
+        "description": "按多个部门为同一个团体项目批量创建队伍。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchAddTeamsRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchAddTeamsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams/delete": {
+      "post": {
+        "tags": [
+          "队伍"
+        ],
+        "summary": "删除队伍（表单兼容）",
+        "description": "通过队伍 ID 删除队伍。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteTeamRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteTeamRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{team_id}": {
+      "delete": {
+        "tags": [
+          "队伍"
+        ],
+        "summary": "删除队伍",
+        "description": "通过路径参数删除队伍。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "description": "队伍 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/teams/{team_id}/members": {
+      "get": {
+        "tags": [
+          "队伍成员"
+        ],
+        "summary": "查询队伍成员",
+        "description": "查询指定队伍成员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TeamMember"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "description": "队伍 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "队伍成员"
+        ],
+        "summary": "增加队伍成员",
+        "description": "为指定队伍增加运动员成员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "description": "队伍 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "队伍成员"
+        ],
+        "summary": "删除队伍成员",
+        "description": "从指定队伍移除运动员成员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "description": "队伍 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams/members": {
+      "get": {
+        "tags": [
+          "队伍成员"
+        ],
+        "summary": "查询队伍成员（兼容）",
+        "description": "通过查询参数查询指定队伍成员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TeamMember"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "query",
+            "required": true,
+            "description": "队伍 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/teams/members/add": {
+      "post": {
+        "tags": [
+          "队伍成员"
+        ],
+        "summary": "增加队伍成员（表单兼容）",
+        "description": "通过表单或 JSON 增加队伍成员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams/members/remove": {
+      "post": {
+        "tags": [
+          "队伍成员"
+        ],
+        "summary": "删除队伍成员（表单兼容）",
+        "description": "通过表单或 JSON 删除队伍成员。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "tags": [
+          "系统状态"
+        ],
+        "summary": "查询初始化状态",
+        "description": "查询系统初始化检查结果。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InitStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OkResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": true
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "example": "参数错误"
+          }
+        },
+        "required": [
+          "ok",
+          "error"
+        ]
+      },
+      "Athlete": {
+        "type": "object",
+        "properties": {
+          "age_group": {
+            "type": "string",
+            "description": "组别"
+          },
+          "athlete_no": {
+            "type": "string",
+            "description": "运动员号"
+          },
+          "athlete_ref_id": {
+            "type": "integer",
+            "description": "运动员数据库 ID"
+          },
+          "athlete_type": {
+            "type": "string",
+            "description": "运动员类型：competitive/fun"
+          },
+          "department_name": {
+            "type": "string",
+            "description": "归属单位"
+          },
+          "gender": {
+            "type": "string",
+            "description": "性别：male/female"
+          },
+          "name": {
+            "type": "string",
+            "description": "姓名"
+          },
+          "registered_events": {
+            "type": "string",
+            "description": "已报名项目列表"
+          },
+          "registration_count": {
+            "type": "integer",
+            "description": "已报名项目数"
+          }
+        }
+      },
+      "Registration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "项目 ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "项目名称"
+          },
+          "label": {
+            "type": "string",
+            "description": "项目完整显示名"
+          },
+          "age_group": {
+            "type": "string",
+            "description": "组别"
+          },
+          "gender": {
+            "type": "string",
+            "description": "性别"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "项目 ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "项目名称"
+          },
+          "category": {
+            "type": "string",
+            "description": "项目类别：competitive/fun"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "项目类型：track/field/fun"
+          },
+          "scoring_strategy": {
+            "type": "string",
+            "description": "计分策略：time/length/count/count_miss"
+          },
+          "gender": {
+            "type": "string",
+            "description": "性别限制：male/female/mixed"
+          },
+          "age_group": {
+            "type": "string",
+            "description": "组别"
+          },
+          "is_individual": {
+            "type": "integer",
+            "description": "是否个人项目：1=个人 0=团体"
+          }
+        }
+      },
+      "EventProgress": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "项目 ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "项目名称"
+          },
+          "category": {
+            "type": "string",
+            "description": "项目类别"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "项目类型"
+          },
+          "scoring_strategy": {
+            "type": "string",
+            "description": "计分策略"
+          },
+          "gender": {
+            "type": "string",
+            "description": "性别"
+          },
+          "age_group": {
+            "type": "string",
+            "description": "组别"
+          },
+          "is_individual": {
+            "type": "integer",
+            "description": "是否个人项目"
+          },
+          "record_done": {
+            "type": "integer",
+            "description": "成绩录入是否完成：0/1"
+          },
+          "print_done": {
+            "type": "integer",
+            "description": "公示打印是否完成：0/1"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "更新时间"
+          }
+        }
+      },
+      "Team": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "队伍 ID"
+          },
+          "team_name": {
+            "type": "string",
+            "description": "队伍名称"
+          },
+          "department_name": {
+            "type": "string",
+            "description": "归属单位"
+          },
+          "event_id": {
+            "type": "integer",
+            "description": "所属项目 ID"
+          },
+          "event_name": {
+            "type": "string",
+            "description": "所属项目名称"
+          },
+          "gender": {
+            "type": "string",
+            "description": "项目性别"
+          },
+          "age_group": {
+            "type": "string",
+            "description": "项目组别"
+          },
+          "member_count": {
+            "type": "integer",
+            "description": "成员数"
+          },
+          "members_summary": {
+            "type": "string",
+            "description": "成员姓名摘要"
+          }
+        }
+      },
+      "TeamMember": {
+        "type": "object",
+        "properties": {
+          "athlete_no": {
+            "type": "string",
+            "description": "运动员号"
+          },
+          "athlete_type": {
+            "type": "string",
+            "description": "运动员类型"
+          },
+          "name": {
+            "type": "string",
+            "description": "姓名"
+          },
+          "gender": {
+            "type": "string",
+            "description": "性别"
+          },
+          "department_name": {
+            "type": "string",
+            "description": "归属单位"
+          },
+          "athlete_ref_id": {
+            "type": "integer",
+            "description": "运动员数据库 ID"
+          }
+        }
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "成绩 ID"
+          },
+          "event_name": {
+            "type": "string",
+            "description": "项目名称"
+          },
+          "category": {
+            "type": "string",
+            "description": "项目类别"
+          },
+          "scoring_strategy": {
+            "type": "string",
+            "description": "计分策略"
+          },
+          "age_group": {
+            "type": "string",
+            "description": "组别"
+          },
+          "result_type": {
+            "type": "string",
+            "description": "成绩类型：athlete/team"
+          },
+          "athlete_type": {
+            "type": "string",
+            "description": "运动员类型"
+          },
+          "target_name": {
+            "type": "string",
+            "description": "运动员名或队伍名"
+          },
+          "department_name": {
+            "type": "string",
+            "description": "归属单位"
+          },
+          "rank": {
+            "type": "integer",
+            "description": "名次"
+          },
+          "points": {
+            "type": "integer",
+            "description": "积分"
+          },
+          "performance": {
+            "type": "string",
+            "description": "成绩文本"
+          },
+          "entered_by": {
+            "type": "string",
+            "description": "录入人员"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "创建时间"
+          }
+        }
+      },
+      "CheckItem": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "检查项标识"
+          },
+          "label": {
+            "type": "string",
+            "description": "检查项名称"
+          },
+          "ok": {
+            "type": "boolean",
+            "description": "是否通过"
+          },
+          "detail": {
+            "type": "string",
+            "description": "详情描述"
+          }
+        }
+      },
+      "Summary": {
+        "type": "object",
+        "properties": {
+          "athlete_count": {
+            "type": "integer",
+            "description": "运动员总数"
+          },
+          "department_count": {
+            "type": "integer",
+            "description": "部门总数"
+          },
+          "event_count": {
+            "type": "integer",
+            "description": "项目总数"
+          }
+        }
+      },
+      "InitStatus": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "description": "请求是否成功"
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "初始化是否完成"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckItem"
+            },
+            "description": "各项检查结果"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/Summary"
+          }
+        }
+      },
+      "RuleConfig": {
+        "type": "object",
+        "properties": {
+          "attempt_policy": {
+            "type": "string",
+            "description": "多次尝试策略：best/latest"
+          },
+          "age_group_options": {
+            "type": "object",
+            "description": "组别配置"
+          },
+          "event_scoring_strategy": {
+            "type": "object",
+            "description": "项目计分策略映射"
+          },
+          "point_rule": {
+            "type": "object",
+            "description": "名次积分规则"
+          }
+        }
+      },
+      "RuleConfigResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "config": {
+            "$ref": "#/components/schemas/RuleConfig"
+          }
+        }
+      },
+      "CreateAthleteRequest": {
+        "type": "object",
+        "properties": {
+          "athlete_type": {
+            "type": "string",
+            "description": "运动员类型：competitive/fun"
+          },
+          "athlete_no": {
+            "type": "string",
+            "description": "运动员号"
+          },
+          "name": {
+            "type": "string",
+            "description": "姓名"
+          },
+          "gender": {
+            "type": "string",
+            "description": "性别：male/female"
+          },
+          "department_name": {
+            "type": "string",
+            "description": "归属单位"
+          },
+          "age_group": {
+            "type": "string",
+            "description": "年龄组，可为空"
+          }
+        },
+        "required": [
+          "athlete_type",
+          "athlete_no",
+          "name",
+          "gender",
+          "department_name"
+        ]
+      },
+      "DeleteAthleteRequest": {
+        "type": "object",
+        "properties": {
+          "athlete_type": {
+            "type": "string",
+            "description": "运动员类型：competitive/fun"
+          },
+          "athlete_no": {
+            "type": "string",
+            "description": "运动员号"
+          }
+        },
+        "required": [
+          "athlete_type",
+          "athlete_no"
+        ]
+      },
+      "RegistrationRequest": {
+        "type": "object",
+        "properties": {
+          "athlete_type": {
+            "type": "string",
+            "description": "运动员类型：competitive/fun"
+          },
+          "athlete_no": {
+            "type": "string",
+            "description": "运动员号"
+          },
+          "event_id": {
+            "type": "integer",
+            "description": "项目 ID"
+          }
+        },
+        "required": [
+          "athlete_type",
+          "athlete_no",
+          "event_id"
+        ]
+      },
+      "UpdateProgressRequest": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "integer",
+            "description": "项目 ID（表单兼容用）"
+          },
+          "record_done": {
+            "type": "boolean",
+            "description": "成绩录入是否完成"
+          },
+          "print_done": {
+            "type": "boolean",
+            "description": "公示打印是否完成"
+          }
+        }
+      },
+      "SetMeetDateRequest": {
+        "type": "object",
+        "properties": {
+          "meet_date": {
+            "type": "string",
+            "format": "date",
+            "description": "比赛日期，格式 YYYY-MM-DD"
+          }
+        },
+        "required": [
+          "meet_date"
+        ]
+      },
+      "CreateResultRequest": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "integer",
+            "description": "项目 ID"
+          },
+          "rank": {
+            "type": "integer",
+            "description": "名次，不传则自动推定"
+          },
+          "athlete_type": {
+            "type": "string",
+            "description": "运动员类型：competitive/fun"
+          },
+          "athlete_id": {
+            "type": "integer",
+            "description": "运动员数据库 ID"
+          },
+          "athlete_no": {
+            "type": "string",
+            "description": "运动员号（可替代 athlete_id）"
+          },
+          "team_id": {
+            "type": "integer",
+            "description": "队伍 ID（团体项目用）"
+          },
+          "performance": {
+            "type": "string",
+            "description": "成绩文本"
+          },
+          "entered_by": {
+            "type": "string",
+            "description": "录入人员姓名或编号"
+          }
+        },
+        "required": [
+          "event_id"
+        ]
+      },
+      "RuleSaveRequest": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "type": "object",
+            "description": "完整规则配置对象",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "config"
+        ]
+      },
+      "CreateTeamRequest": {
+        "type": "object",
+        "properties": {
+          "department_name": {
+            "type": "string",
+            "description": "部门名称"
+          },
+          "event_id": {
+            "type": "integer",
+            "description": "项目 ID"
+          },
+          "team_name": {
+            "type": "string",
+            "description": "队伍名称"
+          }
+        },
+        "required": [
+          "department_name",
+          "event_id",
+          "team_name"
+        ]
+      },
+      "BatchAddTeamsRequest": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "integer",
+            "description": "项目 ID"
+          },
+          "department_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "部门名称列表"
+          }
+        },
+        "required": [
+          "event_id",
+          "department_names"
+        ]
+      },
+      "DeleteTeamRequest": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "integer",
+            "description": "队伍 ID"
+          }
+        },
+        "required": [
+          "team_id"
+        ]
+      },
+      "TeamMemberRequest": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "integer",
+            "description": "队伍 ID"
+          },
+          "athlete_type": {
+            "type": "string",
+            "description": "运动员类型：competitive/fun"
+          },
+          "athlete_no": {
+            "type": "string",
+            "description": "运动员号"
+          }
+        },
+        "required": [
+          "team_id",
+          "athlete_type",
+          "athlete_no"
+        ]
+      },
+      "ClearDataRequest": {
+        "type": "object",
+        "properties": {
+          "tables": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "要清空的数据表标识"
+          },
+          "confirm_text": {
+            "type": "string",
+            "description": "确认文本，必须为 DELETE"
+          },
+          "confirm_code": {
+            "type": "string",
+            "description": "确认码，格式为 CLEAR-{n}"
+          },
+          "acknowledged": {
+            "type": "boolean",
+            "description": "是否已确认风险"
+          }
+        },
+        "required": [
+          "tables",
+          "confirm_text",
+          "confirm_code",
+          "acknowledged"
+        ]
+      },
+      "ReportEnvironmentRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "日期"
+          },
+          "wind_direction": {
+            "type": "string",
+            "description": "风向"
+          },
+          "wind_speed": {
+            "type": "string",
+            "description": "风速"
+          },
+          "air_quality": {
+            "type": "string",
+            "description": "空气质量"
+          },
+          "weather": {
+            "type": "string",
+            "description": "天气"
+          },
+          "temperature_high": {
+            "type": "string",
+            "description": "最高温"
+          },
+          "temperature_low": {
+            "type": "string",
+            "description": "最低温"
+          }
+        }
+      }
+    }
+  }
+}

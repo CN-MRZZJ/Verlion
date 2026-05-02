@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+# ── Shared response schemas ──────────────────────────────────────────
 
 JSON_OK = {
     "type": "object",
@@ -22,6 +23,307 @@ JSON_ERROR = {
     "required": ["ok", "error"],
 }
 
+# ── Data model schemas ───────────────────────────────────────────────
+
+ATHLETE = {
+    "type": "object",
+    "properties": {
+        "age_group": {"type": "string", "description": "组别"},
+        "athlete_no": {"type": "string", "description": "运动员号"},
+        "athlete_ref_id": {"type": "integer", "description": "运动员数据库 ID"},
+        "athlete_type": {"type": "string", "description": "运动员类型：competitive/fun"},
+        "department_name": {"type": "string", "description": "归属单位"},
+        "gender": {"type": "string", "description": "性别：male/female"},
+        "name": {"type": "string", "description": "姓名"},
+        "registered_events": {"type": "string", "description": "已报名项目列表"},
+        "registration_count": {"type": "integer", "description": "已报名项目数"},
+    },
+}
+
+REGISTRATION = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "项目 ID"},
+        "name": {"type": "string", "description": "项目名称"},
+        "label": {"type": "string", "description": "项目完整显示名"},
+        "age_group": {"type": "string", "description": "组别"},
+        "gender": {"type": "string", "description": "性别"},
+    },
+}
+
+EVENT = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "项目 ID"},
+        "name": {"type": "string", "description": "项目名称"},
+        "category": {"type": "string", "description": "项目类别：competitive/fun"},
+        "event_type": {"type": "string", "description": "项目类型：track/field/fun"},
+        "scoring_strategy": {"type": "string", "description": "计分策略：time/length/count/count_miss"},
+        "gender": {"type": "string", "description": "性别限制：male/female/mixed"},
+        "age_group": {"type": "string", "description": "组别"},
+        "is_individual": {"type": "integer", "description": "是否个人项目：1=个人 0=团体"},
+    },
+}
+
+EVENT_PROGRESS = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "项目 ID"},
+        "name": {"type": "string", "description": "项目名称"},
+        "category": {"type": "string", "description": "项目类别"},
+        "event_type": {"type": "string", "description": "项目类型"},
+        "scoring_strategy": {"type": "string", "description": "计分策略"},
+        "gender": {"type": "string", "description": "性别"},
+        "age_group": {"type": "string", "description": "组别"},
+        "is_individual": {"type": "integer", "description": "是否个人项目"},
+        "record_done": {"type": "integer", "description": "成绩录入是否完成：0/1"},
+        "print_done": {"type": "integer", "description": "公示打印是否完成：0/1"},
+        "updated_at": {"type": "string", "description": "更新时间"},
+    },
+}
+
+TEAM = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "队伍 ID"},
+        "team_name": {"type": "string", "description": "队伍名称"},
+        "department_name": {"type": "string", "description": "归属单位"},
+        "event_id": {"type": "integer", "description": "所属项目 ID"},
+        "event_name": {"type": "string", "description": "所属项目名称"},
+        "gender": {"type": "string", "description": "项目性别"},
+        "age_group": {"type": "string", "description": "项目组别"},
+        "member_count": {"type": "integer", "description": "成员数"},
+        "members_summary": {"type": "string", "description": "成员姓名摘要"},
+    },
+}
+
+TEAM_MEMBER = {
+    "type": "object",
+    "properties": {
+        "athlete_no": {"type": "string", "description": "运动员号"},
+        "athlete_type": {"type": "string", "description": "运动员类型"},
+        "name": {"type": "string", "description": "姓名"},
+        "gender": {"type": "string", "description": "性别"},
+        "department_name": {"type": "string", "description": "归属单位"},
+        "athlete_ref_id": {"type": "integer", "description": "运动员数据库 ID"},
+    },
+}
+
+RESULT = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "成绩 ID"},
+        "event_name": {"type": "string", "description": "项目名称"},
+        "category": {"type": "string", "description": "项目类别"},
+        "scoring_strategy": {"type": "string", "description": "计分策略"},
+        "age_group": {"type": "string", "description": "组别"},
+        "result_type": {"type": "string", "description": "成绩类型：athlete/team"},
+        "athlete_type": {"type": "string", "description": "运动员类型"},
+        "target_name": {"type": "string", "description": "运动员名或队伍名"},
+        "department_name": {"type": "string", "description": "归属单位"},
+        "rank": {"type": "integer", "description": "名次"},
+        "points": {"type": "integer", "description": "积分"},
+        "performance": {"type": "string", "description": "成绩文本"},
+        "entered_by": {"type": "string", "description": "录入人员"},
+        "created_at": {"type": "string", "description": "创建时间"},
+    },
+}
+
+CHECK_ITEM = {
+    "type": "object",
+    "properties": {
+        "key": {"type": "string", "description": "检查项标识"},
+        "label": {"type": "string", "description": "检查项名称"},
+        "ok": {"type": "boolean", "description": "是否通过"},
+        "detail": {"type": "string", "description": "详情描述"},
+    },
+}
+
+SUMMARY = {
+    "type": "object",
+    "properties": {
+        "athlete_count": {"type": "integer", "description": "运动员总数"},
+        "department_count": {"type": "integer", "description": "部门总数"},
+        "event_count": {"type": "integer", "description": "项目总数"},
+    },
+}
+
+INIT_STATUS = {
+    "type": "object",
+    "properties": {
+        "ok": {"type": "boolean", "description": "请求是否成功"},
+        "completed": {"type": "boolean", "description": "初始化是否完成"},
+        "checks": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/CheckItem"},
+            "description": "各项检查结果",
+        },
+        "summary": {"$ref": "#/components/schemas/Summary"},
+    },
+}
+
+RULE_CONFIG = {
+    "type": "object",
+    "properties": {
+        "attempt_policy": {"type": "string", "description": "多次尝试策略：best/latest"},
+        "age_group_options": {"type": "object", "description": "组别配置"},
+        "event_scoring_strategy": {"type": "object", "description": "项目计分策略映射"},
+        "point_rule": {"type": "object", "description": "名次积分规则"},
+    },
+}
+
+RULE_CONFIG_RESPONSE = {
+    "type": "object",
+    "properties": {
+        "ok": {"type": "boolean"},
+        "config": {"$ref": "#/components/schemas/RuleConfig"},
+    },
+}
+
+# ── Request schemas ──────────────────────────────────────────────────
+
+CREATE_ATHLETE_REQUEST = {
+    "type": "object",
+    "properties": {
+        "athlete_type": {"type": "string", "description": "运动员类型：competitive/fun"},
+        "athlete_no": {"type": "string", "description": "运动员号"},
+        "name": {"type": "string", "description": "姓名"},
+        "gender": {"type": "string", "description": "性别：male/female"},
+        "department_name": {"type": "string", "description": "归属单位"},
+        "age_group": {"type": "string", "description": "年龄组，可为空"},
+    },
+    "required": ["athlete_type", "athlete_no", "name", "gender", "department_name"],
+}
+
+DELETE_ATHLETE_REQUEST = {
+    "type": "object",
+    "properties": {
+        "athlete_type": {"type": "string", "description": "运动员类型：competitive/fun"},
+        "athlete_no": {"type": "string", "description": "运动员号"},
+    },
+    "required": ["athlete_type", "athlete_no"],
+}
+
+REGISTRATION_REQUEST = {
+    "type": "object",
+    "properties": {
+        "athlete_type": {"type": "string", "description": "运动员类型：competitive/fun"},
+        "athlete_no": {"type": "string", "description": "运动员号"},
+        "event_id": {"type": "integer", "description": "项目 ID"},
+    },
+    "required": ["athlete_type", "athlete_no", "event_id"],
+}
+
+UPDATE_PROGRESS_REQUEST = {
+    "type": "object",
+    "properties": {
+        "event_id": {"type": "integer", "description": "项目 ID（表单兼容用）"},
+        "record_done": {"type": "boolean", "description": "成绩录入是否完成"},
+        "print_done": {"type": "boolean", "description": "公示打印是否完成"},
+    },
+}
+
+SET_MEET_DATE_REQUEST = {
+    "type": "object",
+    "properties": {
+        "meet_date": {"type": "string", "format": "date", "description": "比赛日期，格式 YYYY-MM-DD"},
+    },
+    "required": ["meet_date"],
+}
+
+CREATE_RESULT_REQUEST = {
+    "type": "object",
+    "properties": {
+        "event_id": {"type": "integer", "description": "项目 ID"},
+        "rank": {"type": "integer", "description": "名次，不传则自动推定"},
+        "athlete_type": {"type": "string", "description": "运动员类型：competitive/fun"},
+        "athlete_id": {"type": "integer", "description": "运动员数据库 ID"},
+        "athlete_no": {"type": "string", "description": "运动员号（可替代 athlete_id）"},
+        "team_id": {"type": "integer", "description": "队伍 ID（团体项目用）"},
+        "performance": {"type": "string", "description": "成绩文本"},
+        "entered_by": {"type": "string", "description": "录入人员姓名或编号"},
+    },
+    "required": ["event_id"],
+}
+
+RULE_SAVE_REQUEST = {
+    "type": "object",
+    "properties": {
+        "config": {"type": "object", "description": "完整规则配置对象", "additionalProperties": True},
+    },
+    "required": ["config"],
+}
+
+CREATE_TEAM_REQUEST = {
+    "type": "object",
+    "properties": {
+        "department_name": {"type": "string", "description": "部门名称"},
+        "event_id": {"type": "integer", "description": "项目 ID"},
+        "team_name": {"type": "string", "description": "队伍名称"},
+    },
+    "required": ["department_name", "event_id", "team_name"],
+}
+
+BATCH_ADD_TEAMS_REQUEST = {
+    "type": "object",
+    "properties": {
+        "event_id": {"type": "integer", "description": "项目 ID"},
+        "department_names": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "部门名称列表",
+        },
+    },
+    "required": ["event_id", "department_names"],
+}
+
+DELETE_TEAM_REQUEST = {
+    "type": "object",
+    "properties": {
+        "team_id": {"type": "integer", "description": "队伍 ID"},
+    },
+    "required": ["team_id"],
+}
+
+TEAM_MEMBER_REQUEST = {
+    "type": "object",
+    "properties": {
+        "team_id": {"type": "integer", "description": "队伍 ID"},
+        "athlete_type": {"type": "string", "description": "运动员类型：competitive/fun"},
+        "athlete_no": {"type": "string", "description": "运动员号"},
+    },
+    "required": ["team_id", "athlete_type", "athlete_no"],
+}
+
+CLEAR_DATA_REQUEST = {
+    "type": "object",
+    "properties": {
+        "tables": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "要清空的数据表标识",
+        },
+        "confirm_text": {"type": "string", "description": "确认文本，必须为 DELETE"},
+        "confirm_code": {"type": "string", "description": "确认码，格式为 CLEAR-{n}"},
+        "acknowledged": {"type": "boolean", "description": "是否已确认风险"},
+    },
+    "required": ["tables", "confirm_text", "confirm_code", "acknowledged"],
+}
+
+REPORT_ENVIRONMENT_REQUEST = {
+    "type": "object",
+    "properties": {
+        "date": {"type": "string", "description": "日期"},
+        "wind_direction": {"type": "string", "description": "风向"},
+        "wind_speed": {"type": "string", "description": "风速"},
+        "air_quality": {"type": "string", "description": "空气质量"},
+        "weather": {"type": "string", "description": "天气"},
+        "temperature_high": {"type": "string", "description": "最高温"},
+        "temperature_low": {"type": "string", "description": "最低温"},
+    },
+}
+
+# ── Helper functions ─────────────────────────────────────────────────
 
 def _schema_ref(name: str) -> dict[str, str]:
     return {"$ref": f"#/components/schemas/{name}"}
@@ -33,6 +335,63 @@ def _json_response(description: str = "成功") -> dict[str, Any]:
         "content": {
             "application/json": {
                 "schema": _schema_ref("OkResponse"),
+            }
+        },
+    }
+
+
+def _typed_response(schema_name: str, description: str = "成功") -> dict[str, Any]:
+    return {
+        "description": description,
+        "content": {
+            "application/json": {
+                "schema": _schema_ref(schema_name),
+            }
+        },
+    }
+
+
+def _paginated_response(schema_name: str, description: str = "成功") -> dict[str, Any]:
+    schema = {
+        "type": "object",
+        "properties": {
+            "ok": {"type": "boolean"},
+            "items": {
+                "type": "array",
+                "items": _schema_ref(schema_name),
+            },
+            "total": {"type": "integer"},
+            "page": {"type": "integer"},
+            "page_size": {"type": "integer"},
+        },
+    }
+    return {
+        "description": description,
+        "content": {
+            "application/json": {
+                "schema": schema,
+            }
+        },
+    }
+
+
+def _item_list_response(schema_name: str, description: str = "成功") -> dict[str, Any]:
+    schema = {
+        "type": "object",
+        "properties": {
+            "ok": {"type": "boolean"},
+            "items": {
+                "type": "array",
+                "items": _schema_ref(schema_name),
+            },
+            "total": {"type": "integer"},
+        },
+    }
+    return {
+        "description": description,
+        "content": {
+            "application/json": {
+                "schema": schema,
             }
         },
     }
@@ -83,25 +442,23 @@ def _path(name: str, description: str, schema_type: str = "string") -> dict[str,
     }
 
 
-def _json_body(properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
+def _json_body_ref(
+    schema_name: str,
+    *,
+    form_compat: bool = True,
+) -> dict[str, Any]:
+    content: dict[str, Any] = {
+        "application/json": {
+            "schema": _schema_ref(schema_name),
+        },
+    }
+    if form_compat:
+        content["application/x-www-form-urlencoded"] = {
+            "schema": _schema_ref(schema_name),
+        }
     return {
         "required": True,
-        "content": {
-            "application/json": {
-                "schema": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required or [],
-                }
-            },
-            "application/x-www-form-urlencoded": {
-                "schema": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required or [],
-                }
-            },
-        },
+        "content": content,
     }
 
 
@@ -165,10 +522,6 @@ def get_openapi_spec() -> dict[str, Any]:
         _query("sort_dir", "排序方向：asc/desc"),
     ]
     export_filters = dataset_filters[2:8]
-    athlete_type_prop = {"type": "string", "description": "运动员类型：competitive/fun"}
-    athlete_no_prop = {"type": "string", "description": "运动员号"}
-    event_id_prop = {"type": "integer", "description": "项目 ID"}
-    team_id_prop = {"type": "integer", "description": "队伍 ID"}
 
     paths: dict[str, Any] = {
         "/api/v1/datasets/{view}": {
@@ -188,22 +541,13 @@ def get_openapi_spec() -> dict[str, Any]:
                     _query("athlete_type", "运动员类型：competitive/fun"),
                     _query("keyword", "运动员号、姓名或单位关键词"),
                 ],
+                success=_paginated_response("Athlete"),
             ),
             "post": _operation(
                 "运动员",
                 "新增运动员",
                 "按单位名称新增竞技或趣味运动员。",
-                request_body=_json_body(
-                    {
-                        "athlete_type": athlete_type_prop,
-                        "athlete_no": athlete_no_prop,
-                        "name": {"type": "string", "description": "姓名"},
-                        "gender": {"type": "string", "description": "性别：male/female"},
-                        "department_name": {"type": "string", "description": "归属单位"},
-                        "age_group": {"type": "string", "description": "年龄组，可为空"},
-                    },
-                    ["athlete_type", "athlete_no", "name", "gender", "department_name"],
-                ),
+                request_body=_json_body_ref("CreateAthleteRequest"),
             ),
         },
         "/api/v1/athletes/delete": {
@@ -211,7 +555,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "运动员",
                 "删除运动员（表单兼容）",
                 "通过运动员类型和运动员号删除运动员。",
-                request_body=_json_body({"athlete_type": athlete_type_prop, "athlete_no": athlete_no_prop}, ["athlete_type", "athlete_no"]),
+                request_body=_json_body_ref("DeleteAthleteRequest"),
             )
         },
         "/api/v1/athletes/{athlete_type}/{athlete_no}": {
@@ -228,6 +572,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "查询运动员已报名项目",
                 "查询指定运动员已经报名的个人项目。",
                 parameters=[_path("athlete_type", "运动员类型：competitive/fun"), _path("athlete_no", "运动员号")],
+                success=_item_list_response("Registration"),
             )
         },
         "/api/v1/athletes/registered-events": {
@@ -236,6 +581,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "查询运动员已报名项目（兼容）",
                 "通过查询参数查询指定运动员已经报名的个人项目。",
                 parameters=[_query("athlete_type", "运动员类型：competitive/fun", required=True), _query("athlete_no", "运动员号", required=True)],
+                success=_item_list_response("Registration"),
             )
         },
         "/api/v1/athletes/{athlete_type}/{athlete_no}/registrations/{event_id}": {
@@ -265,7 +611,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "运动员报名",
                 "增加运动员报名（表单兼容）",
                 "通过表单或 JSON 为运动员增加个人项目报名。",
-                request_body=_json_body({"athlete_type": athlete_type_prop, "athlete_no": athlete_no_prop, "event_id": event_id_prop}, ["athlete_type", "athlete_no", "event_id"]),
+                request_body=_json_body_ref("RegistrationRequest"),
             )
         },
         "/api/v1/athletes/registrations/remove": {
@@ -273,14 +619,24 @@ def get_openapi_spec() -> dict[str, Any]:
                 "运动员报名",
                 "删除运动员报名（表单兼容）",
                 "通过表单或 JSON 移除运动员个人项目报名。",
-                request_body=_json_body({"athlete_type": athlete_type_prop, "athlete_no": athlete_no_prop, "event_id": event_id_prop}, ["athlete_type", "athlete_no", "event_id"]),
+                request_body=_json_body_ref("RegistrationRequest"),
             )
         },
         "/api/v1/events": {
-            "get": _operation("项目", "查询项目列表", "返回全部比赛项目。")
+            "get": _operation(
+                "项目",
+                "查询项目列表",
+                "返回全部比赛项目。",
+                success=_item_list_response("Event"),
+            )
         },
         "/api/v1/events/progress": {
-            "get": _operation("项目流程", "查询项目流程状态", "查询所有项目的成绩录入和公示打印完成状态。")
+            "get": _operation(
+                "项目流程",
+                "查询项目流程状态",
+                "查询所有项目的成绩录入和公示打印完成状态。",
+                success=_item_list_response("EventProgress"),
+            )
         },
         "/api/v1/events/{event_id}/progress": {
             "put": _operation(
@@ -288,13 +644,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "更新项目流程状态",
                 "更新指定项目的成绩录入完成和打印完成状态。",
                 parameters=[_path("event_id", "项目 ID", "integer")],
-                request_body=_json_body(
-                    {
-                        "record_done": {"type": "boolean", "description": "成绩录入是否完成"},
-                        "print_done": {"type": "boolean", "description": "公示打印是否完成"},
-                    },
-                    ["record_done", "print_done"],
-                ),
+                request_body=_json_body_ref("UpdateProgressRequest"),
             )
         },
         "/api/v1/events/progress/update": {
@@ -302,14 +652,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "项目流程",
                 "更新项目流程状态（表单兼容）",
                 "通过表单或 JSON 更新项目流程状态。",
-                request_body=_json_body(
-                    {
-                        "event_id": event_id_prop,
-                        "record_done": {"type": "boolean", "description": "成绩录入是否完成"},
-                        "print_done": {"type": "boolean", "description": "公示打印是否完成"},
-                    },
-                    ["event_id"],
-                ),
+                request_body=_json_body_ref("UpdateProgressRequest"),
             )
         },
         "/api/v1/exports/{view}": {
@@ -326,7 +669,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "导入",
                 "设置比赛日期",
                 "初始化或更新比赛日期。",
-                request_body=_json_body({"meet_date": {"type": "string", "format": "date", "description": "比赛日期，格式 YYYY-MM-DD"}}, ["meet_date"]),
+                request_body=_json_body_ref("SetMeetDateRequest"),
             )
         },
         "/api/v1/imports/templates/{name}": {
@@ -373,15 +716,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "维护",
                 "清空指定数据表",
                 "按确认文本、确认码和勾选状态清空指定业务表数据。",
-                request_body=_json_body(
-                    {
-                        "tables": {"type": "array", "items": {"type": "string"}, "description": "要清空的数据表标识"},
-                        "confirm_text": {"type": "string", "description": "确认文本"},
-                        "confirm_code": {"type": "string", "description": "确认码"},
-                        "acknowledged": {"type": "boolean", "description": "是否已确认风险"},
-                    },
-                    ["tables", "confirm_text", "confirm_code", "acknowledged"],
-                ),
+                request_body=_json_body_ref("ClearDataRequest"),
             )
         },
         "/api/v1/settings/report-environment": {
@@ -389,17 +724,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "公示",
                 "保存公示环境信息",
                 "保存成绩公示单使用的日期、天气、风向、温度等环境信息。",
-                request_body=_json_body(
-                    {
-                        "date": {"type": "string", "description": "日期"},
-                        "wind_direction": {"type": "string", "description": "风向"},
-                        "wind_speed": {"type": "string", "description": "风速"},
-                        "air_quality": {"type": "string", "description": "空气质量"},
-                        "weather": {"type": "string", "description": "天气"},
-                        "temperature_high": {"type": "string", "description": "最高温"},
-                        "temperature_low": {"type": "string", "description": "最低温"},
-                    }
-                ),
+                request_body=_json_body_ref("ReportEnvironmentRequest"),
             )
         },
         "/api/v1/notices/personal-result.xlsx": {
@@ -439,33 +764,32 @@ def get_openapi_spec() -> dict[str, Any]:
             )
         },
         "/api/v1/results": {
-            "get": _operation("成绩", "分页查询成绩", "分页查询成绩记录。", parameters=deepcopy(dataset_filters)),
+            "get": _operation(
+                "成绩",
+                "分页查询成绩",
+                "分页查询成绩记录。",
+                parameters=deepcopy(dataset_filters),
+                success=_paginated_response("Result"),
+            ),
             "post": _operation(
                 "成绩",
                 "录入成绩",
                 "录入个人或团体项目成绩，并按规则计算积分。",
-                request_body=_json_body(
-                    {
-                        "event_id": event_id_prop,
-                        "rank": {"type": "integer", "description": "名次，可为空"},
-                        "athlete_type": athlete_type_prop,
-                        "athlete_id": {"type": "integer", "description": "运动员数据库 ID，可为空"},
-                        "athlete_no": athlete_no_prop,
-                        "team_id": team_id_prop,
-                        "performance": {"type": "string", "description": "成绩文本"},
-                        "entered_by": {"type": "string", "description": "录入人员姓名或编号"},
-                    },
-                    ["event_id"],
-                ),
+                request_body=_json_body_ref("CreateResultRequest"),
             ),
         },
         "/api/v1/rules": {
-            "get": _operation("规则", "读取规则配置", "读取当前积分、成绩策略和组别规则配置。"),
+            "get": _operation(
+                "规则",
+                "读取规则配置",
+                "读取当前积分、成绩策略和组别规则配置。",
+                success=_typed_response("RuleConfigResponse"),
+            ),
             "put": _operation(
                 "规则",
                 "保存规则配置",
                 "保存完整规则配置对象。",
-                request_body=_json_body({"config": {"type": "object", "description": "完整规则配置对象", "additionalProperties": True}}, ["config"]),
+                request_body=_json_body_ref("RuleSaveRequest"),
             ),
         },
         "/api/v1/teams": {
@@ -474,19 +798,13 @@ def get_openapi_spec() -> dict[str, Any]:
                 "查询队伍",
                 "按项目、部门和关键词查询队伍列表。",
                 parameters=[_query("keyword", "队伍或成员关键词"), _query("department_name", "部门名称"), _query("event_id", "项目 ID", "integer")],
+                success=_item_list_response("Team"),
             ),
             "post": _operation(
                 "队伍",
                 "新增队伍",
                 "为指定部门和团体项目新增队伍。",
-                request_body=_json_body(
-                    {
-                        "department_name": {"type": "string", "description": "部门名称"},
-                        "event_id": event_id_prop,
-                        "team_name": {"type": "string", "description": "队伍名称"},
-                    },
-                    ["department_name", "event_id", "team_name"],
-                ),
+                request_body=_json_body_ref("CreateTeamRequest"),
             ),
         },
         "/api/v1/teams/batch-add": {
@@ -494,47 +812,58 @@ def get_openapi_spec() -> dict[str, Any]:
                 "队伍",
                 "批量新增队伍",
                 "按多个部门为同一个团体项目批量创建队伍。",
-                request_body=_json_body(
-                    {
-                        "event_id": event_id_prop,
-                        "department_names": {"type": "array", "items": {"type": "string"}, "description": "部门名称列表"},
-                    },
-                    ["event_id", "department_names"],
-                ),
+                request_body=_json_body_ref("BatchAddTeamsRequest"),
             )
         },
         "/api/v1/teams/delete": {
-            "post": _operation("队伍", "删除队伍（表单兼容）", "通过队伍 ID 删除队伍。", request_body=_json_body({"team_id": team_id_prop}, ["team_id"]))
+            "post": _operation(
+                "队伍",
+                "删除队伍（表单兼容）",
+                "通过队伍 ID 删除队伍。",
+                request_body=_json_body_ref("DeleteTeamRequest"),
+            )
         },
         "/api/v1/teams/{team_id}": {
             "delete": _operation("队伍", "删除队伍", "通过路径参数删除队伍。", parameters=[_path("team_id", "队伍 ID", "integer")])
         },
         "/api/v1/teams/{team_id}/members": {
-            "get": _operation("队伍成员", "查询队伍成员", "查询指定队伍成员。", parameters=[_path("team_id", "队伍 ID", "integer")]),
+            "get": _operation(
+                "队伍成员",
+                "查询队伍成员",
+                "查询指定队伍成员。",
+                parameters=[_path("team_id", "队伍 ID", "integer")],
+                success=_item_list_response("TeamMember"),
+            ),
             "post": _operation(
                 "队伍成员",
                 "增加队伍成员",
                 "为指定队伍增加运动员成员。",
                 parameters=[_path("team_id", "队伍 ID", "integer")],
-                request_body=_json_body({"athlete_type": athlete_type_prop, "athlete_no": athlete_no_prop}, ["athlete_type", "athlete_no"]),
+                request_body=_json_body_ref("TeamMemberRequest"),
             ),
             "delete": _operation(
                 "队伍成员",
                 "删除队伍成员",
                 "从指定队伍移除运动员成员。",
                 parameters=[_path("team_id", "队伍 ID", "integer")],
-                request_body=_json_body({"athlete_type": athlete_type_prop, "athlete_no": athlete_no_prop}, ["athlete_type", "athlete_no"]),
+                request_body=_json_body_ref("TeamMemberRequest"),
             ),
         },
         "/api/v1/teams/members": {
-            "get": _operation("队伍成员", "查询队伍成员（兼容）", "通过查询参数查询指定队伍成员。", parameters=[_query("team_id", "队伍 ID", "integer", True)])
+            "get": _operation(
+                "队伍成员",
+                "查询队伍成员（兼容）",
+                "通过查询参数查询指定队伍成员。",
+                parameters=[_query("team_id", "队伍 ID", "integer", True)],
+                success=_item_list_response("TeamMember"),
+            )
         },
         "/api/v1/teams/members/add": {
             "post": _operation(
                 "队伍成员",
                 "增加队伍成员（表单兼容）",
                 "通过表单或 JSON 增加队伍成员。",
-                request_body=_json_body({"team_id": team_id_prop, "athlete_type": athlete_type_prop, "athlete_no": athlete_no_prop}, ["team_id", "athlete_type", "athlete_no"]),
+                request_body=_json_body_ref("TeamMemberRequest"),
             )
         },
         "/api/v1/teams/members/remove": {
@@ -542,11 +871,16 @@ def get_openapi_spec() -> dict[str, Any]:
                 "队伍成员",
                 "删除队伍成员（表单兼容）",
                 "通过表单或 JSON 删除队伍成员。",
-                request_body=_json_body({"team_id": team_id_prop, "athlete_type": athlete_type_prop, "athlete_no": athlete_no_prop}, ["team_id", "athlete_type", "athlete_no"]),
+                request_body=_json_body_ref("TeamMemberRequest"),
             )
         },
         "/api/v1/status": {
-            "get": _operation("系统状态", "查询初始化状态", "查询系统初始化检查结果。")
+            "get": _operation(
+                "系统状态",
+                "查询初始化状态",
+                "查询系统初始化检查结果。",
+                success=_typed_response("InitStatus"),
+            )
         },
     }
 
@@ -579,7 +913,31 @@ def get_openapi_spec() -> dict[str, Any]:
             "schemas": {
                 "OkResponse": JSON_OK,
                 "ErrorResponse": JSON_ERROR,
+                "Athlete": ATHLETE,
+                "Registration": REGISTRATION,
+                "Event": EVENT,
+                "EventProgress": EVENT_PROGRESS,
+                "Team": TEAM,
+                "TeamMember": TEAM_MEMBER,
+                "Result": RESULT,
+                "CheckItem": CHECK_ITEM,
+                "Summary": SUMMARY,
+                "InitStatus": INIT_STATUS,
+                "RuleConfig": RULE_CONFIG,
+                "RuleConfigResponse": RULE_CONFIG_RESPONSE,
+                "CreateAthleteRequest": CREATE_ATHLETE_REQUEST,
+                "DeleteAthleteRequest": DELETE_ATHLETE_REQUEST,
+                "RegistrationRequest": REGISTRATION_REQUEST,
+                "UpdateProgressRequest": UPDATE_PROGRESS_REQUEST,
+                "SetMeetDateRequest": SET_MEET_DATE_REQUEST,
+                "CreateResultRequest": CREATE_RESULT_REQUEST,
+                "RuleSaveRequest": RULE_SAVE_REQUEST,
+                "CreateTeamRequest": CREATE_TEAM_REQUEST,
+                "BatchAddTeamsRequest": BATCH_ADD_TEAMS_REQUEST,
+                "DeleteTeamRequest": DELETE_TEAM_REQUEST,
+                "TeamMemberRequest": TEAM_MEMBER_REQUEST,
+                "ClearDataRequest": CLEAR_DATA_REQUEST,
+                "ReportEnvironmentRequest": REPORT_ENVIRONMENT_REQUEST,
             }
         },
     }
-

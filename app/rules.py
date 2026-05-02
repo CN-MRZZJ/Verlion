@@ -24,6 +24,10 @@ def save_rule_config(config: dict[str, Any]) -> None:
 
 
 def validate_rule_config(config: dict[str, Any]) -> None:
+    attempt_policy = config.get("attempt_policy", "best")
+    if str(attempt_policy) not in ("best", "latest"):
+        raise ValueError("attempt_policy 必须为 best 或 latest")
+
     point_rule = config.get("point_rule")
     if not isinstance(point_rule, dict):
         raise ValueError("point_rule 必须是对象")
@@ -153,3 +157,10 @@ def team_event_default_age_group() -> str:
         return default_value
     options = age_group_options("event")
     return options[0]["value"] if options else "ALL"
+
+
+def attempt_policy() -> str:
+    policy = str(load_rule_config().get("attempt_policy", "best")).strip().lower()
+    if policy not in ("best", "latest"):
+        policy = "best"
+    return policy

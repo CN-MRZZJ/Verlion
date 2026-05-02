@@ -30,6 +30,7 @@ class Database:
             self._migrate_split_athlete_tables(conn)
             self._migrate_age_group_constraints(conn)
             self._migrate_results_entered_by(conn)
+            self._migrate_attempts_table(conn)
             conn.commit()
 
     def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
@@ -52,6 +53,29 @@ class Database:
     def _migrate_results_entered_by(self, conn: sqlite3.Connection) -> None:
         if self._table_exists(conn, "results") and "entered_by" not in self._table_columns(conn, "results"):
             conn.execute("ALTER TABLE results ADD COLUMN entered_by TEXT NOT NULL DEFAULT ''")
+
+    def _migrate_attempts_table(self, conn: sqlite3.Connection) -> None:
+        if not self._table_exists(conn, "attempts"):
+            conn.execute("""
+                CREATE TABLE attempts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id INTEGER NOT NULL,
+                    athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
+                    athlete_ref_id INTEGER,
+                    team_id INTEGER,
+                    rank INTEGER NOT NULL CHECK(rank >= 1),
+                    performance TEXT,
+                    entered_by TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY(event_id) REFERENCES events(id),
+                    FOREIGN KEY(team_id) REFERENCES teams(id),
+                    CHECK(
+                        (athlete_ref_id IS NOT NULL AND athlete_type IS NOT NULL AND team_id IS NULL)
+                        OR
+                        (athlete_ref_id IS NULL AND athlete_type IS NULL AND team_id IS NOT NULL)
+                    )
+                )
+            """)
 
     def _migrate_age_group_constraints(self, conn: sqlite3.Connection) -> None:
         if self._table_exists(conn, "athletes") and "age_group IN ('A','B','C')" in self._table_sql(conn, "athletes"):

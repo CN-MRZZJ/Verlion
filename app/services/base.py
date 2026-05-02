@@ -21,6 +21,7 @@ class MeetServiceBase:
         "team_members": "队伍成员",
         "athlete_registrations": "报名记录",
         "results": "成绩记录",
+        "attempts": "尝试记录",
     }
     REPORT_ENV_KEYS = [
         "date",

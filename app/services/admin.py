@@ -34,9 +34,11 @@ class MeetAdminMixin:
             clear_team_members = "team_members" in selected
             clear_regs = "athlete_registrations" in selected
             clear_results = "results" in selected
+            clear_attempts = "attempts" in selected or clear_results or clear_departments or clear_events
 
             if clear_departments:
                 _exec_delete(conn, "results", "DELETE FROM results")
+                _exec_delete(conn, "attempts", "DELETE FROM attempts")
                 _exec_delete(conn, "athlete_registrations", "DELETE FROM athlete_registrations")
                 _exec_delete(conn, "team_members", "DELETE FROM team_members")
                 _exec_delete(conn, "teams", "DELETE FROM teams")
@@ -46,6 +48,7 @@ class MeetAdminMixin:
             else:
                 if clear_events:
                     _exec_delete(conn, "results", "DELETE FROM results")
+                    _exec_delete(conn, "attempts", "DELETE FROM attempts")
                     _exec_delete(conn, "athlete_registrations", "DELETE FROM athlete_registrations")
                     _exec_delete(conn, "team_members", "DELETE FROM team_members")
                     _exec_delete(conn, "teams", "DELETE FROM teams")
@@ -54,6 +57,7 @@ class MeetAdminMixin:
                 else:
                     if clear_teams:
                         _exec_delete(conn, "results", "DELETE FROM results WHERE team_id IS NOT NULL")
+                        _exec_delete(conn, "attempts", "DELETE FROM attempts WHERE team_id IS NOT NULL")
                         _exec_delete(conn, "team_members", "DELETE FROM team_members")
                         _exec_delete(conn, "teams", "DELETE FROM teams")
                     elif clear_team_members:
@@ -61,12 +65,14 @@ class MeetAdminMixin:
 
                     if clear_athletes:
                         _exec_delete(conn, "results", "DELETE FROM results WHERE athlete_ref_id IS NOT NULL")
+                        _exec_delete(conn, "attempts", "DELETE FROM attempts WHERE athlete_ref_id IS NOT NULL")
                         _exec_delete(conn, "athlete_registrations", "DELETE FROM athlete_registrations")
                         _exec_delete(conn, "team_members", "DELETE FROM team_members")
                         _exec_delete(conn, "athletes", "DELETE FROM athletes")
 
                     if clear_results:
                         _exec_delete(conn, "results", "DELETE FROM results")
+                        _exec_delete(conn, "attempts", "DELETE FROM attempts")
                     if clear_regs:
                         _exec_delete(conn, "athlete_registrations", "DELETE FROM athlete_registrations")
                     if clear_team_members and not clear_teams:

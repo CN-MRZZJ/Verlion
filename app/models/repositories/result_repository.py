@@ -1,7 +1,7 @@
 import sqlite3
 from typing import Optional
 
-from .crud import RESULTS
+from .crud import ATTEMPTS, RESULTS
 
 
 class ResultRepositoryMixin:
@@ -29,6 +29,60 @@ class ResultRepositoryMixin:
                     "entered_by": entered_by or "",
                 },
             )
+
+    def insert_attempt(
+            self,
+            event_id: int,
+            rank: int,
+            athlete_type: Optional[str],
+            athlete_ref_id: Optional[int],
+            team_id: Optional[int],
+            performance: Optional[str],
+            entered_by: Optional[str] = None,
+        ) -> int:
+            return self._crud_insert(
+                ATTEMPTS,
+                {
+                    "event_id": event_id,
+                    "athlete_type": athlete_type,
+                    "athlete_ref_id": athlete_ref_id,
+                    "team_id": team_id,
+                    "rank": rank,
+                    "performance": performance,
+                    "entered_by": entered_by or "",
+                },
+            )
+
+    def list_attempts_for_target(
+            self,
+            event_id: int,
+            athlete_type: Optional[str],
+            athlete_ref_id: Optional[int],
+            team_id: Optional[int],
+        ):
+            if athlete_ref_id is not None:
+                return self.conn.execute(
+                    """
+                    SELECT id, rank, performance, created_at
+                    FROM attempts
+                    WHERE event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL
+                    ORDER BY id ASC
+                    """,
+                    (event_id, athlete_type, athlete_ref_id),
+                ).fetchall()
+
+            if team_id is not None:
+                return self.conn.execute(
+                    """
+                    SELECT id, rank, performance, created_at
+                    FROM attempts
+                    WHERE event_id=? AND team_id=? AND athlete_ref_id IS NULL AND athlete_type IS NULL
+                    ORDER BY id ASC
+                    """,
+                    (event_id, team_id),
+                ).fetchall()
+
+            return []
 
     def get_result_by_target(
             self,
