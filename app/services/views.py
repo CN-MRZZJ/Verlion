@@ -102,9 +102,7 @@ class MeetViewMixin:
             return {"athlete": "个人", "team": "团体"}.get(text, text)
         if key == "athlete_type":
             return {"competitive": "竞技", "fun": "趣味"}.get(text, text)
-        if key == "record_done":
-            return "是" if text in {"1", "True", "true"} else ("否" if text in {"0", "False", "false"} else text)
-        if key == "print_done":
+        if key in {"checkin_done", "competition_done", "record_done", "publish_done"}:
             return "是" if text in {"1", "True", "true"} else ("否" if text in {"0", "False", "false"} else text)
         return value
 
@@ -133,14 +131,16 @@ class MeetViewMixin:
         with self.db.connect() as conn:
             rows = [dict(r) for r in SportsRepository(conn).list_events_with_progress()]
         for row in rows:
+            row["checkin_done"] = int(row.get("checkin_done", 0))
+            row["competition_done"] = int(row.get("competition_done", 0))
             row["record_done"] = int(row.get("record_done", 0))
-            row["print_done"] = int(row.get("print_done", 0))
+            row["publish_done"] = int(row.get("publish_done", 0))
             row["gender_text"] = self._event_gender_label(str(row.get("gender", "")))
             row["age_group_text"] = self._event_group_label(str(row.get("age_group", "")))
             row["category_text"] = "竞技" if row.get("category") == "competitive" else "趣味"
         return rows
 
-    def set_event_progress(self, event_id: int, record_done: bool, print_done: bool) -> dict:
+    def set_event_progress(self, event_id: int, checkin_done: bool, competition_done: bool, record_done: bool, publish_done: bool) -> dict:
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
             event = repo.get_event_by_id(event_id)
@@ -148,14 +148,18 @@ class MeetViewMixin:
                 raise ValueError(f"项目不存在: {event_id}")
             repo.upsert_event_progress(
                 event_id=event_id,
+                checkin_done=1 if checkin_done else 0,
+                competition_done=1 if competition_done else 0,
                 record_done=1 if record_done else 0,
-                print_done=1 if print_done else 0,
+                publish_done=1 if publish_done else 0,
             )
             conn.commit()
         return {
             "event_id": event_id,
+            "checkin_done": 1 if checkin_done else 0,
+            "competition_done": 1 if competition_done else 0,
             "record_done": 1 if record_done else 0,
-            "print_done": 1 if print_done else 0,
+            "publish_done": 1 if publish_done else 0,
         }
 
     def list_registration_pairs(self):
@@ -238,6 +242,7 @@ class MeetViewMixin:
         page: int,
         page_size: int,
         keyword: str = "",
+        event_id: str = "",
         department_name: str = "",
         gender: str = "",
         age_group: str = "",
@@ -289,6 +294,7 @@ class MeetViewMixin:
                     page,
                     page_size,
                     keyword,
+                    event_id,
                     department_name,
                     gender,
                     age_group,
@@ -302,6 +308,7 @@ class MeetViewMixin:
                     page,
                     page_size,
                     keyword,
+                    event_id,
                     department_name,
                     gender,
                     age_group,

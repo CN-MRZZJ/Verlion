@@ -56,15 +56,15 @@ RESULTS = TableSchema(
 
 ATTEMPTS = TableSchema(
     name="attempts",
-    columns=("id", "event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "performance", "entered_by", "created_at"),
-    insert_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "performance", "entered_by"),
-    update_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "performance", "entered_by"),
+    columns=("id", "event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by", "created_at"),
+    insert_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by"),
+    update_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by"),
 )
 
 EVENT_PROGRESS = TableSchema(
     name="event_progress",
     primary_key="event_id",
-    columns=("event_id", "record_done", "print_done", "updated_at"),
-    insert_columns=("event_id", "record_done", "print_done", "updated_at"),
-    update_columns=("record_done", "print_done", "updated_at"),
+    columns=("event_id", "checkin_done", "competition_done", "record_done", "publish_done", "updated_at"),
+    insert_columns=("event_id", "checkin_done", "competition_done", "record_done", "publish_done", "updated_at"),
+    update_columns=("checkin_done", "competition_done", "record_done", "publish_done", "updated_at"),
 )

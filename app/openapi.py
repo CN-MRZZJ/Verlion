@@ -40,6 +40,15 @@ ATHLETE = {
     },
 }
 
+DEPARTMENT = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "部门 ID"},
+        "name": {"type": "string", "description": "部门名称"},
+        "total_members": {"type": "integer", "description": "部门总人数"},
+    },
+}
+
 REGISTRATION = {
     "type": "object",
     "properties": {
@@ -76,8 +85,10 @@ EVENT_PROGRESS = {
         "gender": {"type": "string", "description": "性别"},
         "age_group": {"type": "string", "description": "组别"},
         "is_individual": {"type": "integer", "description": "是否个人项目"},
+        "checkin_done": {"type": "integer", "description": "检录是否完成：0/1"},
+        "competition_done": {"type": "integer", "description": "比赛是否完成：0/1"},
         "record_done": {"type": "integer", "description": "成绩录入是否完成：0/1"},
-        "print_done": {"type": "integer", "description": "公示打印是否完成：0/1"},
+        "publish_done": {"type": "integer", "description": "公示是否完成：0/1"},
         "updated_at": {"type": "string", "description": "更新时间"},
     },
 }
@@ -125,6 +136,18 @@ RESULT = {
         "points": {"type": "integer", "description": "积分"},
         "performance": {"type": "string", "description": "成绩文本"},
         "entered_by": {"type": "string", "description": "录入人员"},
+        "created_at": {"type": "string", "description": "创建时间"},
+    },
+}
+
+ATTEMPT = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "尝试记录 ID"},
+        "attempt_number": {"type": "integer", "description": "第几次录入"},
+        "rank": {"type": "integer", "description": "名次"},
+        "performance": {"type": "string", "description": "成绩文本"},
+        "is_void": {"type": "integer", "description": "是否作废：0=有效 1=作废"},
         "created_at": {"type": "string", "description": "创建时间"},
     },
 }
@@ -218,8 +241,10 @@ UPDATE_PROGRESS_REQUEST = {
     "type": "object",
     "properties": {
         "event_id": {"type": "integer", "description": "项目 ID（表单兼容用）"},
+        "checkin_done": {"type": "boolean", "description": "检录是否完成"},
+        "competition_done": {"type": "boolean", "description": "比赛是否完成"},
         "record_done": {"type": "boolean", "description": "成绩录入是否完成"},
-        "print_done": {"type": "boolean", "description": "公示打印是否完成"},
+        "publish_done": {"type": "boolean", "description": "公示是否完成"},
     },
 }
 
@@ -320,6 +345,38 @@ REPORT_ENVIRONMENT_REQUEST = {
         "weather": {"type": "string", "description": "天气"},
         "temperature_high": {"type": "string", "description": "最高温"},
         "temperature_low": {"type": "string", "description": "最低温"},
+    },
+}
+
+CREATE_DEPARTMENT_REQUEST = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string", "description": "部门名称"},
+        "total_members": {"type": "integer", "description": "部门总人数，默认 0"},
+    },
+    "required": ["name"],
+}
+
+UPDATE_DEPARTMENT_REQUEST = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string", "description": "部门名称"},
+        "total_members": {"type": "integer", "description": "部门总人数"},
+    },
+}
+
+DELETE_DEPARTMENT_REQUEST = {
+    "type": "object",
+    "properties": {
+        "department_id": {"type": "integer", "description": "部门 ID"},
+    },
+    "required": ["department_id"],
+}
+
+VOID_ATTEMPT_REQUEST = {
+    "type": "object",
+    "properties": {
+        "is_void": {"type": "boolean", "description": "是否作废：true=作废 false=取消作废"},
     },
 }
 
@@ -622,6 +679,50 @@ def get_openapi_spec() -> dict[str, Any]:
                 request_body=_json_body_ref("RegistrationRequest"),
             )
         },
+        "/api/v1/departments": {
+            "get": _operation(
+                "部门",
+                "分页查询部门",
+                "分页查询部门列表，支持关键词和排序。",
+                parameters=[
+                    _query("page", "页码，从 1 开始", "integer"),
+                    _query("page_size", "每页数量", "integer"),
+                    _query("keyword", "部门名称关键词"),
+                    _query("sort_by", "排序字段：id/name/total_members"),
+                    _query("sort_dir", "排序方向：asc/desc"),
+                ],
+                success=_paginated_response("Department"),
+            ),
+            "post": _operation(
+                "部门",
+                "新增部门",
+                "新增一个部门。",
+                request_body=_json_body_ref("CreateDepartmentRequest"),
+            ),
+        },
+        "/api/v1/departments/{department_id}": {
+            "put": _operation(
+                "部门",
+                "更新部门",
+                "更新部门名称或总人数。",
+                parameters=[_path("department_id", "部门 ID", "integer")],
+                request_body=_json_body_ref("UpdateDepartmentRequest"),
+            ),
+            "delete": _operation(
+                "部门",
+                "删除部门",
+                "删除指定部门（部门下无运动员和队伍时才能删除）。",
+                parameters=[_path("department_id", "部门 ID", "integer")],
+            ),
+        },
+        "/api/v1/departments/delete": {
+            "post": _operation(
+                "部门",
+                "删除部门（表单兼容）",
+                "通过表单或 JSON 删除部门。",
+                request_body=_json_body_ref("DeleteDepartmentRequest"),
+            )
+        },
         "/api/v1/events": {
             "get": _operation(
                 "项目",
@@ -634,7 +735,7 @@ def get_openapi_spec() -> dict[str, Any]:
             "get": _operation(
                 "项目流程",
                 "查询项目流程状态",
-                "查询所有项目的成绩录入和公示打印完成状态。",
+                "查询所有项目的检录、比赛、成绩录入和公示完成状态。",
                 success=_item_list_response("EventProgress"),
             )
         },
@@ -642,7 +743,7 @@ def get_openapi_spec() -> dict[str, Any]:
             "put": _operation(
                 "项目流程",
                 "更新项目流程状态",
-                "更新指定项目的成绩录入完成和打印完成状态。",
+                "更新指定项目的检录、比赛、成绩录入和公示完成状态。",
                 parameters=[_path("event_id", "项目 ID", "integer")],
                 request_body=_json_body_ref("UpdateProgressRequest"),
             )
@@ -651,7 +752,7 @@ def get_openapi_spec() -> dict[str, Any]:
             "post": _operation(
                 "项目流程",
                 "更新项目流程状态（表单兼容）",
-                "通过表单或 JSON 更新项目流程状态。",
+                "通过表单或 JSON 更新项目流程状态（检录、比赛、录入、公示）。",
                 request_body=_json_body_ref("UpdateProgressRequest"),
             )
         },
@@ -763,12 +864,48 @@ def get_openapi_spec() -> dict[str, Any]:
                 success=_file_response("PDF 文件", "application/pdf"),
             )
         },
+        "/api/v1/notices/personal-attempt.xlsx": {
+            "get": _operation(
+                "公示",
+                "导出个人轮次成绩表 XLSX",
+                "按项目和模板导出个人项目轮次成绩表（含每次尝试记录及作废标记）。",
+                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
+                success=_file_response("XLSX 文件", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            )
+        },
+        "/api/v1/notices/personal-attempt.pdf": {
+            "get": _operation(
+                "公示",
+                "预览个人轮次成绩表 PDF",
+                "按项目和模板生成个人项目轮次成绩表 PDF。",
+                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
+                success=_file_response("PDF 文件", "application/pdf"),
+            )
+        },
+        "/api/v1/notices/team-attempt.xlsx": {
+            "get": _operation(
+                "公示",
+                "导出团体轮次成绩表 XLSX",
+                "按项目和模板导出团体项目轮次成绩表（含每次尝试记录及作废标记）。",
+                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
+                success=_file_response("XLSX 文件", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            )
+        },
+        "/api/v1/notices/team-attempt.pdf": {
+            "get": _operation(
+                "公示",
+                "预览团体轮次成绩表 PDF",
+                "按项目和模板生成团体项目轮次成绩表 PDF。",
+                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
+                success=_file_response("PDF 文件", "application/pdf"),
+            )
+        },
         "/api/v1/results": {
             "get": _operation(
                 "成绩",
                 "分页查询成绩",
                 "分页查询成绩记录。",
-                parameters=deepcopy(dataset_filters),
+                parameters=deepcopy(dataset_filters) + [_query("event_id", "项目 ID 筛选", "integer")],
                 success=_paginated_response("Result"),
             ),
             "post": _operation(
@@ -777,6 +914,29 @@ def get_openapi_spec() -> dict[str, Any]:
                 "录入个人或团体项目成绩，并按规则计算积分。",
                 request_body=_json_body_ref("CreateResultRequest"),
             ),
+        },
+        "/api/v1/attempts": {
+            "get": _operation(
+                "成绩",
+                "查询尝试记录",
+                "查询某个运动员或队伍在指定项目的所有尝试记录（含作废状态）。",
+                parameters=[
+                    _query("event_id", "项目 ID", "integer", True),
+                    _query("athlete_type", "运动员类型：competitive/fun"),
+                    _query("athlete_ref_id", "运动员数据库 ID", "integer"),
+                    _query("team_id", "队伍 ID", "integer"),
+                ],
+                success=_item_list_response("Attempt"),
+            )
+        },
+        "/api/v1/attempts/{attempt_id}/void": {
+            "put": _operation(
+                "成绩",
+                "作废/取消作废尝试记录",
+                "将指定尝试记录标记为作废或取消作废，并自动重算该对象的最终成绩。",
+                parameters=[_path("attempt_id", "尝试记录 ID", "integer")],
+                request_body=_json_body_ref("VoidAttemptRequest"),
+            )
         },
         "/api/v1/rules": {
             "get": _operation(
@@ -896,6 +1056,7 @@ def get_openapi_spec() -> dict[str, Any]:
             {"name": "数据查询"},
             {"name": "运动员"},
             {"name": "运动员报名"},
+            {"name": "部门"},
             {"name": "项目"},
             {"name": "项目流程"},
             {"name": "导入"},
@@ -913,6 +1074,7 @@ def get_openapi_spec() -> dict[str, Any]:
             "schemas": {
                 "OkResponse": JSON_OK,
                 "ErrorResponse": JSON_ERROR,
+                "Department": DEPARTMENT,
                 "Athlete": ATHLETE,
                 "Registration": REGISTRATION,
                 "Event": EVENT,
@@ -920,6 +1082,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "Team": TEAM,
                 "TeamMember": TEAM_MEMBER,
                 "Result": RESULT,
+                "Attempt": ATTEMPT,
                 "CheckItem": CHECK_ITEM,
                 "Summary": SUMMARY,
                 "InitStatus": INIT_STATUS,
@@ -938,6 +1101,10 @@ def get_openapi_spec() -> dict[str, Any]:
                 "TeamMemberRequest": TEAM_MEMBER_REQUEST,
                 "ClearDataRequest": CLEAR_DATA_REQUEST,
                 "ReportEnvironmentRequest": REPORT_ENVIRONMENT_REQUEST,
+                "CreateDepartmentRequest": CREATE_DEPARTMENT_REQUEST,
+                "UpdateDepartmentRequest": UPDATE_DEPARTMENT_REQUEST,
+                "DeleteDepartmentRequest": DELETE_DEPARTMENT_REQUEST,
+                "VoidAttemptRequest": VOID_ATTEMPT_REQUEST,
             }
         },
     }

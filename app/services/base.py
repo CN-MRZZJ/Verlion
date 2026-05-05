@@ -1,11 +1,12 @@
-from datetime import date
 import os
 import re
+from datetime import date
 from typing import Callable, Optional, TypeVar
 
 from app.models.database import Database
 from app.models.repositories import SportsRepository
 from app.rules import event_age_group_label
+from app.services.time_service import today
 
 T = TypeVar("T")
 
@@ -59,7 +60,7 @@ class MeetServiceBase:
     def get_meet_date(self) -> date:
         with self.db.connect() as conn:
             iso = SportsRepository(conn).get_meet_date_iso()
-            return date.fromisoformat(iso) if iso else date(2026, 4, 23)
+            return date.fromisoformat(iso) if iso else today()
 
     def set_report_environment_settings(self, payload: dict[str, str]) -> None:
         with self.db.connect() as conn:

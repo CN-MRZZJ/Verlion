@@ -2,6 +2,7 @@ from typing import Optional
 
 from app.rules import attempt_policy, points_for_rank
 from app.models.repositories import SportsRepository
+from app.models.repositories.crud import RESULTS
 
 
 class MeetResultMixin:
@@ -10,13 +11,14 @@ class MeetResultMixin:
         scoring_strategy: str,
         attempts: list,
     ) -> int:
-        if not attempts:
+        valid = [a for a in attempts if not int(a["is_void"] if "is_void" in a.keys() else 0)]
+        if not valid:
             raise ValueError("内部错误：没有可用的尝试记录")
 
         policy = attempt_policy()
 
-        if policy == "latest" or len(attempts) == 1:
-            return int(attempts[-1]["id"])
+        if policy == "latest" or len(valid) == 1:
+            return int(valid[-1]["id"])
 
         def _key(attempt) -> tuple:
             perf = attempt["performance"] if "performance" in attempt.keys() else None
@@ -29,7 +31,7 @@ class MeetResultMixin:
                 return (0, val, rank, attempt_id)
             return (0, -val, rank, attempt_id)
 
-        best = min(attempts, key=_key)
+        best = min(valid, key=_key)
         return int(best["id"])
 
     def _auto_rank_for_result(
@@ -207,6 +209,12 @@ class MeetResultMixin:
                 team_id=team_id if has_team else None,
                 performance=normalized_performance,
                 entered_by=entered_by_text,
+                attempt_number=repo.get_next_attempt_number(
+                    event_id=event_id,
+                    athlete_type=athlete_type if has_athlete else None,
+                    athlete_ref_id=athlete_ref_id if has_athlete else None,
+                    team_id=team_id if has_team else None,
+                ),
             )
 
             all_attempts = repo.list_attempts_for_target(
@@ -250,3 +258,70 @@ class MeetResultMixin:
                 self._recalculate_event_ranks(repo, event_id, scoring_strategy)
             conn.commit()
             return result_id
+
+    def void_attempt(self, attempt_id: int, is_void: bool = True) -> None:
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            attempt = repo.get_attempt_by_id(attempt_id)
+            if not attempt:
+                raise ValueError(f"尝试记录不存在: {attempt_id}")
+            repo.set_attempt_void(attempt_id, is_void)
+
+            event_id = int(attempt["event_id"])
+            athlete_type = attempt["athlete_type"]
+            athlete_ref_id = attempt["athlete_ref_id"]
+            team_id = attempt["team_id"]
+
+            event = repo.get_event_by_id(event_id)
+            if not event:
+                conn.commit()
+                return
+            scoring_strategy = str(event["scoring_strategy"])
+
+            all_attempts = repo.list_attempts_for_target(
+                event_id=event_id,
+                athlete_type=athlete_type,
+                athlete_ref_id=athlete_ref_id,
+                team_id=team_id,
+            )
+            valid = [a for a in all_attempts if not int(a["is_void"] if "is_void" in a.keys() else 0)]
+
+            exists = repo.get_result_by_target(
+                event_id=event_id,
+                athlete_type=athlete_type,
+                athlete_ref_id=athlete_ref_id,
+                team_id=team_id,
+            )
+
+            if not valid:
+                if exists:
+                    repo._crud_delete_by_id(RESULTS, int(exists["id"]))
+                self._recalculate_event_ranks(repo, event_id, scoring_strategy)
+                conn.commit()
+                return
+
+            best_id = self._pick_best_attempt(scoring_strategy, all_attempts)
+            best = next((a for a in all_attempts if int(a["id"]) == best_id), None)
+            best_rank = int(best["rank"]) if best else 1
+            best_perf = best["performance"] if best else None
+
+            if exists:
+                repo.update_result(
+                    result_id=int(exists["id"]),
+                    rank=best_rank,
+                    points=points_for_rank(best_rank, int(event["is_individual"])),
+                    performance=best_perf,
+                )
+            else:
+                repo.insert_result(
+                    event_id=event_id,
+                    rank=best_rank,
+                    points=points_for_rank(best_rank, int(event["is_individual"])),
+                    athlete_type=athlete_type,
+                    athlete_ref_id=athlete_ref_id,
+                    team_id=team_id,
+                    performance=best_perf,
+                    entered_by=str(attempt["entered_by"] or ""),
+                )
+            self._recalculate_event_ranks(repo, event_id, scoring_strategy)
+            conn.commit()

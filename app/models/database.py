@@ -31,6 +31,7 @@ class Database:
             self._migrate_age_group_constraints(conn)
             self._migrate_results_entered_by(conn)
             self._migrate_attempts_table(conn)
+            self._migrate_event_progress_columns(conn)
             conn.commit()
 
     def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
@@ -63,10 +64,12 @@ class Database:
                     athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
                     athlete_ref_id INTEGER,
                     team_id INTEGER,
+                    attempt_number INTEGER NOT NULL DEFAULT 1,
                     rank INTEGER NOT NULL CHECK(rank >= 1),
                     performance TEXT,
+                    is_void INTEGER NOT NULL DEFAULT 0 CHECK(is_void IN (0,1)),
                     entered_by TEXT NOT NULL DEFAULT '',
-                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
                     FOREIGN KEY(event_id) REFERENCES events(id),
                     FOREIGN KEY(team_id) REFERENCES teams(id),
                     CHECK(
@@ -76,6 +79,12 @@ class Database:
                     )
                 )
             """)
+            return
+        existing = self._table_columns(conn, "attempts")
+        if "attempt_number" not in existing:
+            conn.execute("ALTER TABLE attempts ADD COLUMN attempt_number INTEGER NOT NULL DEFAULT 1")
+        if "is_void" not in existing:
+            conn.execute("ALTER TABLE attempts ADD COLUMN is_void INTEGER NOT NULL DEFAULT 0 CHECK(is_void IN (0,1))")
 
     def _migrate_age_group_constraints(self, conn: sqlite3.Connection) -> None:
         if self._table_exists(conn, "athletes") and "age_group IN ('A','B','C')" in self._table_sql(conn, "athletes"):
@@ -96,7 +105,7 @@ class Database:
                 birth_date TEXT,
                 department_id INTEGER NOT NULL,
                 age_group TEXT,
-                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
                 UNIQUE(athlete_type, athlete_no),
                 FOREIGN KEY(department_id) REFERENCES departments(id)
             )
@@ -209,3 +218,35 @@ class Database:
 
         for _, table in existing_old_tables:
             conn.execute(f"DROP TABLE {table}")
+
+    def _migrate_event_progress_columns(self, conn: sqlite3.Connection) -> None:
+        """Rename print_done→publish_done and add checkin_done, competition_done."""
+        if not self._table_exists(conn, "event_progress"):
+            return
+        existing = self._table_columns(conn, "event_progress")
+        if "checkin_done" in existing and "competition_done" in existing and "publish_done" in existing:
+            return
+        conn.execute("PRAGMA foreign_keys = OFF;")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS event_progress_new (
+                event_id INTEGER PRIMARY KEY,
+                checkin_done INTEGER NOT NULL DEFAULT 0 CHECK(checkin_done IN (0,1)),
+                competition_done INTEGER NOT NULL DEFAULT 0 CHECK(competition_done IN (0,1)),
+                record_done INTEGER NOT NULL DEFAULT 0 CHECK(record_done IN (0,1)),
+                publish_done INTEGER NOT NULL DEFAULT 0 CHECK(publish_done IN (0,1)),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
+                FOREIGN KEY(event_id) REFERENCES events(id)
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO event_progress_new(event_id, checkin_done, competition_done, record_done, publish_done, updated_at)
+            SELECT event_id, 0, 0, record_done, print_done, updated_at
+            FROM event_progress
+            """
+        )
+        conn.execute("DROP TABLE event_progress")
+        conn.execute("ALTER TABLE event_progress_new RENAME TO event_progress")
+        conn.execute("PRAGMA foreign_keys = ON;")

@@ -15,8 +15,8 @@ def save_report_environment():
             "wind_speed": str(payload.get("wind_speed", "")).strip(),
             "air_quality": str(payload.get("air_quality", "")).strip(),
             "weather": str(payload.get("weather", "")).strip(),
-            "temperature_high": str(payload.get("temperature_high", "")).strip(),
-            "temperature_low": str(payload.get("temperature_low", "")).strip(),
+            "temperature_high": str(payload.get("temperature_high", "")).strip()+"℃",
+            "temperature_low": str(payload.get("temperature_low", "")).strip()+"℃",
         }
         get_service().set_report_environment_settings(fields)
         return jsonify({"ok": True})
@@ -108,6 +108,102 @@ def preview_team_result_notice_pdf():
             layout_config_path=current_app.config["TEAM_NOTICE_LAYOUT_CONFIG"],
         )
         safe_ascii_name = "team_result_notice.pdf"
+        encoded_name = quote(filename)
+        return Response(
+            content,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename={safe_ascii_name}; filename*=UTF-8''{encoded_name}"
+            },
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.get("/notices/personal-attempt.xlsx")
+def export_personal_attempt_notice():
+    try:
+        event_id = int(str(request.args.get("event_id", "")).strip())
+        template_name = str(request.args.get("template_name", "")).strip()
+        content, filename = get_service().export_personal_attempt_notice_xlsx(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
+            layout_config_path=current_app.config["PERSONAL_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
+        )
+        safe_ascii_name = "personal_attempt_notice.xlsx"
+        encoded_name = quote(filename)
+        return Response(
+            content,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename={safe_ascii_name}; filename*=UTF-8''{encoded_name}"
+            },
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.get("/notices/personal-attempt.pdf")
+def preview_personal_attempt_notice_pdf():
+    try:
+        event_id = int(str(request.args.get("event_id", "")).strip())
+        template_name = str(request.args.get("template_name", "")).strip()
+        content, filename = get_service().export_personal_attempt_notice_pdf(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
+            layout_config_path=current_app.config["PERSONAL_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
+        )
+        safe_ascii_name = "personal_attempt_notice.pdf"
+        encoded_name = quote(filename)
+        return Response(
+            content,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename={safe_ascii_name}; filename*=UTF-8''{encoded_name}"
+            },
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.get("/notices/team-attempt.xlsx")
+def export_team_attempt_notice():
+    try:
+        event_id = int(str(request.args.get("event_id", "")).strip())
+        template_name = str(request.args.get("template_name", "")).strip()
+        content, filename = get_service().export_team_attempt_notice_xlsx(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
+            layout_config_path=current_app.config["TEAM_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
+        )
+        safe_ascii_name = "team_attempt_notice.xlsx"
+        encoded_name = quote(filename)
+        return Response(
+            content,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename={safe_ascii_name}; filename*=UTF-8''{encoded_name}"
+            },
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.get("/notices/team-attempt.pdf")
+def preview_team_attempt_notice_pdf():
+    try:
+        event_id = int(str(request.args.get("event_id", "")).strip())
+        template_name = str(request.args.get("template_name", "")).strip()
+        content, filename = get_service().export_team_attempt_notice_pdf(
+            event_id=event_id,
+            template_name=template_name,
+            template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
+            layout_config_path=current_app.config["TEAM_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
+        )
+        safe_ascii_name = "team_attempt_notice.pdf"
         encoded_name = quote(filename)
         return Response(
             content,

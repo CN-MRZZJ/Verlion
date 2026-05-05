@@ -70,8 +70,10 @@ class EventRepositoryMixin:
                     e.gender,
                     e.age_group,
                     e.is_individual,
+                    COALESCE(p.checkin_done, 0) AS checkin_done,
+                    COALESCE(p.competition_done, 0) AS competition_done,
                     COALESCE(p.record_done, 0) AS record_done,
-                    COALESCE(p.print_done, 0) AS print_done,
+                    COALESCE(p.publish_done, 0) AS publish_done,
                     COALESCE(p.updated_at, '') AS updated_at
                 FROM events e
                 LEFT JOIN event_progress p ON p.event_id = e.id
@@ -79,17 +81,19 @@ class EventRepositoryMixin:
                 """
             ).fetchall()
 
-    def upsert_event_progress(self, event_id: int, record_done: int, print_done: int) -> None:
+    def upsert_event_progress(self, event_id: int, checkin_done: int, competition_done: int, record_done: int, publish_done: int) -> None:
             self.conn.execute(
                 """
-                INSERT INTO event_progress(event_id, record_done, print_done, updated_at)
-                VALUES(?,?,?,datetime('now'))
+                INSERT INTO event_progress(event_id, checkin_done, competition_done, record_done, publish_done, updated_at)
+                VALUES(?,?,?,?,?,datetime('now', '+08:00'))
                 ON CONFLICT(event_id) DO UPDATE SET
+                    checkin_done=excluded.checkin_done,
+                    competition_done=excluded.competition_done,
                     record_done=excluded.record_done,
-                    print_done=excluded.print_done,
-                    updated_at=datetime('now')
+                    publish_done=excluded.publish_done,
+                    updated_at=datetime('now', '+08:00')
                 """,
-                (event_id, record_done, print_done),
+                (event_id, checkin_done, competition_done, record_done, publish_done),
             )
 
     def list_individual_events_by_category(self, category: str):

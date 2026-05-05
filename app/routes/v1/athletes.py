@@ -8,8 +8,10 @@ def list_athletes():
     try:
         athlete_type = request.args.get("athlete_type", "").strip()
         keyword = request.args.get("keyword", "").strip()
-        items = get_service().query_athletes(athlete_type=athlete_type, keyword=keyword)
-        return jsonify({"ok": True, "items": items, "total": len(items)})
+        page = int(request.args.get("page", "1"))
+        page_size = int(request.args.get("page_size", "20"))
+        result = get_service().query_athletes(athlete_type=athlete_type, keyword=keyword, page=page, page_size=page_size)
+        return jsonify({"ok": True, **result})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
 

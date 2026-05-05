@@ -40,11 +40,13 @@ class MeetAthleteMixin:
     def list_athletes(self):
         return self._repo_read(lambda repo: repo.list_athletes_with_department())
 
-    def query_athletes(self, athlete_type: str = "", keyword: str = "") -> list[dict]:
+    def query_athletes(self, athlete_type: str = "", keyword: str = "", page: int = 1, page_size: int = 20) -> dict:
         type_filter = (athlete_type or "").strip()
         if type_filter and type_filter not in {"competitive", "fun"}:
             raise ValueError("athlete_type 必须为 competitive/fun 或留空")
         kw = (keyword or "").strip().lower()
+        page = max(int(page), 1)
+        page_size = max(min(int(page_size), 100), 1)
 
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
@@ -102,7 +104,10 @@ class MeetAthleteMixin:
                 }
             )
         items.sort(key=lambda x: (str(x["athlete_type"]), str(x["athlete_no"]), str(x["name"])))
-        return items
+
+        total = len(items)
+        start = (page - 1) * page_size
+        return {"items": items[start:start + page_size], "total": total, "page": page, "page_size": page_size}
 
     def get_registered_individual_events(self, athlete_type: str, athlete_no: str) -> list[dict]:
         athlete_type = self._validate_athlete_type((athlete_type or "").strip())

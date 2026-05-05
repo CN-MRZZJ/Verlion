@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS athletes (
     birth_date TEXT,
     department_id INTEGER NOT NULL,
     age_group TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
     UNIQUE(athlete_type, athlete_no),
     FOREIGN KEY(department_id) REFERENCES departments(id)
 );
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS athlete_registrations (
     athlete_type TEXT NOT NULL CHECK(athlete_type IN ('competitive','fun')),
     athlete_ref_id INTEGER NOT NULL,
     event_id INTEGER NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
     UNIQUE(athlete_type, athlete_ref_id, event_id),
     FOREIGN KEY(event_id) REFERENCES events(id)
 );
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS results (
     points INTEGER NOT NULL DEFAULT 0,
     performance TEXT,
     entered_by TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
     FOREIGN KEY(event_id) REFERENCES events(id),
     FOREIGN KEY(team_id) REFERENCES teams(id),
     CHECK(
@@ -91,10 +91,12 @@ CREATE TABLE IF NOT EXISTS attempts (
     athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
     athlete_ref_id INTEGER,
     team_id INTEGER,
+    attempt_number INTEGER NOT NULL DEFAULT 1,
     rank INTEGER NOT NULL CHECK(rank >= 1),
     performance TEXT,
+    is_void INTEGER NOT NULL DEFAULT 0 CHECK(is_void IN (0,1)),
     entered_by TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
     FOREIGN KEY(event_id) REFERENCES events(id),
     FOREIGN KEY(team_id) REFERENCES teams(id),
     CHECK(
@@ -106,8 +108,10 @@ CREATE TABLE IF NOT EXISTS attempts (
 
 CREATE TABLE IF NOT EXISTS event_progress (
     event_id INTEGER PRIMARY KEY,
+    checkin_done INTEGER NOT NULL DEFAULT 0 CHECK(checkin_done IN (0,1)),
+    competition_done INTEGER NOT NULL DEFAULT 0 CHECK(competition_done IN (0,1)),
     record_done INTEGER NOT NULL DEFAULT 0 CHECK(record_done IN (0,1)),
-    print_done INTEGER NOT NULL DEFAULT 0 CHECK(print_done IN (0,1)),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    publish_done INTEGER NOT NULL DEFAULT 0 CHECK(publish_done IN (0,1)),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
     FOREIGN KEY(event_id) REFERENCES events(id)
 );

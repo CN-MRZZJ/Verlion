@@ -21,16 +21,24 @@ def list_event_progress():
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
+def _parse_bool(value) -> bool:
+    return str(value).strip().lower() in {"1", "true", "on", "yes"}
+
+
 @api_v1_bp.put("/events/<int:event_id>/progress")
 def update_event_progress(event_id: int):
     try:
         payload = request.get_json(silent=True) or request.form
-        record_done = str(payload.get("record_done", "")).strip().lower() in {"1", "true", "on", "yes"}
-        print_done = str(payload.get("print_done", "")).strip().lower() in {"1", "true", "on", "yes"}
+        checkin_done = _parse_bool(payload.get("checkin_done", ""))
+        competition_done = _parse_bool(payload.get("competition_done", ""))
+        record_done = _parse_bool(payload.get("record_done", ""))
+        publish_done = _parse_bool(payload.get("publish_done", ""))
         result = get_service().set_event_progress(
             event_id=event_id,
+            checkin_done=checkin_done,
+            competition_done=competition_done,
             record_done=record_done,
-            print_done=print_done,
+            publish_done=publish_done,
         )
         return jsonify({"ok": True, **result})
     except Exception as exc:
@@ -42,12 +50,16 @@ def update_event_progress_compat():
     try:
         payload = request.get_json(silent=True) or request.form
         event_id = int(str(payload.get("event_id", "")).strip())
-        record_done = str(payload.get("record_done", "")).strip().lower() in {"1", "true", "on", "yes"}
-        print_done = str(payload.get("print_done", "")).strip().lower() in {"1", "true", "on", "yes"}
+        checkin_done = _parse_bool(payload.get("checkin_done", ""))
+        competition_done = _parse_bool(payload.get("competition_done", ""))
+        record_done = _parse_bool(payload.get("record_done", ""))
+        publish_done = _parse_bool(payload.get("publish_done", ""))
         result = get_service().set_event_progress(
             event_id=event_id,
+            checkin_done=checkin_done,
+            competition_done=competition_done,
             record_done=record_done,
-            print_done=print_done,
+            publish_done=publish_done,
         )
         return jsonify({"ok": True, **result})
     except Exception as exc:

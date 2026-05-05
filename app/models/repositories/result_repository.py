@@ -39,6 +39,7 @@ class ResultRepositoryMixin:
             team_id: Optional[int],
             performance: Optional[str],
             entered_by: Optional[str] = None,
+            attempt_number: int = 1,
         ) -> int:
             return self._crud_insert(
                 ATTEMPTS,
@@ -47,11 +48,43 @@ class ResultRepositoryMixin:
                     "athlete_type": athlete_type,
                     "athlete_ref_id": athlete_ref_id,
                     "team_id": team_id,
+                    "attempt_number": attempt_number,
                     "rank": rank,
                     "performance": performance,
+                    "is_void": 0,
                     "entered_by": entered_by or "",
                 },
             )
+
+    def get_next_attempt_number(
+            self,
+            event_id: int,
+            athlete_type: Optional[str],
+            athlete_ref_id: Optional[int],
+            team_id: Optional[int],
+        ) -> int:
+            if athlete_ref_id is not None:
+                row = self.conn.execute(
+                    "SELECT MAX(attempt_number) AS mx FROM attempts WHERE event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL",
+                    (event_id, athlete_type, athlete_ref_id),
+                ).fetchone()
+            elif team_id is not None:
+                row = self.conn.execute(
+                    "SELECT MAX(attempt_number) AS mx FROM attempts WHERE event_id=? AND team_id=? AND athlete_ref_id IS NULL",
+                    (event_id, team_id),
+                ).fetchone()
+            else:
+                return 1
+            return (int(row["mx"]) + 1) if row and row["mx"] is not None else 1
+
+    def get_attempt_by_id(self, attempt_id: int):
+            return self.conn.execute(
+                "SELECT id, event_id, athlete_type, athlete_ref_id, team_id, attempt_number, rank, performance, is_void, entered_by, created_at FROM attempts WHERE id=?",
+                (attempt_id,),
+            ).fetchone()
+
+    def set_attempt_void(self, attempt_id: int, is_void: bool) -> None:
+            self._crud_update_by_id(ATTEMPTS, attempt_id, {"is_void": 1 if is_void else 0})
 
     def list_attempts_for_target(
             self,
@@ -63,10 +96,10 @@ class ResultRepositoryMixin:
             if athlete_ref_id is not None:
                 return self.conn.execute(
                     """
-                    SELECT id, rank, performance, created_at
+                    SELECT id, attempt_number, rank, performance, is_void, created_at
                     FROM attempts
                     WHERE event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL
-                    ORDER BY id ASC
+                    ORDER BY attempt_number ASC, id ASC
                     """,
                     (event_id, athlete_type, athlete_ref_id),
                 ).fetchall()
@@ -74,10 +107,10 @@ class ResultRepositoryMixin:
             if team_id is not None:
                 return self.conn.execute(
                     """
-                    SELECT id, rank, performance, created_at
+                    SELECT id, attempt_number, rank, performance, is_void, created_at
                     FROM attempts
                     WHERE event_id=? AND team_id=? AND athlete_ref_id IS NULL AND athlete_type IS NULL
-                    ORDER BY id ASC
+                    ORDER BY attempt_number ASC, id ASC
                     """,
                     (event_id, team_id),
                 ).fetchall()
@@ -326,16 +359,20 @@ class ResultRepositoryMixin:
             page: int,
             page_size: int,
             keyword: str,
-            department_name: str,
-            gender: str,
-            age_group: str,
-            category: str,
-            scoring_strategy: str,
+            event_id: str = "",
+            department_name: str = "",
+            gender: str = "",
+            age_group: str = "",
+            category: str = "",
+            scoring_strategy: str = "",
             sort_by: str = "",
             sort_dir: str = "desc",
         ):
             where = ["1=1"]
             params: list = []
+            if event_id:
+                where.append("r.event_id = ?")
+                params.append(int(event_id))
             if keyword:
                 where.append("(e.name LIKE ? OR COALESCE(a.name, t.name) LIKE ? OR r.entered_by LIKE ?)")
                 params.extend([f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"])
@@ -360,6 +397,7 @@ class ResultRepositoryMixin:
                 sort_dir,
                 {
                     "id": "r.id",
+                    "event_id": "r.event_id",
                     "event_name": "e.name",
                     "category": "e.category",
                     "scoring_strategy": "e.scoring_strategy",
@@ -389,6 +427,7 @@ class ResultRepositoryMixin:
             data_sql = f"""
                 SELECT
                     r.id,
+                    r.event_id,
                     e.name AS event_name,
                     e.category,
                     e.scoring_strategy,
@@ -418,16 +457,20 @@ class ResultRepositoryMixin:
             page: int,
             page_size: int,
             keyword: str,
-            department_name: str,
-            gender: str,
-            age_group: str,
-            category: str,
-            scoring_strategy: str,
+            event_id: str = "",
+            department_name: str = "",
+            gender: str = "",
+            age_group: str = "",
+            category: str = "",
+            scoring_strategy: str = "",
             sort_by: str = "",
             sort_dir: str = "desc",
         ):
             where = ["1=1"]
             params: list = []
+            if event_id:
+                where.append("r.event_id = ?")
+                params.append(int(event_id))
             if keyword:
                 where.append(
                     """
@@ -549,3 +592,44 @@ class ResultRepositoryMixin:
                 ORDER BY {order_sql}
             """
             return self._paged_query(count_sql, data_sql, tuple(params), page, page_size)
+
+    def list_personal_attempts_for_event(self, event_id: int):
+            return self.conn.execute(
+                """
+                SELECT
+                    a.athlete_no,
+                    a.name AS athlete_name,
+                    d.name AS department_name,
+                    at.attempt_number,
+                    at.rank,
+                    at.performance,
+                    at.is_void,
+                    at.created_at
+                FROM attempts at
+                JOIN athletes a ON a.athlete_type = at.athlete_type AND a.id = at.athlete_ref_id
+                LEFT JOIN departments d ON d.id = a.department_id
+                WHERE at.event_id=? AND at.athlete_ref_id IS NOT NULL
+                ORDER BY a.athlete_no ASC, at.attempt_number ASC
+                """,
+                (event_id,),
+            ).fetchall()
+
+    def list_team_attempts_for_event(self, event_id: int):
+            return self.conn.execute(
+                """
+                SELECT
+                    t.name AS team_name,
+                    d.name AS department_name,
+                    at.attempt_number,
+                    at.rank,
+                    at.performance,
+                    at.is_void,
+                    at.created_at
+                FROM attempts at
+                JOIN teams t ON t.id = at.team_id
+                LEFT JOIN departments d ON d.id = t.department_id
+                WHERE at.event_id=? AND at.team_id IS NOT NULL
+                ORDER BY t.name ASC, at.attempt_number ASC
+                """,
+                (event_id,),
+            ).fetchall()

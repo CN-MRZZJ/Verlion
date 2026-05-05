@@ -9,6 +9,7 @@ def list_results():
         page = int(request.args.get("page", "1"))
         page_size = int(request.args.get("page_size", "20"))
         keyword = request.args.get("keyword", "").strip()
+        event_id = request.args.get("event_id", "").strip()
         department_name = request.args.get("department_name", "").strip()
         gender = request.args.get("gender", "").strip()
         age_group = request.args.get("age_group", "").strip()
@@ -22,6 +23,7 @@ def list_results():
             page=page,
             page_size=page_size,
             keyword=keyword,
+            event_id=event_id,
             department_name=department_name,
             gender=gender,
             age_group=age_group,

@@ -1,6 +1,7 @@
 from .admin import MeetAdminMixin
 from .athletes import MeetAthleteMixin
 from .base import MeetServiceBase
+from .departments import MeetDepartmentMixin
 from .imports import MeetImportMixin
 from .notice import MeetNoticeMixin
 from .results import MeetResultMixin
@@ -17,5 +18,6 @@ class SportsMeetService(
     MeetNoticeMixin,
     MeetImportMixin,
     MeetAdminMixin,
+    MeetDepartmentMixin,
 ):
     pass
