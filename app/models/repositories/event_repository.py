@@ -12,7 +12,7 @@ class EventRepositoryMixin:
             event_type: str,
             scoring_strategy: str,
             gender: str,
-            age_group: str,
+            group: str,
             is_individual: int,
         ) -> int:
             return self._crud_insert(
@@ -23,7 +23,7 @@ class EventRepositoryMixin:
                     "event_type": event_type,
                     "scoring_strategy": scoring_strategy,
                     "gender": gender,
-                    "age_group": age_group,
+                    "group": group,
                     "is_individual": is_individual,
                 },
             )
@@ -35,16 +35,16 @@ class EventRepositoryMixin:
             event_type: str,
             scoring_strategy: str,
             gender: str,
-            age_group: str,
+            group: str,
             is_individual: int,
         ) -> bool:
             return self._crud_exists(
                 EVENTS,
                 WhereClause(
                     """
-                    name=? AND category=? AND event_type=? AND scoring_strategy=? AND gender=? AND age_group=? AND is_individual=?
+                    name=? AND category=? AND event_type=? AND scoring_strategy=? AND gender=? AND "group"=? AND is_individual=?
                     """,
-                    (name, category, event_type, scoring_strategy, gender, age_group, is_individual),
+                    (name, category, event_type, scoring_strategy, gender, group, is_individual),
                 ),
             )
 
@@ -54,7 +54,7 @@ class EventRepositoryMixin:
     def list_events(self):
             return self._crud_list(
                 EVENTS,
-                columns=("id", "name", "category", "event_type", "scoring_strategy", "gender", "age_group", "is_individual"),
+                columns=("id", "name", "category", "event_type", "scoring_strategy", "gender", "group", "is_individual"),
                 order_by="id",
             )
 
@@ -68,7 +68,7 @@ class EventRepositoryMixin:
                     e.event_type,
                     e.scoring_strategy,
                     e.gender,
-                    e.age_group,
+                    e."group",
                     e.is_individual,
                     COALESCE(p.checkin_done, 0) AS checkin_done,
                     COALESCE(p.competition_done, 0) AS competition_done,
@@ -99,7 +99,7 @@ class EventRepositoryMixin:
     def list_individual_events_by_category(self, category: str):
             return self._crud_list(
                 EVENTS,
-                columns=("id", "name", "category", "gender", "age_group", "is_individual"),
+                columns=("id", "name", "category", "gender", "group", "is_individual"),
                 where=WhereClause("category=? AND is_individual=1", (category,)),
                 order_by="id",
             )
@@ -113,7 +113,7 @@ class EventRepositoryMixin:
             page_size: int,
             keyword: str,
             gender: str,
-            age_group: str,
+            group: str,
             category: str,
             scoring_strategy: str,
             sort_by: str = "",
@@ -130,9 +130,9 @@ class EventRepositoryMixin:
             if gender:
                 where.append("gender = ?")
                 params.append(gender)
-            if age_group:
-                where.append("age_group = ?")
-                params.append(age_group)
+            if group:
+                where.append('"group" = ?')
+                params.append(group)
             if scoring_strategy:
                 where.append("scoring_strategy = ?")
                 params.append(scoring_strategy)
@@ -146,7 +146,7 @@ class EventRepositoryMixin:
                     "category": "category",
                     "event_type": "event_type",
                     "gender": "gender",
-                    "age_group": "age_group",
+                    "group": "group",
                     "is_individual": "is_individual",
                     "scoring_strategy": "scoring_strategy",
                 },
@@ -154,7 +154,7 @@ class EventRepositoryMixin:
             )
             count_sql = f"SELECT COUNT(*) AS c FROM events WHERE {where_sql}"
             data_sql = f"""
-                SELECT id, name, category, event_type, gender, age_group, is_individual
+                SELECT id, name, category, event_type, gender, "group", is_individual
                 , scoring_strategy
                 FROM events
                 WHERE {where_sql}

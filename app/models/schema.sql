@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS athletes (
     gender TEXT NOT NULL CHECK(gender IN ('male','female')),
     birth_date TEXT,
     department_id INTEGER NOT NULL,
-    age_group TEXT,
+    "group" TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
     UNIQUE(athlete_type, athlete_no),
     FOREIGN KEY(department_id) REFERENCES departments(id)
@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     category TEXT NOT NULL CHECK(category IN ('competitive','fun')),
-    event_type TEXT NOT NULL CHECK(event_type IN ('track','field','fun')),
+    event_type TEXT NOT NULL,
     scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss')),
     gender TEXT NOT NULL CHECK(gender IN ('male','female','mixed')),
-    age_group TEXT NOT NULL,
+    "group" TEXT NOT NULL,
     is_individual INTEGER NOT NULL CHECK(is_individual IN (0,1))
 );
 
@@ -104,6 +104,29 @@ CREATE TABLE IF NOT EXISTS attempts (
         OR
         (athlete_ref_id IS NULL AND athlete_type IS NULL AND team_id IS NOT NULL)
     )
+);
+
+CREATE TABLE IF NOT EXISTS event_types (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss'))
+);
+
+CREATE TABLE IF NOT EXISTS point_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    result_type TEXT NOT NULL CHECK(result_type IN ('individual','team')),
+    rank INTEGER NOT NULL CHECK(rank >= 1),
+    points INTEGER NOT NULL CHECK(points >= 0),
+    UNIQUE(result_type, rank)
+);
+
+CREATE TABLE IF NOT EXISTS group_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scope TEXT NOT NULL CHECK(scope IN ('athlete','event')),
+    value TEXT NOT NULL,
+    label TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(scope, value)
 );
 
 CREATE TABLE IF NOT EXISTS event_progress (

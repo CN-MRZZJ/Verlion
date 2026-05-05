@@ -4,22 +4,124 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from app.models.database import Database
+
+_rules_db: Database | None = None
+
 DEFAULT_RULE_CONFIG_PATH = Path(__file__).resolve().parent.parent / "sports_rules.json"
 RULE_CONFIG_PATH = Path(os.getenv("SPORTS_RULES_CONFIG", str(DEFAULT_RULE_CONFIG_PATH)))
 
 
+def set_rules_db(db: Database) -> None:
+    global _rules_db
+    _rules_db = db
+
+
+def _get_rules_db() -> Database:
+    if _rules_db is None:
+        raise RuntimeError("rules DB not initialized — call set_rules_db() at startup")
+    return _rules_db
+
+
+def invalidate_rules_cache() -> None:
+    load_rule_config.cache_clear()
+
+
 @lru_cache(maxsize=1)
 def load_rule_config() -> dict[str, Any]:
-    with RULE_CONFIG_PATH.open("r", encoding="utf-8") as file:
-        return json.load(file)
+    db = _get_rules_db()
+    with db.connect() as conn:
+        event_types_rows = conn.execute(
+            "SELECT code, name, scoring_strategy FROM event_types ORDER BY code"
+        ).fetchall()
+        event_scoring_strategy = {r["code"]: r["scoring_strategy"] for r in event_types_rows}
+
+        point_rows = conn.execute(
+            "SELECT result_type, rank, points FROM point_rules ORDER BY result_type, rank"
+        ).fetchall()
+        point_rule: dict[str, dict[str, int]] = {"individual": {}, "team": {}}
+        for r in point_rows:
+            point_rule[r["result_type"]][str(r["rank"])] = r["points"]
+
+        age_rows = conn.execute(
+            "SELECT scope, value, label FROM group_options ORDER BY scope, sort_order"
+        ).fetchall()
+        group_options: dict[str, Any] = {"athlete": [], "event": [], "fallback_label": "不限组", "team_event_default": "ALL"}
+        for r in age_rows:
+            group_options[r["scope"]].append({"value": r["value"], "label": r["label"]})
+
+        for key, default in [
+            ("rule.attempt_policy", "best"),
+            ("rule.team_event_default", "ALL"),
+        ]:
+            row = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            if row:
+                val = str(row["value"]).strip()
+                if key == "rule.attempt_policy":
+                    group_options["_attempt_policy"] = val
+                elif key == "rule.team_event_default":
+                    group_options["team_event_default"] = val
+
+        attempt_policy_val = group_options.pop("_attempt_policy", None)
+
+    return {
+        "attempt_policy": str(attempt_policy_val) if attempt_policy_val else "best",
+        "event_scoring_strategy": event_scoring_strategy,
+        "point_rule": point_rule,
+        "group_options": group_options,
+    }
 
 
 def save_rule_config(config: dict[str, Any]) -> None:
     validate_rule_config(config)
-    RULE_CONFIG_PATH.write_text(
-        json.dumps(config, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    db = _get_rules_db()
+    with db.connect() as conn:
+        conn.execute("DELETE FROM event_types")
+        name_map = {"track": "径赛", "field": "田赛", "fun": "趣味"}
+        for code, strategy in config.get("event_scoring_strategy", {}).items():
+            if str(code).startswith("_"):
+                continue
+            conn.execute(
+                "INSERT INTO event_types(code, name, scoring_strategy) VALUES(?,?,?)",
+                (code, name_map.get(code, code), strategy),
+            )
+
+        conn.execute("DELETE FROM point_rules")
+        for result_type in ("individual", "team"):
+            rules = config.get("point_rule", {}).get(result_type, {})
+            for rank, points in rules.items():
+                if str(rank).startswith("_"):
+                    continue
+                conn.execute(
+                    "INSERT INTO point_rules(result_type, rank, points) VALUES(?,?,?)",
+                    (result_type, int(rank), int(points)),
+                )
+
+        conn.execute("DELETE FROM group_options")
+        groups = config.get("group_options", {})
+        for scope in ("athlete", "event"):
+            for sort_idx, item in enumerate(groups.get(scope, [])):
+                if not isinstance(item, dict):
+                    continue
+                conn.execute(
+                    "INSERT INTO group_options(scope, value, label, sort_order) VALUES(?,?,?,?)",
+                    (scope, item["value"], item["label"], sort_idx),
+                )
+
+        for key, json_path, default in [
+            ("rule.attempt_policy", "attempt_policy", "best"),
+            ("rule.team_event_default", "group_options.team_event_default", "ALL"),
+        ]:
+            val = config
+            for part in json_path.split("."):
+                val = val.get(part, {}) if isinstance(val, dict) else str(val or default)
+            if not isinstance(val, str):
+                val = str(val or default).strip()
+            conn.execute(
+                "INSERT INTO settings(key, value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (key, str(val).strip()),
+            )
+
     load_rule_config.cache_clear()
 
 
@@ -53,26 +155,26 @@ def validate_rule_config(config: dict[str, Any]) -> None:
         if str(strategy) not in allowed_scoring:
             raise ValueError(f"{event_type} 的 scoring_strategy 无效: {strategy}")
 
-    age_groups = config.get("age_group_options")
-    if not isinstance(age_groups, dict):
-        raise ValueError("age_group_options 必须是对象")
+    groups = config.get("group_options")
+    if not isinstance(groups, dict):
+        raise ValueError("group_options 必须是对象")
     for scope in ("athlete", "event"):
-        options = age_groups.get(scope)
+        options = groups.get(scope)
         if not isinstance(options, list):
-            raise ValueError(f"age_group_options.{scope} 必须是数组")
+            raise ValueError(f"group_options.{scope} 必须是数组")
         seen_values: set[str] = set()
         for item in options:
             value = str(item.get("value", "")).strip() if isinstance(item, dict) else ""
             if not isinstance(item, dict) or not value:
-                raise ValueError(f"age_group_options.{scope} 包含无效选项")
+                raise ValueError(f"group_options.{scope} 包含无效选项")
             if not str(item.get("label", "")).strip():
-                raise ValueError(f"age_group_options.{scope} 的 label 不能为空")
+                raise ValueError(f"group_options.{scope} 的 label 不能为空")
             if value in seen_values:
-                raise ValueError(f"age_group_options.{scope} 存在重复值: {value}")
+                raise ValueError(f"group_options.{scope} 存在重复值: {value}")
             seen_values.add(value)
-    team_event_default = str(age_groups.get("team_event_default", "")).strip()
-    if team_event_default and team_event_default not in {item["value"] for item in _age_group_options_from_config(age_groups, "event")}:
-        raise ValueError("age_group_options.team_event_default 必须存在于 event 组别选项中")
+    team_event_default = str(groups.get("team_event_default", "")).strip()
+    if team_event_default and team_event_default not in {item["value"] for item in _group_options_from_config(groups, "event")}:
+        raise ValueError("group_options.team_event_default 必须存在于 event 组别选项中")
 
 
 def point_rule_for_result_type(result_type: str) -> dict[int, int]:
@@ -108,7 +210,7 @@ def scoring_strategy_for_event_type(event_type: str) -> str:
     return str(mapping[event_type])
 
 
-def _age_group_options_from_config(configured: dict[str, Any], scope: str) -> list[dict[str, str]]:
+def _group_options_from_config(configured: dict[str, Any], scope: str) -> list[dict[str, str]]:
     options = configured.get(scope, [])
     return [
         {"value": str(item.get("value", "")), "label": str(item.get("label", ""))}
@@ -117,45 +219,45 @@ def _age_group_options_from_config(configured: dict[str, Any], scope: str) -> li
     ]
 
 
-def age_group_options(scope: str = "event") -> list[dict[str, str]]:
-    configured = load_rule_config().get("age_group_options", {})
-    return _age_group_options_from_config(configured, scope)
+def group_options(scope: str = "event") -> list[dict[str, str]]:
+    configured = load_rule_config().get("group_options", {})
+    return _group_options_from_config(configured, scope)
 
 
-def age_group_values(scope: str = "event") -> set[str]:
-    return {item["value"] for item in age_group_options(scope)}
+def group_values(scope: str = "event") -> set[str]:
+    return {item["value"] for item in group_options(scope)}
 
 
-def age_group_labels(scope: str = "event") -> dict[str, str]:
+def group_labels(scope: str = "event") -> dict[str, str]:
     labels: dict[str, str] = {}
-    for item in age_group_options(scope):
+    for item in group_options(scope):
         labels[item["value"]] = item["label"]
     return labels
 
 
-def age_group_label(age_group: str, scope: str = "event") -> str:
-    if not age_group:
+def group_label(group: str, scope: str = "event") -> str:
+    if not group:
         return ""
-    labels = age_group_labels(scope)
-    if age_group in labels:
-        return labels[age_group]
-    return str(age_group)
+    labels = group_labels(scope)
+    if group in labels:
+        return labels[group]
+    return str(group)
 
 
-def athlete_age_group_label(age_group: str) -> str:
-    return age_group_label(age_group, "athlete")
+def athlete_group_label(group: str) -> str:
+    return group_label(group, "athlete")
 
 
-def event_age_group_label(age_group: str) -> str:
-    return age_group_label(age_group, "event")
+def event_group_label(group: str) -> str:
+    return group_label(group, "event")
 
 
-def team_event_default_age_group() -> str:
-    configured = load_rule_config().get("age_group_options", {})
+def team_event_default_group() -> str:
+    configured = load_rule_config().get("group_options", {})
     default_value = str(configured.get("team_event_default", "")).strip()
     if default_value:
         return default_value
-    options = age_group_options("event")
+    options = group_options("event")
     return options[0]["value"] if options else "ALL"
 
 

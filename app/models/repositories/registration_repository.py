@@ -28,7 +28,7 @@ class RegistrationRepositoryMixin:
                     e.id,
                     e.name,
                     e.gender,
-                    e.age_group
+                    e."group"
                 FROM athlete_registrations r
                 JOIN events e ON e.id = r.event_id
                 WHERE r.athlete_type=? AND r.athlete_ref_id=? AND e.is_individual=1
@@ -63,7 +63,7 @@ class RegistrationRepositoryMixin:
                     r.athlete_type,
                     a.name AS athlete_name,
                     a.gender,
-                    a.age_group,
+                    a."group",
                     d.name AS department_name,
                     e.name AS event_name,
                     e.category,
@@ -83,7 +83,7 @@ class RegistrationRepositoryMixin:
             keyword: str,
             department_name: str,
             gender: str = "",
-            age_group: str = "",
+            group: str = "",
             category: str = "",
             scoring_strategy: str = "",
             sort_by: str = "",
@@ -100,9 +100,9 @@ class RegistrationRepositoryMixin:
             if gender:
                 where.append("a.gender = ?")
                 params.append(gender)
-            if age_group:
-                where.append("a.age_group = ?")
-                params.append(age_group)
+            if group:
+                where.append('a."group" = ?')
+                params.append(group)
             if category:
                 where.append("e.category = ?")
                 params.append(category)
@@ -118,7 +118,7 @@ class RegistrationRepositoryMixin:
                     "athlete_type": "r.athlete_type",
                     "athlete_name": "athlete_name",
                     "gender": "gender",
-                    "age_group": "age_group",
+                    "group": "group",
                     "department_name": "d.name",
                     "event_name": "e.name",
                     "category": "e.category",
@@ -140,7 +140,7 @@ class RegistrationRepositoryMixin:
                     r.athlete_type,
                     a.name AS athlete_name,
                     a.gender,
-                    a.age_group,
+                    a."group",
                     d.name AS department_name,
                     e.name AS event_name,
                     e.category,

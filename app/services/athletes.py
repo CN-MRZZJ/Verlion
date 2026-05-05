@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.rules import age_group_values
+from app.rules import group_values
 from app.models.repositories import SportsRepository
 from .validators import ensure_in, optional_text, require_text
 
@@ -15,15 +15,15 @@ class MeetAthleteMixin:
         gender: str,
         department_id: int,
         athlete_no: Optional[str] = None,
-        age_group: Optional[str] = None,
+        group: Optional[str] = None,
         athlete_type: str = "competitive",
     ) -> int:
         athlete_type = self._validate_athlete_type(athlete_type)
         ensure_in(gender, {"male", "female"}, "gender 必须是 male 或 female")
-        allowed_age_groups = age_group_values("athlete")
-        if age_group is not None and age_group != "" and age_group not in allowed_age_groups:
-            raise ValueError(f"age_group 必须是 {'/'.join(sorted(allowed_age_groups))}")
-        resolved_group = age_group if age_group else None
+        allowed_groups = group_values("athlete")
+        if group is not None and group != "" and group not in allowed_groups:
+            raise ValueError(f"group 必须是 {'/'.join(sorted(allowed_groups))}")
+        resolved_group = group if group else None
 
         def _action(repo: SportsRepository) -> int:
             return repo.insert_athlete(
@@ -32,7 +32,7 @@ class MeetAthleteMixin:
                 name=name,
                 gender=gender,
                 department_id=department_id,
-                age_group=resolved_group,
+                group=resolved_group,
             )
 
         return self._repo_write(_action)
@@ -62,7 +62,7 @@ class MeetAthleteMixin:
 
         def _event_label(event: dict) -> str:
             g = self._event_gender_label(str(event.get("gender", "")))
-            ag = self._event_group_label(str(event.get("age_group", "")))
+            ag = self._event_group_label(str(event.get("group", "")))
             return f"{event.get('name', '')}{g}{ag}"
 
         items: list[dict] = []
@@ -97,7 +97,7 @@ class MeetAthleteMixin:
                     "athlete_no": a.get("athlete_no", "") or "",
                     "name": a.get("name", "") or "",
                     "gender": a.get("gender", "") or "",
-                    "age_group": a.get("age_group", "") or "",
+                    "group": a.get("group", "") or "",
                     "department_name": a.get("department_name", "") or "",
                     "registration_count": len(labels),
                     "registered_events": "；".join(labels),
@@ -128,7 +128,7 @@ class MeetAthleteMixin:
             it["label"] = (
                 f"{it.get('name', '')}"
                 f"{self._event_gender_label(str(it.get('gender', '')))}"
-                f"{self._event_group_label(str(it.get('age_group', '')))}"
+                f"{self._event_group_label(str(it.get('group', '')))}"
             )
         return items
 
@@ -145,17 +145,17 @@ class MeetAthleteMixin:
         name: str,
         gender: str,
         department_name: str,
-        age_group: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> int:
         athlete_type = self._validate_athlete_type(athlete_type)
         athlete_no_text = require_text(athlete_no, "athlete_no")
         name_text = require_text(name, "name")
         ensure_in(gender, {"male", "female"}, "gender 必须是 male 或 female")
         dept_name = require_text(department_name, "department_name")
-        age_group_text = optional_text(age_group)
-        allowed_age_groups = age_group_values("athlete")
-        if age_group_text and age_group_text not in allowed_age_groups:
-            raise ValueError(f"age_group 必须是 {'/'.join(sorted(allowed_age_groups))}")
+        group_text = optional_text(group)
+        allowed_groups = group_values("athlete")
+        if group_text and group_text not in allowed_groups:
+            raise ValueError(f"group 必须是 {'/'.join(sorted(allowed_groups))}")
 
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
@@ -173,7 +173,7 @@ class MeetAthleteMixin:
                 name=name_text,
                 gender=gender,
                 department_id=dept_id,
-                age_group=age_group_text,
+                group=group_text,
             )
             conn.commit()
             return athlete_id

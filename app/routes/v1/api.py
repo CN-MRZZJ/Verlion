@@ -11,7 +11,7 @@ def get_dataset(view: str):
         keyword = request.args.get("keyword", "").strip()
         department_name = request.args.get("department_name", "").strip()
         gender = request.args.get("gender", "").strip()
-        age_group = request.args.get("age_group", "").strip()
+        group = request.args.get("group", "").strip()
         category = request.args.get("category", "").strip()
         scoring_strategy = request.args.get("scoring_strategy", "").strip()
         sort_by = request.args.get("sort_by", "").strip()
@@ -24,7 +24,7 @@ def get_dataset(view: str):
             keyword=keyword,
             department_name=department_name,
             gender=gender,
-            age_group=age_group,
+            group=group,
             category=category,
             scoring_strategy=scoring_strategy,
             sort_by=sort_by,

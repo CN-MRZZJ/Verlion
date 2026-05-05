@@ -2,7 +2,7 @@ import csv
 import io
 
 from app.models.repositories import SportsRepository
-from app.rules import athlete_age_group_label, event_age_group_label
+from app.rules import athlete_group_label, event_group_label
 
 
 class MeetViewMixin:
@@ -15,7 +15,7 @@ class MeetViewMixin:
         "event_type",
         "scoring_strategy",
         "event_gender",
-        "age_group",
+        "group",
         "is_individual",
         "result_type",
         "athlete_type",
@@ -57,7 +57,7 @@ class MeetViewMixin:
             "event_type": "项目类型",
             "gender": "性别",
             "event_gender": "项目性别",
-            "age_group": "组别",
+            "group": "组别",
             "is_individual": "项目属性",
             "scoring_strategy": "计分策略",
             "result_type": "成绩对象",
@@ -75,7 +75,7 @@ class MeetViewMixin:
         }
         return mapping.get(key, key)
 
-    def _export_readable_value(self, key: str, value, age_group_scope: str = "event"):
+    def _export_readable_value(self, key: str, value, group_scope: str = "event"):
         if value is None:
             return ""
         text = str(value)
@@ -85,10 +85,10 @@ class MeetViewMixin:
             return {"track": "径赛", "field": "田赛", "fun": "趣味"}.get(text, text)
         if key in {"gender", "event_gender", "athlete_gender"}:
             return {"male": "男", "female": "女", "mixed": "混合"}.get(text, text)
-        if key == "age_group":
-            if age_group_scope == "athlete":
-                return athlete_age_group_label(text) or text
-            return event_age_group_label(text) or text
+        if key == "group":
+            if group_scope == "athlete":
+                return athlete_group_label(text) or text
+            return event_group_label(text) or text
         if key == "is_individual":
             return "个人" if text in {"1", "True", "true"} else ("团体" if text in {"0", "False", "false"} else text)
         if key == "scoring_strategy":
@@ -106,10 +106,10 @@ class MeetViewMixin:
             return "是" if text in {"1", "True", "true"} else ("否" if text in {"0", "False", "false"} else text)
         return value
 
-    def _readable_item(self, item: dict, age_group_scope: str = "event") -> dict:
+    def _readable_item(self, item: dict, group_scope: str = "event") -> dict:
         out = {}
         for k, v in item.items():
-            out[k] = self._export_readable_value(k, v, age_group_scope)
+            out[k] = self._export_readable_value(k, v, group_scope)
         return out
 
     def _add_result_detail_fields(self, rows: list[dict]) -> list[dict]:
@@ -118,7 +118,7 @@ class MeetViewMixin:
                 {
                     "name": row.get("event_name", ""),
                     "gender": row.get("event_gender", ""),
-                    "age_group": row.get("age_group", ""),
+                    "group": row.get("group", ""),
                 }
             )
         return rows
@@ -136,7 +136,7 @@ class MeetViewMixin:
             row["record_done"] = int(row.get("record_done", 0))
             row["publish_done"] = int(row.get("publish_done", 0))
             row["gender_text"] = self._event_gender_label(str(row.get("gender", "")))
-            row["age_group_text"] = self._event_group_label(str(row.get("age_group", "")))
+            row["group_text"] = self._event_group_label(str(row.get("group", "")))
             row["category_text"] = "竞技" if row.get("category") == "competitive" else "趣味"
         return rows
 
@@ -245,7 +245,7 @@ class MeetViewMixin:
         event_id: str = "",
         department_name: str = "",
         gender: str = "",
-        age_group: str = "",
+        group: str = "",
         category: str = "",
         scoring_strategy: str = "",
         sort_by: str = "",
@@ -255,11 +255,11 @@ class MeetViewMixin:
             repo = SportsRepository(conn)
             if view_name == "events":
                 total, rows = repo.page_events(
-                    page, page_size, keyword, gender, age_group, category, scoring_strategy, sort_by, sort_dir
+                    page, page_size, keyword, gender, group, category, scoring_strategy, sort_by, sort_dir
                 )
             elif view_name == "athletes":
                 total, rows = repo.page_athletes(
-                    page, page_size, keyword, department_name, gender, age_group, sort_by, sort_dir
+                    page, page_size, keyword, department_name, gender, group, sort_by, sort_dir
                 )
             elif view_name == "departments":
                 total, rows = repo.page_departments(page, page_size, keyword, sort_by, sort_dir)
@@ -270,7 +270,7 @@ class MeetViewMixin:
                     keyword,
                     department_name,
                     gender,
-                    age_group,
+                    group,
                     category,
                     scoring_strategy,
                     sort_by,
@@ -283,7 +283,7 @@ class MeetViewMixin:
                     keyword,
                     department_name,
                     gender,
-                    age_group,
+                    group,
                     category,
                     scoring_strategy,
                     sort_by,
@@ -297,7 +297,7 @@ class MeetViewMixin:
                     event_id,
                     department_name,
                     gender,
-                    age_group,
+                    group,
                     category,
                     scoring_strategy,
                     sort_by,
@@ -311,7 +311,7 @@ class MeetViewMixin:
                     event_id,
                     department_name,
                     gender,
-                    age_group,
+                    group,
                     category,
                     scoring_strategy,
                     sort_by,
@@ -330,8 +330,8 @@ class MeetViewMixin:
             if view_name == "result_details":
                 self._add_result_detail_fields(items)
                 items = [{col: item.get(col, "") for col in self.RESULT_DETAIL_COLUMNS} for item in items]
-            age_group_scope = "athlete" if view_name == "athletes" else "event"
-            items = [self._readable_item(i, age_group_scope) for i in items]
+            group_scope = "athlete" if view_name == "athletes" else "event"
+            items = [self._readable_item(i, group_scope) for i in items]
             return {
                 "view": view_name,
                 "page": page,
@@ -350,7 +350,7 @@ class MeetViewMixin:
         keyword: str = "",
         department_name: str = "",
         gender: str = "",
-        age_group: str = "",
+        group: str = "",
         category: str = "",
         scoring_strategy: str = "",
     ) -> str:
@@ -361,7 +361,7 @@ class MeetViewMixin:
             keyword=keyword,
             department_name=department_name,
             gender=gender,
-            age_group=age_group,
+            group=group,
             category=category,
             scoring_strategy=scoring_strategy,
         )
@@ -374,8 +374,8 @@ class MeetViewMixin:
         for row in items:
             readable_row = {}
             for col, header in zip(columns, headers):
-                age_group_scope = "athlete" if view_name == "athletes" else "event"
-                readable_row[header] = self._export_readable_value(col, row.get(col), age_group_scope)
+                group_scope = "athlete" if view_name == "athletes" else "event"
+                readable_row[header] = self._export_readable_value(col, row.get(col), group_scope)
             writer.writerow(readable_row)
         return output.getvalue()
 

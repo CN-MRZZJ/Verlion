@@ -1,5 +1,6 @@
 from .base import CrudRepositoryMixin
 from .schemas import (
+    GROUP_OPTIONS,
     ATTEMPTS,
     ATHLETE_TABLES,
     ATHLETES,
@@ -7,6 +8,8 @@ from .schemas import (
     DEPARTMENTS,
     EVENTS,
     EVENT_PROGRESS,
+    EVENT_TYPES,
+    POINT_RULES,
     RESULTS,
     SETTINGS,
     TEAMS,
@@ -15,6 +18,7 @@ from .schemas import (
 from .types import TableSchema, WhereClause
 
 __all__ = [
+    "GROUP_OPTIONS",
     "ATTEMPTS",
     "ATHLETE_TABLES",
     "ATHLETES",
@@ -23,6 +27,8 @@ __all__ = [
     "DEPARTMENTS",
     "EVENTS",
     "EVENT_PROGRESS",
+    "EVENT_TYPES",
+    "POINT_RULES",
     "RESULTS",
     "SETTINGS",
     "TEAMS",

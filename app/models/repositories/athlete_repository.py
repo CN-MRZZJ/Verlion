@@ -12,7 +12,7 @@ class AthleteRepositoryMixin:
             name: str,
             gender: str,
             department_id: int,
-            age_group: Optional[str],
+            group: Optional[str],
             birth_date_iso: Optional[str] = None,
         ) -> int:
             return self._crud_insert(
@@ -24,14 +24,14 @@ class AthleteRepositoryMixin:
                     "gender": gender,
                     "birth_date": birth_date_iso,
                     "department_id": department_id,
-                    "age_group": age_group,
+                    "group": group,
                 },
             )
 
-    def update_athlete_age_group(self, athlete_type: str, athlete_ref_id: int, age_group: str) -> None:
+    def update_athlete_group(self, athlete_type: str, athlete_ref_id: int, group: str) -> None:
             self._crud_update_where(
                 self._athlete_schema(athlete_type),
-                {"age_group": age_group},
+                {"group": group},
                 WhereClause("id=? AND athlete_type=?", (athlete_ref_id, athlete_type)),
             )
 
@@ -81,7 +81,7 @@ class AthleteRepositoryMixin:
                     a.athlete_no,
                     a.name,
                     a.gender,
-                    a.age_group,
+                    a."group",
                     d.name AS department_name
                 FROM athletes a
                 JOIN departments d ON d.id = a.department_id
@@ -98,7 +98,7 @@ class AthleteRepositoryMixin:
                     a.athlete_no,
                     a.name,
                     a.gender,
-                    a.age_group,
+                    a."group",
                     d.name AS department_name
                 FROM athletes a
                 JOIN departments d ON d.id = a.department_id

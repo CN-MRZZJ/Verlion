@@ -15,9 +15,9 @@ DEPARTMENTS = TableSchema(
 
 ATHLETES = TableSchema(
     name="athletes",
-    columns=("id", "athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "age_group", "created_at"),
-    insert_columns=("athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "age_group"),
-    update_columns=("athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "age_group"),
+    columns=("id", "athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "group", "created_at"),
+    insert_columns=("athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "group"),
+    update_columns=("athlete_type", "athlete_no", "name", "gender", "birth_date", "department_id", "group"),
 )
 
 ATHLETE_TABLES = {
@@ -27,7 +27,7 @@ ATHLETE_TABLES = {
 
 EVENTS = TableSchema(
     name="events",
-    columns=("id", "name", "category", "event_type", "scoring_strategy", "gender", "age_group", "is_individual"),
+    columns=("id", "name", "category", "event_type", "scoring_strategy", "gender", "group", "is_individual"),
 )
 
 ATHLETE_REGISTRATIONS = TableSchema(
@@ -59,6 +59,28 @@ ATTEMPTS = TableSchema(
     columns=("id", "event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by", "created_at"),
     insert_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by"),
     update_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by"),
+)
+
+EVENT_TYPES = TableSchema(
+    name="event_types",
+    primary_key="code",
+    columns=("code", "name", "scoring_strategy"),
+    insert_columns=("code", "name", "scoring_strategy"),
+    update_columns=("name", "scoring_strategy"),
+)
+
+POINT_RULES = TableSchema(
+    name="point_rules",
+    columns=("id", "result_type", "rank", "points"),
+    insert_columns=("result_type", "rank", "points"),
+    update_columns=("points",),
+)
+
+GROUP_OPTIONS = TableSchema(
+    name="group_options",
+    columns=("id", "scope", "value", "label", "sort_order"),
+    insert_columns=("scope", "value", "label", "sort_order"),
+    update_columns=("label", "sort_order"),
 )
 
 EVENT_PROGRESS = TableSchema(

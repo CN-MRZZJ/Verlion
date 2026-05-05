@@ -99,7 +99,7 @@ app/
 从 `sports_rules.json` 加载配置（`lru_cache`），支持运行时保存并自动刷新缓存。包含：
 - `point_rule`：个人/团体名次积分映射
 - `attempt_policy`：`best`（取最优）/ `latest`（取最新）
-- `age_group_options`：运动员组别（A/B/C）、项目组别（A/B/C/ALL）、`team_event_default`
+- `group_options`：运动员组别（A/B/C）、项目组别（A/B/C/ALL）、`team_event_default`
 - `event_scoring_strategy`：track→time、field→length、fun→count
 
 ### 成绩计算策略（4 种）

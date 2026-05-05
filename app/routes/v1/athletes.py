@@ -26,7 +26,7 @@ def create_athlete():
             name=str(payload.get("name", "")).strip(),
             gender=str(payload.get("gender", "")).strip(),
             department_name=str(payload.get("department_name", "")).strip(),
-            age_group=str(payload.get("age_group", "")).strip() or None,
+            group=str(payload.get("group", "")).strip() or None,
         )
         return jsonify({"ok": True, "inserted": 1, "athlete_id": athlete_id})
     except Exception as exc:

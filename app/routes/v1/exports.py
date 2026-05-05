@@ -12,7 +12,7 @@ def export_view(view: str):
             keyword=request.args.get("keyword", "").strip(),
             department_name=request.args.get("department_name", "").strip(),
             gender=request.args.get("gender", "").strip(),
-            age_group=request.args.get("age_group", "").strip(),
+            group=request.args.get("group", "").strip(),
             category=request.args.get("category", "").strip(),
             scoring_strategy=request.args.get("scoring_strategy", "").strip(),
         )

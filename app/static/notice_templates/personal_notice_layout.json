@@ -17,14 +17,12 @@
     "fun": "趣味成绩单",
     "default": "成绩单"
   },
-  "rank_rows": [
-    {"rank": "B15", "name": "C15", "department": "D15", "performance": "G15"},
-    {"rank": "B16", "name": "C16", "department": "D16", "performance": "G16"},
-    {"rank": "B17", "name": "C17", "department": "D17", "performance": "G17"},
-    {"rank": "B18", "name": "C18", "department": "D18", "performance": "G18"},
-    {"rank": "B19", "name": "C19", "department": "D19", "performance": "G19"},
-    {"rank": "B20", "name": "C20", "department": "D20", "performance": "G20"},
-    {"rank": "B21", "name": "C21", "department": "D21", "performance": "G21"},
-    {"rank": "B22", "name": "C22", "department": "D22", "performance": "G22"}
-  ]
+  "row_template": {
+    "rank": "B",
+    "name": "C",
+    "department": "D",
+    "performance": "G"
+  },
+  "start_row": 15,
+  "max_rows": 8
 }

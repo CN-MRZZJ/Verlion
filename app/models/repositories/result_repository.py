@@ -239,7 +239,7 @@ class ResultRepositoryMixin:
                     e.name AS event_name,
                     e.category,
                     e.scoring_strategy,
-                    e.age_group,
+                    e."group",
                     CASE
                         WHEN r.athlete_ref_id IS NOT NULL THEN 'athlete'
                         ELSE 'team'
@@ -299,7 +299,7 @@ class ResultRepositoryMixin:
                     e.event_type,
                     e.scoring_strategy,
                     e.gender AS event_gender,
-                    e.age_group,
+                    e."group",
                     e.is_individual,
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN 'athlete' ELSE 'team' END AS result_type,
                     COALESCE(r.athlete_type, '') AS athlete_type,
@@ -325,7 +325,7 @@ class ResultRepositoryMixin:
                 LEFT JOIN teams t ON t.id = r.team_id
                 LEFT JOIN departments d2 ON d2.id = t.department_id
                 LEFT JOIN team_member_summary ms ON ms.team_id = t.id
-                ORDER BY e.category ASC, e.gender ASC, e.age_group ASC, e.name ASC, r.rank ASC, r.id ASC
+                ORDER BY e.category ASC, e.gender ASC, e."group" ASC, e.name ASC, r.rank ASC, r.id ASC
                 """
             ).fetchall()
 
@@ -362,7 +362,7 @@ class ResultRepositoryMixin:
             event_id: str = "",
             department_name: str = "",
             gender: str = "",
-            age_group: str = "",
+            group: str = "",
             category: str = "",
             scoring_strategy: str = "",
             sort_by: str = "",
@@ -382,9 +382,9 @@ class ResultRepositoryMixin:
             if gender:
                 where.append("e.gender = ?")
                 params.append(gender)
-            if age_group:
-                where.append("e.age_group = ?")
-                params.append(age_group)
+            if group:
+                where.append('e."group" = ?')
+                params.append(group)
             if category:
                 where.append("e.category = ?")
                 params.append(category)
@@ -401,7 +401,7 @@ class ResultRepositoryMixin:
                     "event_name": "e.name",
                     "category": "e.category",
                     "scoring_strategy": "e.scoring_strategy",
-                    "age_group": "e.age_group",
+                    "group": 'e."group"',
                     "result_type": "result_type",
                     "athlete_type": "athlete_type",
                     "target_name": "target_name",
@@ -431,7 +431,7 @@ class ResultRepositoryMixin:
                     e.name AS event_name,
                     e.category,
                     e.scoring_strategy,
-                    e.age_group,
+                    e."group",
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN 'athlete' ELSE 'team' END AS result_type,
                     COALESCE(r.athlete_type, '') AS athlete_type,
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN a.name ELSE t.name END AS target_name,
@@ -460,7 +460,7 @@ class ResultRepositoryMixin:
             event_id: str = "",
             department_name: str = "",
             gender: str = "",
-            age_group: str = "",
+            group: str = "",
             category: str = "",
             scoring_strategy: str = "",
             sort_by: str = "",
@@ -492,9 +492,9 @@ class ResultRepositoryMixin:
             if gender:
                 where.append("e.gender = ?")
                 params.append(gender)
-            if age_group:
-                where.append("e.age_group = ?")
-                params.append(age_group)
+            if group:
+                where.append('e."group" = ?')
+                params.append(group)
             if category:
                 where.append("e.category = ?")
                 params.append(category)
@@ -514,7 +514,7 @@ class ResultRepositoryMixin:
                     "event_type": "e.event_type",
                     "scoring_strategy": "e.scoring_strategy",
                     "event_gender": "e.gender",
-                    "age_group": "e.age_group",
+                    "group": 'e."group"',
                     "is_individual": "e.is_individual",
                     "result_type": "result_type",
                     "athlete_type": "athlete_type",
@@ -531,7 +531,7 @@ class ResultRepositoryMixin:
                     "entered_by": "r.entered_by",
                     "created_at": "r.created_at",
                 },
-                "e.category ASC, e.gender ASC, e.age_group ASC, e.name ASC, r.rank ASC, r.id ASC",
+                'e.category ASC, e.gender ASC, e."group" ASC, e.name ASC, r.rank ASC, r.id ASC',
             )
             base_from = f"""
                 FROM results r
@@ -569,7 +569,7 @@ class ResultRepositoryMixin:
                     e.event_type,
                     e.scoring_strategy,
                     e.gender AS event_gender,
-                    e.age_group,
+                    e."group",
                     e.is_individual,
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN 'athlete' ELSE 'team' END AS result_type,
                     COALESCE(r.athlete_type, '') AS athlete_type,
@@ -593,7 +593,27 @@ class ResultRepositoryMixin:
             """
             return self._paged_query(count_sql, data_sql, tuple(params), page, page_size)
 
-    def list_personal_attempts_for_event(self, event_id: int):
+    def list_personal_attempts_for_event(self, event_id: int, attempt_number: int | None = None):
+            if attempt_number is not None:
+                return self.conn.execute(
+                    """
+                    SELECT
+                        a.athlete_no,
+                        a.name AS athlete_name,
+                        d.name AS department_name,
+                        at.attempt_number,
+                        at.rank,
+                        at.performance,
+                        at.is_void,
+                        at.created_at
+                    FROM attempts at
+                    JOIN athletes a ON a.athlete_type = at.athlete_type AND a.id = at.athlete_ref_id
+                    LEFT JOIN departments d ON d.id = a.department_id
+                    WHERE at.event_id=? AND at.athlete_ref_id IS NOT NULL AND at.attempt_number=?
+                    ORDER BY a.athlete_no ASC
+                    """,
+                    (event_id, attempt_number),
+                ).fetchall()
             return self.conn.execute(
                 """
                 SELECT
@@ -614,7 +634,26 @@ class ResultRepositoryMixin:
                 (event_id,),
             ).fetchall()
 
-    def list_team_attempts_for_event(self, event_id: int):
+    def list_team_attempts_for_event(self, event_id: int, attempt_number: int | None = None):
+            if attempt_number is not None:
+                return self.conn.execute(
+                    """
+                    SELECT
+                        t.name AS team_name,
+                        d.name AS department_name,
+                        at.attempt_number,
+                        at.rank,
+                        at.performance,
+                        at.is_void,
+                        at.created_at
+                    FROM attempts at
+                    JOIN teams t ON t.id = at.team_id
+                    LEFT JOIN departments d ON d.id = t.department_id
+                    WHERE at.event_id=? AND at.team_id IS NOT NULL AND at.attempt_number=?
+                    ORDER BY t.name ASC
+                    """,
+                    (event_id, attempt_number),
+                ).fetchall()
             return self.conn.execute(
                 """
                 SELECT

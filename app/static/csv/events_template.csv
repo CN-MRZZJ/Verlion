@@ -1,4 +1,4 @@
-name,category,event_type,scoring_strategy,gender,age_group,is_individual
+name,category,event_type,scoring_strategy,gender,group,is_individual
 100米,competitive,track,time,男女,C,1
 800米,competitive,track,time,male,B,1
 1500米,competitive,track,time,female,A,1

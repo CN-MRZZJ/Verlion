@@ -5,6 +5,18 @@ from flask import Response, current_app, jsonify, request
 from .common import api_v1_bp, get_service
 
 
+def _parse_attempt_number(raw: str | None) -> int | None:
+    if raw is None:
+        return None
+    stripped = str(raw).strip()
+    if not stripped:
+        return None
+    try:
+        return int(stripped)
+    except (ValueError, TypeError):
+        return None
+
+
 @api_v1_bp.post("/settings/report-environment")
 def save_report_environment():
     try:
@@ -125,11 +137,13 @@ def export_personal_attempt_notice():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
+        attempt_number = _parse_attempt_number(request.args.get("attempt_number"))
         content, filename = get_service().export_personal_attempt_notice_xlsx(
             event_id=event_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["PERSONAL_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
+            attempt_number=attempt_number,
         )
         safe_ascii_name = "personal_attempt_notice.xlsx"
         encoded_name = quote(filename)
@@ -149,11 +163,13 @@ def preview_personal_attempt_notice_pdf():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
+        attempt_number = _parse_attempt_number(request.args.get("attempt_number"))
         content, filename = get_service().export_personal_attempt_notice_pdf(
             event_id=event_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["PERSONAL_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
+            attempt_number=attempt_number,
         )
         safe_ascii_name = "personal_attempt_notice.pdf"
         encoded_name = quote(filename)
@@ -173,11 +189,13 @@ def export_team_attempt_notice():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
+        attempt_number = _parse_attempt_number(request.args.get("attempt_number"))
         content, filename = get_service().export_team_attempt_notice_xlsx(
             event_id=event_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["TEAM_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
+            attempt_number=attempt_number,
         )
         safe_ascii_name = "team_attempt_notice.xlsx"
         encoded_name = quote(filename)
@@ -197,11 +215,13 @@ def preview_team_attempt_notice_pdf():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
+        attempt_number = _parse_attempt_number(request.args.get("attempt_number"))
         content, filename = get_service().export_team_attempt_notice_pdf(
             event_id=event_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["TEAM_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
+            attempt_number=attempt_number,
         )
         safe_ascii_name = "team_attempt_notice.pdf"
         encoded_name = quote(filename)

@@ -4,6 +4,7 @@ from flask_cors import CORS
 from config import Config
 from app.models.database import Database
 from app.openapi import get_openapi_spec
+from app.rules import set_rules_db
 from app.services import SportsMeetService
 
 
@@ -12,7 +13,9 @@ def create_app() -> Flask:
     app.config.from_object(Config)
     CORS(app)
 
-    Database(app.config["DATABASE_PATH"]).initialize()
+    db = Database(app.config["DATABASE_PATH"])
+    db.initialize()
+    set_rules_db(db)
 
     from app.routes.v1 import api_v1_bp
 

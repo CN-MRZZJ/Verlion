@@ -28,7 +28,7 @@ JSON_ERROR = {
 ATHLETE = {
     "type": "object",
     "properties": {
-        "age_group": {"type": "string", "description": "组别"},
+        "group": {"type": "string", "description": "组别"},
         "athlete_no": {"type": "string", "description": "运动员号"},
         "athlete_ref_id": {"type": "integer", "description": "运动员数据库 ID"},
         "athlete_type": {"type": "string", "description": "运动员类型：competitive/fun"},
@@ -55,7 +55,7 @@ REGISTRATION = {
         "id": {"type": "integer", "description": "项目 ID"},
         "name": {"type": "string", "description": "项目名称"},
         "label": {"type": "string", "description": "项目完整显示名"},
-        "age_group": {"type": "string", "description": "组别"},
+        "group": {"type": "string", "description": "组别"},
         "gender": {"type": "string", "description": "性别"},
     },
 }
@@ -69,7 +69,7 @@ EVENT = {
         "event_type": {"type": "string", "description": "项目类型：track/field/fun"},
         "scoring_strategy": {"type": "string", "description": "计分策略：time/length/count/count_miss"},
         "gender": {"type": "string", "description": "性别限制：male/female/mixed"},
-        "age_group": {"type": "string", "description": "组别"},
+        "group": {"type": "string", "description": "组别"},
         "is_individual": {"type": "integer", "description": "是否个人项目：1=个人 0=团体"},
     },
 }
@@ -83,7 +83,7 @@ EVENT_PROGRESS = {
         "event_type": {"type": "string", "description": "项目类型"},
         "scoring_strategy": {"type": "string", "description": "计分策略"},
         "gender": {"type": "string", "description": "性别"},
-        "age_group": {"type": "string", "description": "组别"},
+        "group": {"type": "string", "description": "组别"},
         "is_individual": {"type": "integer", "description": "是否个人项目"},
         "checkin_done": {"type": "integer", "description": "检录是否完成：0/1"},
         "competition_done": {"type": "integer", "description": "比赛是否完成：0/1"},
@@ -102,7 +102,7 @@ TEAM = {
         "event_id": {"type": "integer", "description": "所属项目 ID"},
         "event_name": {"type": "string", "description": "所属项目名称"},
         "gender": {"type": "string", "description": "项目性别"},
-        "age_group": {"type": "string", "description": "项目组别"},
+        "group": {"type": "string", "description": "项目组别"},
         "member_count": {"type": "integer", "description": "成员数"},
         "members_summary": {"type": "string", "description": "成员姓名摘要"},
     },
@@ -127,7 +127,7 @@ RESULT = {
         "event_name": {"type": "string", "description": "项目名称"},
         "category": {"type": "string", "description": "项目类别"},
         "scoring_strategy": {"type": "string", "description": "计分策略"},
-        "age_group": {"type": "string", "description": "组别"},
+        "group": {"type": "string", "description": "组别"},
         "result_type": {"type": "string", "description": "成绩类型：athlete/team"},
         "athlete_type": {"type": "string", "description": "运动员类型"},
         "target_name": {"type": "string", "description": "运动员名或队伍名"},
@@ -189,7 +189,7 @@ RULE_CONFIG = {
     "type": "object",
     "properties": {
         "attempt_policy": {"type": "string", "description": "多次尝试策略：best/latest"},
-        "age_group_options": {"type": "object", "description": "组别配置"},
+        "group_options": {"type": "object", "description": "组别配置"},
         "event_scoring_strategy": {"type": "object", "description": "项目计分策略映射"},
         "point_rule": {"type": "object", "description": "名次积分规则"},
     },
@@ -203,6 +203,41 @@ RULE_CONFIG_RESPONSE = {
     },
 }
 
+EVENT_TYPE = {
+    "type": "object",
+    "properties": {
+        "code": {"type": "string", "description": "项目代号"},
+        "name": {"type": "string", "description": "项目中文分类"},
+        "scoring_strategy": {"type": "string", "description": "比较策略：time/length/count/count_miss"},
+    },
+}
+
+EVENT_TYPE_ITEM_RESPONSE = {
+    "type": "object",
+    "properties": {
+        "ok": {"type": "boolean"},
+        "item": {"$ref": "#/components/schemas/EventType"},
+    },
+}
+
+CREATE_EVENT_TYPE_REQUEST = {
+    "type": "object",
+    "required": ["code", "name", "scoring_strategy"],
+    "properties": {
+        "code": {"type": "string", "description": "项目代号"},
+        "name": {"type": "string", "description": "项目中文分类"},
+        "scoring_strategy": {"type": "string", "description": "比较策略：time/length/count/count_miss"},
+    },
+}
+
+UPDATE_EVENT_TYPE_REQUEST = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string", "description": "项目中文分类"},
+        "scoring_strategy": {"type": "string", "description": "比较策略：time/length/count/count_miss"},
+    },
+}
+
 # ── Request schemas ──────────────────────────────────────────────────
 
 CREATE_ATHLETE_REQUEST = {
@@ -213,7 +248,7 @@ CREATE_ATHLETE_REQUEST = {
         "name": {"type": "string", "description": "姓名"},
         "gender": {"type": "string", "description": "性别：male/female"},
         "department_name": {"type": "string", "description": "归属单位"},
-        "age_group": {"type": "string", "description": "年龄组，可为空"},
+        "group": {"type": "string", "description": "年龄组，可为空"},
     },
     "required": ["athlete_type", "athlete_no", "name", "gender", "department_name"],
 }
@@ -583,7 +618,7 @@ def get_openapi_spec() -> dict[str, Any]:
         _query("keyword", "关键词筛选"),
         _query("department_name", "部门名称筛选"),
         _query("gender", "性别筛选：male/female/mixed"),
-        _query("age_group", "组别筛选"),
+        _query("group", "组别筛选"),
         _query("category", "项目类别筛选：competitive/fun"),
         _query("scoring_strategy", "成绩策略筛选"),
         _query("sort_by", "排序字段"),
@@ -767,6 +802,42 @@ def get_openapi_spec() -> dict[str, Any]:
                 request_body=_json_body_ref("UpdateProgressRequest"),
             )
         },
+        "/api/v1/event-types": {
+            "get": _operation(
+                "项目类型",
+                "列出项目类型",
+                "列出所有已配置的项目类型（项目代号、中文分类、比较策略）。",
+                success=_item_list_response("EventType"),
+            ),
+            "post": _operation(
+                "项目类型",
+                "新增项目类型",
+                "新增一个项目类型，包含代号、中文分类名称和比较策略。",
+                request_body=_json_body_ref("CreateEventTypeRequest"),
+            ),
+        },
+        "/api/v1/event-types/{code}": {
+            "get": _operation(
+                "项目类型",
+                "获取项目类型",
+                "根据代号获取单个项目类型。",
+                parameters=[_path("code", "项目代号")],
+                success=_typed_response("EventTypeItemResponse"),
+            ),
+            "put": _operation(
+                "项目类型",
+                "更新项目类型",
+                "更新项目类型的中文分类名称或比较策略。",
+                parameters=[_path("code", "项目代号")],
+                request_body=_json_body_ref("UpdateEventTypeRequest"),
+            ),
+            "delete": _operation(
+                "项目类型",
+                "删除项目类型",
+                "删除指定项目类型（需确保没有项目引用该代号）。",
+                parameters=[_path("code", "项目代号")],
+            ),
+        },
         "/api/v1/exports/{view}": {
             "get": _operation(
                 "导出",
@@ -880,7 +951,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "公示",
                 "导出个人轮次成绩表 XLSX",
                 "按项目和模板导出个人项目轮次成绩表（含每次尝试记录及作废标记）。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
+                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True), _query("attempt_number", "指定轮次（不传则导出所有轮次）", "integer")],
                 success=_file_response("XLSX 文件", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
             )
         },
@@ -889,7 +960,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "公示",
                 "预览个人轮次成绩表 PDF",
                 "按项目和模板生成个人项目轮次成绩表 PDF。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
+                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True), _query("attempt_number", "指定轮次（不传则导出所有轮次）", "integer")],
                 success=_file_response("PDF 文件", "application/pdf"),
             )
         },
@@ -898,7 +969,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "公示",
                 "导出团体轮次成绩表 XLSX",
                 "按项目和模板导出团体项目轮次成绩表（含每次尝试记录及作废标记）。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
+                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True), _query("attempt_number", "指定轮次（不传则导出所有轮次）", "integer")],
                 success=_file_response("XLSX 文件", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
             )
         },
@@ -907,7 +978,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "公示",
                 "预览团体轮次成绩表 PDF",
                 "按项目和模板生成团体项目轮次成绩表 PDF。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
+                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True), _query("attempt_number", "指定轮次（不传则导出所有轮次）", "integer")],
                 success=_file_response("PDF 文件", "application/pdf"),
             )
         },
@@ -1069,6 +1140,7 @@ def get_openapi_spec() -> dict[str, Any]:
             {"name": "运动员报名"},
             {"name": "部门"},
             {"name": "项目"},
+            {"name": "项目类型"},
             {"name": "项目流程"},
             {"name": "导入"},
             {"name": "导出"},
@@ -1093,6 +1165,10 @@ def get_openapi_spec() -> dict[str, Any]:
                 "Team": TEAM,
                 "TeamMember": TEAM_MEMBER,
                 "Result": RESULT,
+                "EventType": EVENT_TYPE,
+                "EventTypeItemResponse": EVENT_TYPE_ITEM_RESPONSE,
+                "CreateEventTypeRequest": CREATE_EVENT_TYPE_REQUEST,
+                "UpdateEventTypeRequest": UPDATE_EVENT_TYPE_REQUEST,
                 "Attempt": ATTEMPT,
                 "CheckItem": CHECK_ITEM,
                 "Summary": SUMMARY,

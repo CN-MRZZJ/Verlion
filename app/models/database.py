@@ -32,6 +32,9 @@ class Database:
             self._migrate_results_entered_by(conn)
             self._migrate_attempts_table(conn)
             self._migrate_event_progress_columns(conn)
+            self._migrate_rules_tables(conn)
+            self._migrate_group_rename(conn)
+            self._migrate_event_type_check(conn)
             conn.commit()
 
     def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
@@ -250,3 +253,140 @@ class Database:
         conn.execute("DROP TABLE event_progress")
         conn.execute("ALTER TABLE event_progress_new RENAME TO event_progress")
         conn.execute("PRAGMA foreign_keys = ON;")
+
+    def _migrate_rules_tables(self, conn: sqlite3.Connection) -> None:
+        """Create rules config tables and seed from sports_rules.json if empty."""
+        if not self._table_exists(conn, "event_types"):
+            conn.execute("""
+                CREATE TABLE event_types (
+                    code TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss'))
+                )
+            """)
+        if not self._table_exists(conn, "point_rules"):
+            conn.execute("""
+                CREATE TABLE point_rules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    result_type TEXT NOT NULL CHECK(result_type IN ('individual','team')),
+                    rank INTEGER NOT NULL CHECK(rank >= 1),
+                    points INTEGER NOT NULL CHECK(points >= 0),
+                    UNIQUE(result_type, rank)
+                )
+            """)
+        if not self._table_exists(conn, "group_options"):
+            conn.execute("""
+                CREATE TABLE group_options (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scope TEXT NOT NULL CHECK(scope IN ('athlete','event')),
+                    value TEXT NOT NULL,
+                    label TEXT NOT NULL,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    UNIQUE(scope, value)
+                )
+            """)
+        self._seed_rules_from_json(conn)
+
+    def _migrate_group_rename(self, conn: sqlite3.Connection) -> None:
+        """Rename age_group → group in tables and columns."""
+        if self._table_exists(conn, "age_group_options") and not self._table_exists(conn, "group_options"):
+            conn.execute("ALTER TABLE age_group_options RENAME TO group_options")
+
+        if self._table_exists(conn, "athletes"):
+            cols = self._table_columns(conn, "athletes")
+            if "age_group" in cols:
+                conn.execute('ALTER TABLE athletes RENAME COLUMN age_group TO "group"')
+
+        if self._table_exists(conn, "events"):
+            cols = self._table_columns(conn, "events")
+            if "age_group" in cols:
+                conn.execute('ALTER TABLE events RENAME COLUMN age_group TO "group"')
+
+    def _migrate_event_type_check(self, conn: sqlite3.Connection) -> None:
+        """Remove hardcoded CHECK on event_type, now managed via event_types table."""
+        if self._table_exists(conn, "events") and "event_type IN ('track','field','fun')" in self._table_sql(conn, "events"):
+            conn.execute("PRAGMA foreign_keys = OFF;")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS events_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    category TEXT NOT NULL CHECK(category IN ('competitive','fun')),
+                    event_type TEXT NOT NULL,
+                    scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss')),
+                    gender TEXT NOT NULL CHECK(gender IN ('male','female','mixed')),
+                    "group" TEXT NOT NULL,
+                    is_individual INTEGER NOT NULL CHECK(is_individual IN (0,1))
+                )
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO events_new(id, name, category, event_type, scoring_strategy, gender, "group", is_individual)
+                SELECT id, name, category, event_type, scoring_strategy, gender, "group", is_individual
+                FROM events
+                """
+            )
+            conn.execute("DROP TABLE events")
+            conn.execute("ALTER TABLE events_new RENAME TO events")
+            conn.execute("PRAGMA foreign_keys = ON;")
+
+    def _seed_rules_from_json(self, conn: sqlite3.Connection) -> None:
+        """One-time seed from sports_rules.json into new tables if empty."""
+        import json
+
+        json_path = Path(__file__).resolve().parent.parent.parent / "sports_rules.json"
+        if not json_path.exists():
+            return
+
+        with json_path.open("r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        count = conn.execute("SELECT COUNT(*) AS c FROM event_types").fetchone()["c"]
+        if count == 0:
+            name_map = {"track": "径赛", "field": "田赛", "fun": "趣味"}
+            for code, strategy in config.get("event_scoring_strategy", {}).items():
+                if str(code).startswith("_"):
+                    continue
+                conn.execute(
+                    "INSERT INTO event_types(code, name, scoring_strategy) VALUES(?,?,?)",
+                    (code, name_map.get(code, code), strategy),
+                )
+
+        count = conn.execute("SELECT COUNT(*) AS c FROM point_rules").fetchone()["c"]
+        if count == 0:
+            point_rule = config.get("point_rule", {})
+            for result_type in ("individual", "team"):
+                rules = point_rule.get(result_type, {})
+                for rank, points in rules.items():
+                    if str(rank).startswith("_"):
+                        continue
+                    conn.execute(
+                        "INSERT INTO point_rules(result_type, rank, points) VALUES(?,?,?)",
+                        (result_type, int(rank), int(points)),
+                    )
+
+        count = conn.execute("SELECT COUNT(*) AS c FROM group_options").fetchone()["c"]
+        if count == 0:
+            groups = config.get("age_group_options") or config.get("group_options", {})
+            for scope in ("athlete", "event"):
+                for sort_idx, item in enumerate(groups.get(scope, [])):
+                    if not isinstance(item, dict):
+                        continue
+                    conn.execute(
+                        "INSERT INTO group_options(scope, value, label, sort_order) VALUES(?,?,?,?)",
+                        (scope, item.get("value", ""), item.get("label", ""), sort_idx),
+                    )
+
+        for key, default in [
+            ("rule.attempt_policy", "best"),
+            ("rule.team_event_default", "ALL"),
+        ]:
+            existing = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            if not existing:
+                if key == "rule.attempt_policy":
+                    val = str(config.get("attempt_policy", default)).strip()
+                else:
+                    groups = config.get("group_options") or config.get("age_group_options", {})
+                    val = str(groups.get("team_event_default", default)).strip()
+                conn.execute("INSERT INTO settings(key, value) VALUES(?,?)", (key, val))

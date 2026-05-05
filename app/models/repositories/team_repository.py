@@ -53,7 +53,7 @@ class TeamRepositoryMixin:
                     a.athlete_no,
                     a.name AS athlete_name,
                     a.gender,
-                    a.age_group,
+                    a."group",
                     d.name AS department_name
                 FROM team_members tm
                 LEFT JOIN athletes a ON a.athlete_type = tm.athlete_type AND a.id = tm.athlete_ref_id
@@ -74,7 +74,7 @@ class TeamRepositoryMixin:
                     d.name AS department_name,
                     e.name AS event_name,
                     e.gender,
-                    e.age_group
+                    e."group"
                 FROM teams t
                 JOIN departments d ON d.id = t.department_id
                 JOIN events e ON e.id = t.event_id
@@ -100,7 +100,7 @@ class TeamRepositoryMixin:
             keyword: str,
             department_name: str,
             gender: str = "",
-            age_group: str = "",
+            group: str = "",
             category: str = "",
             scoring_strategy: str = "",
             sort_by: str = "",
@@ -117,9 +117,9 @@ class TeamRepositoryMixin:
             if gender:
                 where.append("e.gender = ?")
                 params.append(gender)
-            if age_group:
-                where.append("e.age_group = ?")
-                params.append(age_group)
+            if group:
+                where.append('e."group" = ?')
+                params.append(group)
             if category:
                 where.append("e.category = ?")
                 params.append(category)
@@ -136,7 +136,7 @@ class TeamRepositoryMixin:
                     "department_name": "d.name",
                     "event_name": "e.name",
                     "gender": "e.gender",
-                    "age_group": "e.age_group",
+                    "group": 'e."group"',
                 },
                 "t.id DESC",
             )
@@ -148,7 +148,7 @@ class TeamRepositoryMixin:
                 WHERE {where_sql}
             """
             data_sql = f"""
-                SELECT t.id, t.event_id, t.name AS team_name, d.name AS department_name, e.name AS event_name, e.gender, e.age_group
+                SELECT t.id, t.event_id, t.name AS team_name, d.name AS department_name, e.name AS event_name, e.gender, e."group"
                 FROM teams t
                 JOIN departments d ON d.id = t.department_id
                 JOIN events e ON e.id = t.event_id

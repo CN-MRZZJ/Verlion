@@ -5,7 +5,7 @@ from typing import Callable, Optional, TypeVar
 
 from app.models.database import Database
 from app.models.repositories import SportsRepository
-from app.rules import event_age_group_label
+from app.rules import event_group_label
 from app.services.time_service import today
 
 T = TypeVar("T")
@@ -96,11 +96,11 @@ class MeetServiceBase:
             return "女子"
         return "混合"
 
-    def _event_group_label(self, age_group: str) -> str:
-        return event_age_group_label(age_group) or event_age_group_label("ALL")
+    def _event_group_label(self, group: str) -> str:
+        return event_group_label(group) or event_group_label("ALL")
 
     def _event_display_name(self, event: dict) -> str:
-        return f"{event.get('name', '')}{self._event_gender_label(str(event.get('gender', '')))}{self._event_group_label(str(event.get('age_group', '')))}"
+        return f"{event.get('name', '')}{self._event_gender_label(str(event.get('gender', '')))}{self._event_group_label(str(event.get('group', '')))}"
 
     def _notice_title_for_event(self, event: dict, layout: Optional[dict] = None) -> str:
         title_map = (layout or {}).get("notice_title_by_event_type", {}) if isinstance(layout, dict) else {}

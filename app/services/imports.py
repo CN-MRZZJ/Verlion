@@ -2,14 +2,13 @@ import csv
 import io
 import re
 
-from app.rules import age_group_values, team_event_default_age_group
-from app.rules import scoring_strategy_for_event_type
+from app.rules import group_values, load_rule_config, scoring_strategy_for_event_type, team_event_default_group
 from app.models.repositories import SportsRepository
 
 
 class MeetImportMixin:
     def import_events_rows(self, rows: list[dict[str, str]]) -> dict:
-        required = {"name", "category", "event_type", "gender", "age_group", "is_individual"}
+        required = {"name", "category", "event_type", "gender", "group", "is_individual"}
         missing = required - set(rows[0].keys()) if rows else required
         if missing:
             raise ValueError(f"项目模板缺少字段: {sorted(missing)}")
@@ -28,34 +27,36 @@ class MeetImportMixin:
                     event_type = row["event_type"].strip()
                     scoring_strategy = (row.get("scoring_strategy") or "").strip()
                     gender_raw = row["gender"].strip()
-                    age_group = row["age_group"].strip()
+                    group = row["group"].strip()
                     is_individual = int(row["is_individual"].strip())
 
                     if category not in {"competitive", "fun"}:
                         raise ValueError("category 必须为 competitive 或 fun")
-                    if event_type not in {"track", "field", "fun"}:
-                        raise ValueError("event_type 必须为 track/field/fun")
+                    valid_event_types = set(load_rule_config().get("event_scoring_strategy", {}))
+                    valid_event_types.discard("_comment")
+                    if event_type not in valid_event_types:
+                        raise ValueError(f"event_type 必须为 {'/'.join(sorted(valid_event_types))}")
                     if scoring_strategy and scoring_strategy not in {"time", "length", "count", "count_miss"}:
                         raise ValueError("scoring_strategy 必须为 time/length/count/count_miss")
                     target_genders = self._expand_event_genders(gender_raw)
-                    allowed_event_age_groups = age_group_values("event")
-                    if age_group not in allowed_event_age_groups:
-                        raise ValueError(f"age_group 必须为 {'/'.join(sorted(allowed_event_age_groups))}")
+                    allowed_event_groups = group_values("event")
+                    if group not in allowed_event_groups:
+                        raise ValueError(f"group 必须为 {'/'.join(sorted(allowed_event_groups))}")
                     if is_individual not in {0, 1}:
                         raise ValueError("is_individual 必须为 0 或 1")
                     if category == "fun" and event_type != "fun":
                         raise ValueError("趣味项目的 event_type 必须为 fun")
                     if category == "competitive" and event_type == "fun":
                         raise ValueError("竞技项目的 event_type 不能为 fun")
-                    team_default_age_group = team_event_default_age_group()
-                    if (category == "fun" or is_individual == 0) and age_group != team_default_age_group:
-                        raise ValueError(f"趣味项目和集体项目必须使用 age_group={team_default_age_group}")
-                    if event_type in {"track", "field"}:
+                    team_default_group = team_event_default_group()
+                    if (category == "fun" or is_individual == 0) and group != team_default_group:
+                        raise ValueError(f"趣味项目和集体项目必须使用 group={team_default_group}")
+                    try:
                         fixed = scoring_strategy_for_event_type(event_type)
                         if scoring_strategy and scoring_strategy != fixed:
                             raise ValueError(f"{event_type} 项目的 scoring_strategy 必须为 {fixed}")
                         scoring_strategy = fixed
-                    else:
+                    except ValueError:
                         if not scoring_strategy:
                             scoring_strategy = "count"
 
@@ -66,12 +67,12 @@ class MeetImportMixin:
                             event_type,
                             scoring_strategy,
                             gender,
-                            age_group,
+                            group,
                             is_individual,
                         ):
                             skipped += 1
                             skipped_details.append(
-                                f"第{idx}行: 已存在，已跳过（name={name}, gender={gender}, age_group={age_group}）"
+                                f"第{idx}行: 已存在，已跳过（name={name}, gender={gender}, group={group}）"
                             )
                             continue
 
@@ -81,7 +82,7 @@ class MeetImportMixin:
                             event_type,
                             scoring_strategy,
                             gender,
-                            age_group,
+                            group,
                             is_individual,
                         )
                         inserted += 1
@@ -126,11 +127,11 @@ class MeetImportMixin:
                     if not department_name:
                         raise ValueError("department_name 不能为空")
 
-                    age_group_raw = (row.get("age_group") or "").strip()
-                    age_group = age_group_raw if age_group_raw else None
-                    allowed_athlete_age_groups = age_group_values("athlete")
-                    if age_group and age_group not in allowed_athlete_age_groups:
-                        raise ValueError(f"age_group 必须为 {'/'.join(sorted(allowed_athlete_age_groups))}")
+                    group_raw = (row.get("group") or "").strip()
+                    group = group_raw if group_raw else None
+                    allowed_athlete_groups = group_values("athlete")
+                    if group and group not in allowed_athlete_groups:
+                        raise ValueError(f"group 必须为 {'/'.join(sorted(allowed_athlete_groups))}")
 
                     total_members_text = (row.get("total_members") or "0").strip()
                     total_members = int(total_members_text) if total_members_text else 0
@@ -155,7 +156,7 @@ class MeetImportMixin:
                         name=name,
                         gender=gender,
                         department_id=dept_id,
-                        age_group=age_group,
+                        group=group,
                     )
                     inserted += 1
                 except Exception as exc:
@@ -230,10 +231,10 @@ class MeetImportMixin:
                     csv_gender = (row.get("gender") or "").strip()
                     if csv_gender and csv_gender != athlete["gender"]:
                         raise ValueError("gender 与已导入运动员信息不一致")
-                    csv_group = (row.get("age_group") or "").strip()
-                    athlete_group = athlete.get("age_group") or ""
+                    csv_group = (row.get("group") or "").strip()
+                    athlete_group = athlete.get("group") or ""
                     if csv_group and csv_group != athlete_group:
-                        raise ValueError("age_group 与已导入运动员信息不一致")
+                        raise ValueError("group 与已导入运动员信息不一致")
 
                     selected_any = False
                     for header, event_ids in event_columns:
@@ -322,7 +323,7 @@ class MeetImportMixin:
         grouped_events: list[tuple[str, list[dict]]] = []
         group_map: dict[str, list[dict]] = {}
         for event in events:
-            key = f"{event['name']}|{event['age_group']}"
+            key = f"{event['name']}|{event['group']}"
             if key not in group_map:
                 group_map[key] = []
                 grouped_events.append((key, group_map[key]))
@@ -333,8 +334,8 @@ class MeetImportMixin:
             ref = items[0]
             ids = sorted(int(e["id"]) for e in items)
             ids_token = "|".join(str(i) for i in ids)
-            event_columns.append(f"{ref['name']}-{self._event_group_label(str(ref['age_group']))}[{ids_token}]")
-        fieldnames = ["athlete_no", "name", "gender", "age_group", "department_name"] + event_columns
+            event_columns.append(f"{ref['name']}-{self._event_group_label(str(ref['group']))}[{ids_token}]")
+        fieldnames = ["athlete_no", "name", "gender", "group", "department_name"] + event_columns
         output = io.StringIO()
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
@@ -344,7 +345,7 @@ class MeetImportMixin:
                 "athlete_no": athlete.get("athlete_no", "") or "",
                 "name": athlete.get("name", "") or "",
                 "gender": athlete.get("gender", "") or "",
-                "age_group": athlete.get("age_group", "") or "",
+                "group": athlete.get("group", "") or "",
                 "department_name": athlete.get("department_name", "") or "",
             }
             athlete_id = int(athlete["athlete_ref_id"])

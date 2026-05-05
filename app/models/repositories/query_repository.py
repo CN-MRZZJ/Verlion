@@ -10,7 +10,7 @@ class QueryRepositoryMixin:
             keyword: str,
             department_name: str,
             gender: str,
-            age_group: str,
+            group: str,
             sort_by: str = "",
             sort_dir: str = "desc",
         ):
@@ -25,9 +25,9 @@ class QueryRepositoryMixin:
             if gender:
                 where.append("u.gender = ?")
                 params.append(gender)
-            if age_group:
-                where.append("u.age_group = ?")
-                params.append(age_group)
+            if group:
+                where.append('u."group" = ?')
+                params.append(group)
             where_sql = " AND ".join(where)
 
             athlete_sql = """
@@ -37,7 +37,7 @@ class QueryRepositoryMixin:
                     a.athlete_no,
                     a.name,
                     a.gender,
-                    a.age_group,
+                    a."group",
                     d.name AS department_name
                 FROM athletes a
                 JOIN departments d ON d.id = a.department_id
@@ -53,13 +53,13 @@ class QueryRepositoryMixin:
                     "athlete_no": "u.athlete_no",
                     "name": "u.name",
                     "gender": "u.gender",
-                    "age_group": "u.age_group",
+                    "group": 'u."group"',
                     "department_name": "u.department_name",
                 },
                 "u.athlete_type ASC, u.athlete_ref_id DESC",
             )
             data_sql = f"""
-                SELECT u.athlete_type, u.athlete_ref_id, u.athlete_no, u.name, u.gender, u.age_group, u.department_name
+                SELECT u.athlete_type, u.athlete_ref_id, u.athlete_no, u.name, u.gender, u."group", u.department_name
                 FROM ({athlete_sql}) u
                 WHERE {where_sql}
                 ORDER BY {order_sql}
