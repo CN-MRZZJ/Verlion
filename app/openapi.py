@@ -519,6 +519,17 @@ def _json_body_ref(
     }
 
 
+def _form_body_ref(schema_name: str) -> dict[str, Any]:
+    return {
+        "required": True,
+        "content": {
+            "application/x-www-form-urlencoded": {
+                "schema": _schema_ref(schema_name),
+            }
+        },
+    }
+
+
 def _csv_upload_body() -> dict[str, Any]:
     return {
         "required": True,
@@ -769,8 +780,8 @@ def get_openapi_spec() -> dict[str, Any]:
             "post": _operation(
                 "导入",
                 "设置比赛日期",
-                "初始化或更新比赛日期。",
-                request_body=_json_body_ref("SetMeetDateRequest"),
+                "初始化或更新比赛日期（仅接受表单提交）。",
+                request_body=_form_body_ref("SetMeetDateRequest"),
             )
         },
         "/api/v1/imports/templates/{name}": {

@@ -1,194 +1,158 @@
-# Sports Point (Flask)
+# Sports Point — 运动会积分与成绩管理系统
 
-项目已重构为纯 Flask 架构（无 CLI）。
-
-## 目录结构
-```text
-.
-├── app/
-│   ├── __init__.py
-│   ├── routes/
-│   │   ├── __init__.py
-│   │   ├── main.py
-│   │   └── auth.py
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── database.py
-│   │   ├── repository.py
-│   │   ├── meet.py
-│   │   └── user.py
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── meet_service.py
-│   ├── templates/
-│   │   ├── layout.html
-│   │   ├── home.html
-│   │   ├── import_center.html
-│   │   ├── notice_center.html
-│   │   ├── data_center.html
-│   │   └── init_status.html
-│   └── static/
-│       ├── css/
-│       │   └── style.css
-│       ├── js/
-│       │   └── app.js
-│       └── csv/
-│           ├── events_template.csv
-│           ├── competitive_athletes_template.csv
-│           └── fun_athletes_template.csv
-│       └── notice_templates/
-│           ├── personal_notice_template.xlsx
-│           └── personal_notice_layout.json
-├── config.py
-├── requirements.txt
-├── migrations/
-│   └── .gitkeep
-└── run.py
-```
+纯 Flask Web 应用，SQLite 数据库，用于运动会项目、运动员、成绩及积分管理，支持公示单导出（XLSX + PDF）。
 
 ## 运行环境
+
 - Python 3.10+
-- Flask
+- 平台：Windows / Linux
 
-## 安装依赖
+## 快速开始
+
 ```bash
+# 安装依赖
 pip install -r requirements.txt
-```
 
-## 启动
-### Dev（开发模式）
-```bash
+# 开发模式（Flask 内置服务器，debug=True）
 python run_dev.py
+
+# 生产模式
+python run_prod.py                # Windows（Waitress）
+gunicorn -w 4 -b 0.0.0.0:5000 run:app  # Linux（Gunicorn）
 ```
 
-### Prod（生产模式）
-Windows / 通用：
-```bash
-python run_prod.py
+启动后访问：`http://127.0.0.1:5000`
+API 文档：`http://127.0.0.1:5000/docs`
+
+## 项目结构
+
+```
+.
+├── app/
+│   ├── __init__.py              # Flask 工厂函数，注册 blueprint / CORS
+│   ├── openapi.py               # OpenAPI 3.0.3 规范（手动维护）
+│   ├── rules.py                 # 规则引擎：积分规则、计分策略、组别、尝试策略
+│   ├── routes/v1/               # 路由层（薄控制器）
+│   │   ├── common.py            # Blueprint 定义、get_service()、CSV 解析
+│   │   ├── api.py               # 通用数据视图查询
+│   │   ├── athletes.py          # 运动员 CRUD + 报名
+│   │   ├── attempts.py          # 尝试记录（多轮次录入 + 作废）
+│   │   ├── departments.py       # 部门管理
+│   │   ├── events.py            # 项目管理 + 流程状态
+│   │   ├── exports.py           # CSV 导出 + 数据视图导出
+│   │   ├── imports.py           # CSV 上传导入
+│   │   ├── notices.py           # XLSX/PDF 公示单
+│   │   ├── results.py           # 成绩录入/查询
+│   │   ├── rules.py             # 规则读写 API
+│   │   └── teams.py             # 队伍 + 成员管理
+│   ├── services/                # 业务逻辑层（Mixin 组合模式）
+│   │   ├── core.py              # SportsMeetService，组合所有 Mixin
+│   │   ├── base.py              # 基础服务 + 成绩格式化
+│   │   ├── time_service.py      # UTC+8 时区工具
+│   │   ├── admin.py             # 数据清除等管理功能
+│   │   ├── athletes.py          # 运动员业务逻辑
+│   │   ├── departments.py       # 部门业务逻辑
+│   │   ├── imports.py           # CSV 导入逻辑
+│   │   ├── notice.py            # 公示单生成
+│   │   ├── results.py           # 成绩录入（含多次尝试支持）
+│   │   ├── teams.py             # 队伍业务逻辑
+│   │   ├── validators.py        # 数据校验
+│   │   └── views.py             # 数据视图查询
+│   ├── models/                  # 数据访问层
+│   │   ├── database.py          # 连接管理 + schema 初始化 + 迁移
+│   │   ├── schema.sql           # DDL
+│   │   └── repositories/        # Repository 模式
+│   │       ├── sports_repository.py   # 组合入口
+│   │       ├── base_repository.py     # 通用查询辅助
+│   │       ├── crud/                  # 通用 CRUD（Mixin + Type 定义）
+│   │       └── *_repository.py        # 各领域 Repository
+│   ├── templates/               # 前端页面模板 + Swagger UI
+│   └── static/
+│       ├── csv/                 # CSV 导入模板
+│       └── notice_templates/    # 公示单模板（XLSX + JSON 布局配置）
+├── config.py                    # 配置（环境变量覆盖）
+├── sports_rules.json            # 积分规则、评分策略、组别配置
+├── run_dev.py                   # 开发启动脚本
+├── run_prod.py                  # 生产启动脚本
+└── requirements.txt
 ```
 
-Linux（推荐 Gunicorn）：
-```bash
-gunicorn -w 4 -b 0.0.0.0:5000 run:app
+## 核心功能
+
+### 项目管理
+- 项目 CRUD，支持 `track`（径赛）、`field`（田赛）、`fun`（趣味）三种类型
+- 项目流程状态跟踪：检录 → 比赛 → 成绩录入 → 公示
+- CSV 批量导入/导出
+
+### 运动员管理
+- 统一运动员表，`competitive`（竞技）和 `fun`（趣味）分类
+- 运动员 CRUD + 批量 CSV 导入，支持部门归属和组别（A/B/C）
+
+### 成绩录入
+- 4 种计分策略：`time`（时间）、`length`（长度）、`count`（计数）、`count_miss`（命中/失误）
+- 多次尝试支持（`best` 取最优 / `latest` 取最新），支持作废与取消作废
+- 个人项目与团体项目分开录入
+
+### 积分与排名
+- 可配置积分规则（个人/团体前 8 名），通过 `sports_rules.json` 调整
+- 运动员积分榜、部门积分榜、队伍排名
+
+### 队伍管理
+- 团体项目组队，队伍成员管理
+
+### 公示单系统
+- 4 种公示单：个人成绩、团体成绩、个人轮次、团体轮次
+- 导出 XLSX + PDF 在线预览
+- 支持环境信息字段（日期、天气、温度、风向、风速、空气质量）
+- 模板布局可通过 JSON 配置文件自定义
+
+### 数据中心
+- 多视图切换，统一筛选 + 分页 + 排序
+- 数据导出（CSV）
+
+### 数据安全
+- 数据清除需多重确认：勾选表 → 口令 `DELETE` → 动态校验码 `CLEAR-N` → 风险确认
+
+## API 响应约定
+
+所有 API 统一返回 JSON：
+
+```json
+// 成功
+{ "ok": true, ...data }
+// 失败（HTTP 400）
+{ "ok": false, "error": "错误描述" }
+// 分页
+{ "ok": true, "items": [...], "total": N, "page": N, "page_size": N }
 ```
 
-访问：`http://127.0.0.1:5000`
+## 配置
 
-## 功能
-- 工作台：初始化提醒、关键指标、最近成绩、积分榜
-- 导入中心：设置比赛日期、模板下载、项目导入、运动员名单导入、项目报名导入、成绩录入
-- 成绩录入页：个人/团体分开录入，项目联动筛选运动员或队伍，并展示最近成绩
-- 公示单中心：导出个人成绩公示单（xlsx）+ PDF 在线预览 + 浏览器打印
-- 导入中心：支持按需清除表数据（多重确认防误触）
-- 数据中心：统一筛选 + 统一分页（20/50/100）+ 多数据视图切换 + 点击表头升降序排序 + 重置/刷新/导出
-- 状态中心：初始化检查结果（比赛日期、项目导入）
-- 提供 API：`/api/events`、`/api/athletes`、`/api/data/<view>`、`/api/init-status`、`/export/data/<view>`
-- 前端使用 Layui 构建，符合后台工作人员操作习惯
+通过环境变量覆盖默认值（见 `config.py`）：
 
-## CSV 模板
-- `/templates/events_template.csv`
-- `/templates/competitive_athletes_template.csv`
-- `/templates/fun_athletes_template.csv`
-- `/templates/registrations-template.csv?category=competitive`
-- `/templates/registrations-template.csv?category=fun`
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `SECRET_KEY` | Flask secret key | `dev-secret-key` |
+| `SPORTS_MEET_DB` | SQLite 数据库路径 | `{项目根}/sports_meet.db` |
+| `SPORTS_RULES_CONFIG` | 规则配置文件路径 | `{项目根}/sports_rules.json` |
 
-## 个人成绩公示单（xlsx / pdf）
-- 页面入口：`/notice-center`
-- 环境信息字段（写入 `settings` 表）：
-  - `date` 日期
-  - `wind_direction` 风向
-  - `wind_speed` 风速
-  - `air_quality` 空气质量
-  - `weather` 天气
-  - `temperature_high` 最高气温
-  - `temperature_low` 最低气温
-- 模板目录：`app/static/notice_templates/`
-  - 默认模板文件：`personal_notice_template.xlsx`
-  - 坐标配置文件：`personal_notice_layout.json`
-- 导出接口：
-  - `GET /export/personal-result-notice.xlsx?event_id=<项目ID>&template_name=<模板文件名>`
-  - `GET /preview/personal-result-notice.pdf?event_id=<项目ID>`（在线预览）
-- 坐标配置说明：
-  - `environment_cells`：环境信息和项目名称写入坐标
-  - `rank_rows`：第1-8名的写入坐标，每行需包含排名坐标（`rank`，也支持别名 `ranking/place/名次`），以及 `name`、`department`、`performance`
+## CSV 导入规范
 
-### 项目模板（events_template.csv）
-用于导入比赛项目基础信息。
+### 导入顺序
+建议按顺序导入：项目 → 运动员名单 → 报名关系
 
-字段说明：
-- `name`：项目名称，例如 `100米`、`4x100米接力`
-- `category`：项目类别，只能是 `competitive`（竞技）或 `fun`（趣味）
-- `event_type`：项目类型，只能是：
-  - `track`（径赛）
-  - `field`（田赛）
-  - `fun`（趣味）
-- `scoring_strategy`：评分策略，可选 `time`、`length`、`count`
-- `gender`：性别组，可填 `male`、`female`、`mixed`；也支持合并写法 `男女`/`both`/`male+female`/`all`（会自动拆成男、女两条项目）
-- `age_group`：年龄组，可写 `A`、`B`、`C`、`ALL`
-- 规则：所有趣味项目与所有集体项目（例如接力）必须填写 `ALL`
-- 评分策略规则：
-  - `track` 固定 `time`
-  - `field` 固定 `length`
-  - `fun` 可用 `time` / `length` / `count`（不填时默认 `count`）
-- `is_individual`：是否个人项目，`1`=个人，`0`=集体
+### 模板
+| 模板 | 用途 |
+|------|------|
+| `events_template.csv` | 批量导入比赛项目 |
+| `competitive_athletes_template.csv` | 竞技运动员名单 |
+| `fun_athletes_template.csv` | 趣味运动员名单 |
+| `registrations-template.csv?category=competitive` | 竞技项目报名矩阵 |
+| `registrations-template.csv?category=fun` | 趣味项目报名矩阵 |
 
-示例：
-```csv
-name,category,event_type,scoring_strategy,gender,age_group,is_individual
-100米,competitive,track,time,male,C,1
-4x100米接力,competitive,track,time,male,ALL,0
-一分钟呼啦圈,fun,fun,time,female,ALL,1
-```
-
-### 竞技项目运动员模板（competitive_athletes_template.csv）
-用于导入竞技运动员名单（仅入库，不自动报名）。
-
-字段说明：
-- `athlete_no`：运动员号（必填，且在竞技运动员表内唯一）
-- `name`：姓名（必填）
-- `gender`：`male` / `female`（必填）
-- `department_name`：归属单位（必填）
-- `age_group`：`A` / `B` / `C`（可选）
-- `total_members`：部门总人数（可选）
-
-### 趣味项目运动员模板（fun_athletes_template.csv）
-用于导入趣味运动员名单（仅入库，不自动报名）。
-
-字段说明与竞技名单模板一致。
-
-### 报名矩阵模板（按类别导出）
-用于给已导入的运动员批量报名个人项目（横向项目列）。
-
-字段说明：
-- 固定列：`athlete_no`、`name`、`gender`、`age_group`、`department_name`
-- 项目列：`项目名-组别[event_id1|event_id2]`（例如 `100米-甲组[1|2]`）
-- 单元格取值：填 `1/yes/y/true/√/是` 表示报名，留空表示不报名。
-
-### 导出接口
-- 接口：`/templates/registrations-template.csv?category=competitive`
-- 参数：
-  - `category`：`competitive` 或 `fun`
-- 用途：按类别导出报名矩阵模板，自动预填运动员信息和项目列。
-
-### 填写规范与常见错误
-- 文件编码建议使用 `UTF-8`。
-- 第一行表头不要改名、不要增减字段。
-- 枚举值必须严格按模板约定填写（如 `male` 不能写成 `男`）。
-- 接力与趣味项目必须使用 `age_group=ALL`。
-- 导入后如有错误，会在返回结果中按“第几行”给出原因。
-- 竞技运动员与趣味运动员分表存储，不复用同一运动员记录。
-- 建议导入顺序：先导入项目 -> 再导入运动员名单 -> 最后导入报名关系。
-- 报名导入使用矩阵模板：每行一个运动员，横向多项目勾选；男女项目已合并为同一列，系统会按运动员性别自动匹配同名同组项目。
-
-## 说明
-- 本项目已移除 CLI 模式，仅保留 Flask Web 方式。
-- 系统不再内置默认项目；初始化后请在“导入中心”通过 CSV 导入项目。
-
-## 数据清除（防误触）
-- 入口：导入中心底部“危险操作：按需清除数据”
-- 支持按表勾选清除，系统会按依赖关系自动处理关联删除
-- 需要同时满足以下条件才会执行：
-  - 勾选至少一张表
-  - 输入确认口令 `DELETE`
-  - 输入动态校验码 `CLEAR-N`（`N` 为所选表数量）
-  - 勾选“我已确认这是不可逆操作”
+### 注意事项
+- 文件编码建议 UTF-8
+- 表头不可改名、不可增减字段
+- 枚举值严格按约定（如 `male` 不可写成 `男`）
+- 接力与趣味项目必须使用 `age_group=ALL`
+- 导入后如有错误，返回结果会按行号给出原因
