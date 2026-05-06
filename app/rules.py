@@ -76,15 +76,31 @@ def save_rule_config(config: dict[str, Any]) -> None:
     validate_rule_config(config)
     db = _get_rules_db()
     with db.connect() as conn:
-        conn.execute("DELETE FROM event_types")
         name_map = {"track": "径赛", "field": "田赛", "fun": "趣味"}
         for code, strategy in config.get("event_scoring_strategy", {}).items():
             if str(code).startswith("_"):
                 continue
+            existing = conn.execute(
+                "SELECT name FROM event_types WHERE code=?", (code,)
+            ).fetchone()
+            display_name = existing["name"] if existing else name_map.get(code, code)
             conn.execute(
-                "INSERT INTO event_types(code, name, scoring_strategy) VALUES(?,?,?)",
-                (code, name_map.get(code, code), strategy),
+                "INSERT INTO event_types(code, name, scoring_strategy) VALUES(?,?,?)"
+                " ON CONFLICT(code) DO UPDATE SET scoring_strategy=excluded.scoring_strategy",
+                (code, display_name, strategy),
             )
+        keep_codes = [
+            c for c in config.get("event_scoring_strategy", {})
+            if not str(c).startswith("_")
+        ]
+        if keep_codes:
+            placeholders = ",".join("?" for _ in keep_codes)
+            conn.execute(
+                f"DELETE FROM event_types WHERE code NOT IN ({placeholders})",
+                tuple(keep_codes),
+            )
+        else:
+            conn.execute("DELETE FROM event_types")
 
         conn.execute("DELETE FROM point_rules")
         for result_type in ("individual", "team"):
@@ -121,6 +137,8 @@ def save_rule_config(config: dict[str, Any]) -> None:
                 "INSERT INTO settings(key, value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                 (key, str(val).strip()),
             )
+
+        conn.commit()
 
     load_rule_config.cache_clear()
 
