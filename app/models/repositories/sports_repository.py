@@ -3,6 +3,7 @@ from .base_repository import BaseRepositoryMixin
 from .department_repository import DepartmentRepositoryMixin
 from .event_repository import EventRepositoryMixin
 from .event_type_repository import EventTypeRepositoryMixin
+from .heats import HeatsRepositoryMixin
 from .query_repository import QueryRepositoryMixin
 from .registration_repository import RegistrationRepositoryMixin
 from .reporting_repository import ReportingRepositoryMixin
@@ -23,6 +24,7 @@ class SportsRepository(
     ResultRepositoryMixin,
     ReportingRepositoryMixin,
     QueryRepositoryMixin,
+    HeatsRepositoryMixin,
 ):
     pass
 

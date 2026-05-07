@@ -138,3 +138,38 @@ CREATE TABLE IF NOT EXISTS event_progress (
     updated_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
     FOREIGN KEY(event_id) REFERENCES events(id)
 );
+
+CREATE TABLE IF NOT EXISTS rounds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL,
+    round_number INTEGER NOT NULL,
+    round_name TEXT NOT NULL,
+    advancement_rule TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
+    UNIQUE(event_id, round_number),
+    FOREIGN KEY(event_id) REFERENCES events(id)
+);
+
+CREATE TABLE IF NOT EXISTS heats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    round_id INTEGER NOT NULL,
+    heat_number INTEGER NOT NULL,
+    heat_name TEXT NOT NULL,
+    UNIQUE(round_id, heat_number),
+    FOREIGN KEY(round_id) REFERENCES rounds(id)
+);
+
+CREATE TABLE IF NOT EXISTS heat_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    heat_id INTEGER NOT NULL,
+    athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
+    athlete_ref_id INTEGER,
+    team_id INTEGER,
+    lane INTEGER,
+    FOREIGN KEY(heat_id) REFERENCES heats(id),
+    CHECK(
+        (athlete_ref_id IS NOT NULL AND athlete_type IS NOT NULL AND team_id IS NULL)
+        OR
+        (athlete_ref_id IS NULL AND athlete_type IS NULL AND team_id IS NOT NULL)
+    )
+);

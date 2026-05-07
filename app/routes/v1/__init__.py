@@ -1,4 +1,4 @@
-from . import api, athletes, attempts, departments, event_types, events, exports, imports, notices, results, rules, teams  # noqa: F401
+from . import api, athletes, attempts, departments, event_types, events, exports, heats, imports, notices, results, rules, teams  # noqa: F401
 from .common import DATA_VIEWS, api_v1_bp, get_service, parse_csv_upload
 
 __all__ = [

@@ -90,3 +90,24 @@ EVENT_PROGRESS = TableSchema(
     insert_columns=("event_id", "checkin_done", "competition_done", "record_done", "publish_done", "updated_at"),
     update_columns=("checkin_done", "competition_done", "record_done", "publish_done", "updated_at"),
 )
+
+ROUNDS = TableSchema(
+    name="rounds",
+    columns=("id", "event_id", "round_number", "round_name", "advancement_rule", "created_at"),
+    insert_columns=("event_id", "round_number", "round_name", "advancement_rule"),
+    update_columns=("round_name", "advancement_rule"),
+)
+
+HEATS = TableSchema(
+    name="heats",
+    columns=("id", "round_id", "heat_number", "heat_name"),
+    insert_columns=("round_id", "heat_number", "heat_name"),
+    update_columns=("heat_name",),
+)
+
+HEAT_ENTRIES = TableSchema(
+    name="heat_entries",
+    columns=("id", "heat_id", "athlete_type", "athlete_ref_id", "team_id", "lane"),
+    insert_columns=("heat_id", "athlete_type", "athlete_ref_id", "team_id", "lane"),
+    update_columns=("athlete_type", "athlete_ref_id", "team_id", "lane"),
+)

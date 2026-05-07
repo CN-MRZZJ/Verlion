@@ -35,6 +35,7 @@ class Database:
             self._migrate_rules_tables(conn)
             self._migrate_group_rename(conn)
             self._migrate_event_type_check(conn)
+            self._migrate_heats_tables(conn)
             conn.commit()
 
     def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
@@ -390,3 +391,72 @@ class Database:
                     groups = config.get("group_options") or config.get("age_group_options", {})
                     val = str(groups.get("team_event_default", default)).strip()
                 conn.execute("INSERT INTO settings(key, value) VALUES(?,?)", (key, val))
+
+    def _migrate_heats_tables(self, conn: sqlite3.Connection) -> None:
+        if not self._table_exists(conn, "rounds"):
+            conn.execute("""
+                CREATE TABLE rounds (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id INTEGER NOT NULL,
+                    round_number INTEGER NOT NULL,
+                    round_name TEXT NOT NULL,
+                    advancement_rule TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now', '+08:00')),
+                    UNIQUE(event_id, round_number),
+                    FOREIGN KEY(event_id) REFERENCES events(id)
+                )
+            """)
+        if not self._table_exists(conn, "heats"):
+            conn.execute("""
+                CREATE TABLE heats (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    round_id INTEGER NOT NULL,
+                    heat_number INTEGER NOT NULL,
+                    heat_name TEXT NOT NULL,
+                    UNIQUE(round_id, heat_number),
+                    FOREIGN KEY(round_id) REFERENCES rounds(id)
+                )
+            """)
+        if not self._table_exists(conn, "heat_entries"):
+            conn.execute("""
+                CREATE TABLE heat_entries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    heat_id INTEGER NOT NULL,
+                    athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
+                    athlete_ref_id INTEGER,
+                    team_id INTEGER,
+                    lane INTEGER,
+                    FOREIGN KEY(heat_id) REFERENCES heats(id),
+                    CHECK(
+                        (athlete_ref_id IS NOT NULL AND athlete_type IS NOT NULL AND team_id IS NULL)
+                        OR
+                        (athlete_ref_id IS NULL AND athlete_type IS NULL AND team_id IS NOT NULL)
+                    )
+                )
+            """)
+        elif "UNIQUE(heat_id, lane)" in self._table_sql(conn, "heat_entries"):
+            conn.execute("PRAGMA foreign_keys = OFF;")
+            conn.execute("""
+                CREATE TABLE heat_entries_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    heat_id INTEGER NOT NULL,
+                    athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
+                    athlete_ref_id INTEGER,
+                    team_id INTEGER,
+                    lane INTEGER,
+                    FOREIGN KEY(heat_id) REFERENCES heats(id),
+                    CHECK(
+                        (athlete_ref_id IS NOT NULL AND athlete_type IS NOT NULL AND team_id IS NULL)
+                        OR
+                        (athlete_ref_id IS NULL AND athlete_type IS NULL AND team_id IS NOT NULL)
+                    )
+                )
+            """)
+            conn.execute("""
+                INSERT INTO heat_entries_new(id, heat_id, athlete_type, athlete_ref_id, team_id, lane)
+                SELECT id, heat_id, athlete_type, athlete_ref_id, team_id, lane
+                FROM heat_entries
+            """)
+            conn.execute("DROP TABLE heat_entries")
+            conn.execute("ALTER TABLE heat_entries_new RENAME TO heat_entries")
+            conn.execute("PRAGMA foreign_keys = ON;")

@@ -153,3 +153,16 @@ class RegistrationRepositoryMixin:
                 ORDER BY {order_sql}
             """
             return self._paged_query(count_sql, data_sql, tuple(params), page, page_size)
+
+    def list_event_participants(self, event_id: int):
+        return self.conn.execute(
+            """
+            SELECT a.id, a.name, a.athlete_type, a.athlete_no, a."group", d.name AS department_name
+            FROM athlete_registrations r
+            JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
+            LEFT JOIN departments d ON d.id = a.department_id
+            WHERE r.event_id = ?
+            ORDER BY a.athlete_no
+            """,
+            (event_id,),
+        ).fetchall()

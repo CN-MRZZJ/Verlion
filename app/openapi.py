@@ -415,6 +415,91 @@ VOID_ATTEMPT_REQUEST = {
     },
 }
 
+# ── 分组分道 ──────────────────────────────────────────────────────────
+
+HEAT_ENTRY = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "道次分配 ID"},
+        "heat_id": {"type": "integer", "description": "所属组次 ID"},
+        "athlete_type": {"type": "string", "description": "运动员类型：competitive/fun"},
+        "athlete_ref_id": {"type": "integer", "description": "运动员数据库 ID"},
+        "athlete_name": {"type": "string", "description": "运动员姓名"},
+        "athlete_no": {"type": "string", "description": "运动员号"},
+        "department_name": {"type": "string", "description": "归属单位"},
+        "group": {"type": "string", "description": "年龄组别"},
+        "lane": {"type": "integer", "description": "道次"},
+    },
+}
+
+HEAT = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "组次 ID"},
+        "round_id": {"type": "integer", "description": "所属轮次 ID"},
+        "heat_name": {"type": "string", "description": "组次名称，如 第1组"},
+        "heat_number": {"type": "integer", "description": "组次序号"},
+        "entries": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/HeatEntry"},
+            "description": "道次分配列表",
+        },
+    },
+}
+
+ROUND_STAGE = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "description": "轮次 ID"},
+        "event_id": {"type": "integer", "description": "所属项目 ID"},
+        "round_name": {"type": "string", "description": "轮次名称，如 预赛/决赛"},
+        "round_number": {"type": "integer", "description": "轮次序号"},
+        "advancement_rule": {"type": "string", "description": "晋级规则"},
+        "created_at": {"type": "string", "description": "创建时间"},
+        "heats": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Heat"},
+            "description": "组次列表",
+        },
+    },
+}
+
+HEATS_DATA = {
+    "type": "object",
+    "properties": {
+        "event_id": {"type": "integer", "description": "项目 ID"},
+        "rounds": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Round"},
+            "description": "轮次列表",
+        },
+    },
+}
+
+HEATS_RESPONSE = {
+    "type": "object",
+    "properties": {
+        "ok": {"type": "boolean"},
+        "data": {"$ref": "#/components/schemas/HeatsData"},
+    },
+}
+
+CREATE_HEATS_REQUEST = {
+    "type": "object",
+    "properties": {
+        "lanes_per_heat": {"type": "integer", "description": "每组道数/人数上限，默认 8"},
+        "algorithm": {"type": "string", "description": "编排算法名称，默认 random"},
+        "params": {"type": "object", "description": "算法自定义参数", "additionalProperties": True},
+    },
+}
+
+UPDATE_LANE_REQUEST = {
+    "type": "object",
+    "properties": {
+        "lane": {"type": "integer", "description": "新的道次，可为空"},
+    },
+}
+
 # ── Helper functions ─────────────────────────────────────────────────
 
 def _schema_ref(name: str) -> dict[str, str]:
@@ -802,6 +887,50 @@ def get_openapi_spec() -> dict[str, Any]:
                 request_body=_json_body_ref("UpdateProgressRequest"),
             )
         },
+        "/api/v1/events/{event_id}/heats": {
+            "get": _operation(
+                "分组分道",
+                "查看编排结果",
+                "查看指定项目的分组分道结果（轮次→组次→道次分配）。",
+                parameters=[_path("event_id", "项目 ID", "integer")],
+                success=_typed_response("HeatsResponse"),
+            ),
+            "post": _operation(
+                "分组分道",
+                "执行编排",
+                "按指定算法执行分组分道编排，生成道次表。",
+                parameters=[_path("event_id", "项目 ID", "integer")],
+                request_body=_json_body_ref("CreateHeatsRequest"),
+                success=_typed_response("HeatsResponse"),
+            ),
+            "delete": _operation(
+                "分组分道",
+                "清除编排",
+                "清除指定项目的全部分组分道数据，用于重新编排。",
+                parameters=[_path("event_id", "项目 ID", "integer")],
+            ),
+        },
+        "/api/v1/events/{event_id}/heats/{heat_id}/entries/{entry_id}": {
+            "put": _operation(
+                "分组分道",
+                "调整道次",
+                "手动调整某个道次分配的 lane 值（调道/换道）。",
+                parameters=[
+                    _path("event_id", "项目 ID", "integer"),
+                    _path("heat_id", "组次 ID", "integer"),
+                    _path("entry_id", "道次分配 ID", "integer"),
+                ],
+                request_body=_json_body_ref("UpdateLaneRequest"),
+            ),
+        },
+        "/api/v1/events/heats/algorithms": {
+            "get": _operation(
+                "分组分道",
+                "列出编排算法",
+                "返回当前可用的分组分道算法名称列表。",
+                success=_item_list_response("string"),
+            ),
+        },
         "/api/v1/event-types": {
             "get": _operation(
                 "项目类型",
@@ -1142,6 +1271,7 @@ def get_openapi_spec() -> dict[str, Any]:
             {"name": "项目"},
             {"name": "项目类型"},
             {"name": "项目流程"},
+            {"name": "分组分道"},
             {"name": "导入"},
             {"name": "导出"},
             {"name": "成绩"},
@@ -1192,6 +1322,13 @@ def get_openapi_spec() -> dict[str, Any]:
                 "UpdateDepartmentRequest": UPDATE_DEPARTMENT_REQUEST,
                 "DeleteDepartmentRequest": DELETE_DEPARTMENT_REQUEST,
                 "VoidAttemptRequest": VOID_ATTEMPT_REQUEST,
+                "HeatEntry": HEAT_ENTRY,
+                "Heat": HEAT,
+                "Round": ROUND_STAGE,
+                "HeatsData": HEATS_DATA,
+                "HeatsResponse": HEATS_RESPONSE,
+                "CreateHeatsRequest": CREATE_HEATS_REQUEST,
+                "UpdateLaneRequest": UPDATE_LANE_REQUEST,
             }
         },
     }
