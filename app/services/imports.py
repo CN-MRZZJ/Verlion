@@ -60,6 +60,9 @@ class MeetImportMixin:
                         if not scoring_strategy:
                             scoring_strategy = "count"
 
+                    et_row = repo.get_event_type(event_type)
+                    competition_format = str(et_row["competition_format"]) if et_row else "heats"
+
                     for gender in target_genders:
                         if repo.event_exists(
                             name,
@@ -69,6 +72,7 @@ class MeetImportMixin:
                             gender,
                             group,
                             is_individual,
+                            competition_format,
                         ):
                             skipped += 1
                             skipped_details.append(
@@ -84,6 +88,7 @@ class MeetImportMixin:
                             gender,
                             group,
                             is_individual,
+                            competition_format,
                         )
                         inserted += 1
                 except Exception as exc:

@@ -37,14 +37,16 @@ def create_event_heats(event_id: int):
                     athlete_type=str(r["athlete_type"]),
                     department=str(r["department_name"] or ""),
                 ))
-            return participants
+            hc = repo.get_heats_config(event_id)
+            heat_rounds = int(hc["heat_rounds"]) if hc else 1
+            return participants, heat_rounds
 
-        participants = service._repo_read(_read)
+        participants, heat_rounds = service._repo_read(_read)
         if not participants:
             return jsonify({"ok": False, "error": "该项目没有报名运动员"}), 400
 
         algorithm = get_algorithm(config.algorithm)
-        input = GroupingInput(event_id=event_id, participants=participants, config=config)
+        input = GroupingInput(event_id=event_id, participants=participants, config=config, heat_rounds=heat_rounds)
         output = algorithm.run(input)
         service.save_grouping_output(output)
 
@@ -69,10 +71,45 @@ def update_heat_entry(event_id: int, heat_id: int, entry_id: int):
         lane = payload.get("lane")
         if lane is not None:
             lane = int(lane)
-        get_service().update_heat_entry_lane(entry_id, lane)
+        target_heat_id = int(payload.get("heat_id", heat_id))
+        if lane is None and target_heat_id == heat_id:
+            return jsonify({"ok": False, "error": "lane 或 heat_id 至少提供一个"}), 400
+        get_service().swap_or_move_heat_entry(entry_id, target_heat_id, lane)
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.put("/events/<int:event_id>/heats/config")
+def set_heats_config(event_id: int):
+    try:
+        payload = request.get_json(silent=True) or request.form
+        heat_rounds = int(payload.get("heat_rounds", 1))
+        if not 1 <= heat_rounds <= 4:
+            return jsonify({"ok": False, "error": "heat_rounds 必须在 1-4 之间"}), 400
+        get_service().set_heats_config(event_id, heat_rounds)
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.post("/events/<int:event_id>/rounds/<int:round_id>/advance")
+def advance_round(event_id: int, round_id: int):
+    try:
+        payload = request.get_json(silent=True) or {}
+        strategy = str(payload.get("strategy", "per_heat_top"))
+        lanes_per_heat = int(payload.get("lanes_per_heat", 8))
+        params = payload.get("params", {})
+        result = get_service().advance_to_next_round(event_id, round_id, strategy, lanes_per_heat, params)
+        return jsonify({"ok": True, **result})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.get("/events/advancement-strategies")
+def list_advancement_strategies():
+    from app.grouping.advancement import list_advancements
+    return jsonify({"ok": True, "strategies": list_advancements()})
 
 
 @api_v1_bp.get("/events/heats/algorithms")

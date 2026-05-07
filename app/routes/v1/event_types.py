@@ -23,13 +23,16 @@ def create_event_type():
         code = str(payload.get("code", "")).strip()
         name = str(payload.get("name", "")).strip()
         scoring_strategy = str(payload.get("scoring_strategy", "")).strip()
+        competition_format = str(payload.get("competition_format", "heats")).strip()
         if not code:
             raise ValueError("code 不能为空")
         if not name:
             raise ValueError("name 不能为空")
         if scoring_strategy not in _ALLOWED_STRATEGIES:
             raise ValueError(f"scoring_strategy 必须为 {'/'.join(sorted(_ALLOWED_STRATEGIES))}")
-        code = get_service().insert_event_type(code, name, scoring_strategy)
+        if competition_format not in ("heats", "knockout", "round_robin"):
+            raise ValueError("competition_format 必须为 heats/knockout/round_robin")
+        code = get_service().insert_event_type(code, name, scoring_strategy, competition_format)
         invalidate_rules_cache()
         return jsonify({"ok": True, "code": code})
     except Exception as exc:
@@ -62,8 +65,13 @@ def update_event_type(code: str):
             if val not in _ALLOWED_STRATEGIES:
                 raise ValueError(f"scoring_strategy 必须为 {'/'.join(sorted(_ALLOWED_STRATEGIES))}")
             updates["scoring_strategy"] = val
+        if "competition_format" in payload:
+            val = str(payload["competition_format"]).strip()
+            if val not in ("heats", "knockout", "round_robin"):
+                raise ValueError("competition_format 必须为 heats/knockout/round_robin")
+            updates["competition_format"] = val
         if not updates:
-            raise ValueError("至少需要提供 name 或 scoring_strategy")
+            raise ValueError("至少需要提供 name、scoring_strategy 或 competition_format")
         get_service().update_event_type(code, **updates)
         invalidate_rules_cache()
         return jsonify({"ok": True, "code": code})

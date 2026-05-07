@@ -36,6 +36,9 @@ class Database:
             self._migrate_group_rename(conn)
             self._migrate_event_type_check(conn)
             self._migrate_heats_tables(conn)
+            self._migrate_competition_format(conn)
+            self._migrate_event_types_competition_format(conn)
+            self._migrate_heats_config(conn)
             conn.commit()
 
     def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
@@ -460,3 +463,25 @@ class Database:
             conn.execute("DROP TABLE heat_entries")
             conn.execute("ALTER TABLE heat_entries_new RENAME TO heat_entries")
             conn.execute("PRAGMA foreign_keys = ON;")
+
+    def _migrate_competition_format(self, conn: sqlite3.Connection) -> None:
+        if self._table_exists(conn, "events") and "competition_format" not in self._table_columns(conn, "events"):
+            conn.execute("ALTER TABLE events ADD COLUMN competition_format TEXT NOT NULL DEFAULT 'heats'")
+        if self._table_exists(conn, "results") and "round_id" not in self._table_columns(conn, "results"):
+            conn.execute("ALTER TABLE results ADD COLUMN round_id INTEGER NOT NULL DEFAULT 1")
+        if self._table_exists(conn, "attempts") and "round_id" not in self._table_columns(conn, "attempts"):
+            conn.execute("ALTER TABLE attempts ADD COLUMN round_id INTEGER NOT NULL DEFAULT 1")
+
+    def _migrate_event_types_competition_format(self, conn: sqlite3.Connection) -> None:
+        if self._table_exists(conn, "event_types") and "competition_format" not in self._table_columns(conn, "event_types"):
+            conn.execute("ALTER TABLE event_types ADD COLUMN competition_format TEXT NOT NULL DEFAULT 'heats'")
+
+    def _migrate_heats_config(self, conn: sqlite3.Connection) -> None:
+        if not self._table_exists(conn, "heats_config"):
+            conn.execute("""
+                CREATE TABLE heats_config (
+                    event_id INTEGER PRIMARY KEY,
+                    heat_rounds INTEGER NOT NULL DEFAULT 1 CHECK(heat_rounds BETWEEN 1 AND 4),
+                    FOREIGN KEY(event_id) REFERENCES events(id)
+                )
+            """)

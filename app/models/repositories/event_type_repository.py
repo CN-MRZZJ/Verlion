@@ -2,8 +2,8 @@ from .crud import EVENT_TYPES, WhereClause
 
 
 class EventTypeRepositoryMixin:
-    def insert_event_type(self, code: str, name: str, scoring_strategy: str) -> str:
-        self._crud_insert(EVENT_TYPES, {"code": code, "name": name, "scoring_strategy": scoring_strategy})
+    def insert_event_type(self, code: str, name: str, scoring_strategy: str, competition_format: str = "heats") -> str:
+        self._crud_insert(EVENT_TYPES, {"code": code, "name": name, "scoring_strategy": scoring_strategy, "competition_format": competition_format})
         return code
 
     def get_event_type(self, code: str):
@@ -12,12 +12,14 @@ class EventTypeRepositoryMixin:
     def list_event_types(self):
         return self._crud_list(EVENT_TYPES, order_by="code")
 
-    def update_event_type(self, code: str, name: str | None = None, scoring_strategy: str | None = None):
+    def update_event_type(self, code: str, name: str | None = None, scoring_strategy: str | None = None, competition_format: str | None = None):
         values = {}
         if name is not None:
             values["name"] = name
         if scoring_strategy is not None:
             values["scoring_strategy"] = scoring_strategy
+        if competition_format is not None:
+            values["competition_format"] = competition_format
         if values:
             self._crud_update_by_id(EVENT_TYPES, code, values)
 

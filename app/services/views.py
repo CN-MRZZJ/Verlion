@@ -123,9 +123,24 @@ class MeetViewMixin:
             )
         return rows
 
+    _ROUND_LABELS = {
+        1: {1: "决赛"},
+        2: {1: "预赛", 2: "决赛"},
+        3: {1: "预赛", 2: "半决赛", 3: "决赛"},
+        4: {1: "预赛", 2: "复赛", 3: "半决赛", 4: "决赛"},
+    }
+
+    def _inject_round_names(self, row: dict) -> dict:
+        hr = int(row.get("heat_rounds", 1))
+        row["round_names"] = self._ROUND_LABELS.get(hr, self._ROUND_LABELS[1])
+        return row
+
     def list_events(self):
         with self.db.connect() as conn:
-            return SportsRepository(conn).list_events()
+            rows = [dict(r) for r in SportsRepository(conn).list_events()]
+        for row in rows:
+            self._inject_round_names(row)
+        return rows
 
     def list_event_progress(self) -> list[dict]:
         with self.db.connect() as conn:
@@ -138,6 +153,7 @@ class MeetViewMixin:
             row["gender_text"] = self._event_gender_label(str(row.get("gender", "")))
             row["group_text"] = self._event_group_label(str(row.get("group", "")))
             row["category_text"] = "竞技" if row.get("category") == "competitive" else "趣味"
+            self._inject_round_names(row)
         return rows
 
     def set_event_progress(self, event_id: int, checkin_done: bool, competition_done: bool, record_done: bool, publish_done: bool) -> dict:

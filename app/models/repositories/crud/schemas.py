@@ -27,7 +27,7 @@ ATHLETE_TABLES = {
 
 EVENTS = TableSchema(
     name="events",
-    columns=("id", "name", "category", "event_type", "scoring_strategy", "gender", "group", "is_individual"),
+    columns=("id", "name", "category", "event_type", "scoring_strategy", "gender", "group", "is_individual", "competition_format"),
 )
 
 ATHLETE_REGISTRATIONS = TableSchema(
@@ -49,24 +49,24 @@ TEAM_MEMBERS = TableSchema(
 
 RESULTS = TableSchema(
     name="results",
-    columns=("id", "event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by", "created_at"),
-    insert_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by"),
-    update_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by"),
+    columns=("id", "event_id", "round_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by", "created_at"),
+    insert_columns=("event_id", "round_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by"),
+    update_columns=("event_id", "round_id", "athlete_type", "athlete_ref_id", "team_id", "rank", "points", "performance", "entered_by"),
 )
 
 ATTEMPTS = TableSchema(
     name="attempts",
-    columns=("id", "event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by", "created_at"),
-    insert_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by"),
-    update_columns=("event_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by"),
+    columns=("id", "event_id", "round_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by", "created_at"),
+    insert_columns=("event_id", "round_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by"),
+    update_columns=("event_id", "round_id", "athlete_type", "athlete_ref_id", "team_id", "attempt_number", "rank", "performance", "is_void", "entered_by"),
 )
 
 EVENT_TYPES = TableSchema(
     name="event_types",
     primary_key="code",
-    columns=("code", "name", "scoring_strategy"),
-    insert_columns=("code", "name", "scoring_strategy"),
-    update_columns=("name", "scoring_strategy"),
+    columns=("code", "name", "scoring_strategy", "competition_format"),
+    insert_columns=("code", "name", "scoring_strategy", "competition_format"),
+    update_columns=("name", "scoring_strategy", "competition_format"),
 )
 
 POINT_RULES = TableSchema(
@@ -91,6 +91,14 @@ EVENT_PROGRESS = TableSchema(
     update_columns=("checkin_done", "competition_done", "record_done", "publish_done", "updated_at"),
 )
 
+HEATS_CONFIG = TableSchema(
+    name="heats_config",
+    primary_key="event_id",
+    columns=("event_id", "heat_rounds"),
+    insert_columns=("event_id", "heat_rounds"),
+    update_columns=("heat_rounds",),
+)
+
 ROUNDS = TableSchema(
     name="rounds",
     columns=("id", "event_id", "round_number", "round_name", "advancement_rule", "created_at"),
@@ -109,5 +117,5 @@ HEAT_ENTRIES = TableSchema(
     name="heat_entries",
     columns=("id", "heat_id", "athlete_type", "athlete_ref_id", "team_id", "lane"),
     insert_columns=("heat_id", "athlete_type", "athlete_ref_id", "team_id", "lane"),
-    update_columns=("athlete_type", "athlete_ref_id", "team_id", "lane"),
+    update_columns=("athlete_type", "athlete_ref_id", "team_id", "heat_id", "lane"),
 )

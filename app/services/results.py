@@ -40,8 +40,9 @@ class MeetResultMixin:
         event_id: int,
         scoring_strategy: str,
         performance: Optional[str],
+        round_id: int = 1,
     ) -> int:
-        rows = repo.list_event_results(event_id)
+        rows = repo.list_event_results(event_id, round_id=round_id)
         if not rows:
             return 1
         max_rank = max(int(r["rank"]) for r in rows)
@@ -66,8 +67,8 @@ class MeetResultMixin:
             return max_rank + 1
         return better + 1
 
-    def _recalculate_event_ranks(self, repo: SportsRepository, event_id: int, scoring_strategy: str) -> None:
-        rows = [dict(r) for r in repo.list_event_results(event_id)]
+    def _recalculate_event_ranks(self, repo: SportsRepository, event_id: int, scoring_strategy: str, round_id: int = 1) -> None:
+        rows = [dict(r) for r in repo.list_event_results(event_id, round_id=round_id)]
         if not rows:
             return
         event = repo.get_event_by_id(event_id)
@@ -105,6 +106,7 @@ class MeetResultMixin:
         team_id: Optional[int] = None,
         performance: Optional[str] = None,
         entered_by: Optional[str] = None,
+        round_id: int = 0,
     ) -> int:
         athlete_no_text = (athlete_no or "").strip()
         if athlete_ref_id is not None and athlete_no_text:
@@ -197,12 +199,14 @@ class MeetResultMixin:
                 event_id,
                 scoring_strategy,
                 normalized_performance,
+                round_id,
             )
             if final_rank < 1:
                 raise ValueError("rank 必须 >= 1")
 
             repo.insert_attempt(
                 event_id=event_id,
+                round_id=round_id,
                 rank=final_rank,
                 athlete_type=athlete_type if has_athlete else None,
                 athlete_ref_id=athlete_ref_id if has_athlete else None,
@@ -211,6 +215,7 @@ class MeetResultMixin:
                 entered_by=entered_by_text,
                 attempt_number=repo.get_next_attempt_number(
                     event_id=event_id,
+                    round_id=round_id,
                     athlete_type=athlete_type if has_athlete else None,
                     athlete_ref_id=athlete_ref_id if has_athlete else None,
                     team_id=team_id if has_team else None,
@@ -219,6 +224,7 @@ class MeetResultMixin:
 
             all_attempts = repo.list_attempts_for_target(
                 event_id=event_id,
+                round_id=round_id,
                 athlete_type=athlete_type if has_athlete else None,
                 athlete_ref_id=athlete_ref_id if has_athlete else None,
                 team_id=team_id if has_team else None,
@@ -230,6 +236,7 @@ class MeetResultMixin:
 
             exists = repo.get_result_by_target(
                 event_id=event_id,
+                round_id=round_id,
                 athlete_type=athlete_type if has_athlete else None,
                 athlete_ref_id=athlete_ref_id if has_athlete else None,
                 team_id=team_id if has_team else None,
@@ -246,6 +253,7 @@ class MeetResultMixin:
             else:
                 result_id = repo.insert_result(
                     event_id=event_id,
+                    round_id=round_id,
                     rank=best_rank,
                     points=points_for_rank(best_rank, int(event["is_individual"])),
                     athlete_type=athlete_type if has_athlete else None,
@@ -255,7 +263,7 @@ class MeetResultMixin:
                     entered_by=entered_by_text,
                 )
             if auto_rank:
-                self._recalculate_event_ranks(repo, event_id, scoring_strategy)
+                self._recalculate_event_ranks(repo, event_id, scoring_strategy, round_id)
             conn.commit()
             return result_id
 
@@ -268,6 +276,7 @@ class MeetResultMixin:
             repo.set_attempt_void(attempt_id, is_void)
 
             event_id = int(attempt["event_id"])
+            round_id = int(attempt["round_id"])
             athlete_type = attempt["athlete_type"]
             athlete_ref_id = attempt["athlete_ref_id"]
             team_id = attempt["team_id"]
@@ -280,6 +289,7 @@ class MeetResultMixin:
 
             all_attempts = repo.list_attempts_for_target(
                 event_id=event_id,
+                round_id=round_id,
                 athlete_type=athlete_type,
                 athlete_ref_id=athlete_ref_id,
                 team_id=team_id,
@@ -288,6 +298,7 @@ class MeetResultMixin:
 
             exists = repo.get_result_by_target(
                 event_id=event_id,
+                round_id=round_id,
                 athlete_type=athlete_type,
                 athlete_ref_id=athlete_ref_id,
                 team_id=team_id,
@@ -296,7 +307,7 @@ class MeetResultMixin:
             if not valid:
                 if exists:
                     repo._crud_delete_by_id(RESULTS, int(exists["id"]))
-                self._recalculate_event_ranks(repo, event_id, scoring_strategy)
+                self._recalculate_event_ranks(repo, event_id, scoring_strategy, round_id)
                 conn.commit()
                 return
 
@@ -315,6 +326,7 @@ class MeetResultMixin:
             else:
                 repo.insert_result(
                     event_id=event_id,
+                    round_id=round_id,
                     rank=best_rank,
                     points=points_for_rank(best_rank, int(event["is_individual"])),
                     athlete_type=athlete_type,
@@ -323,5 +335,5 @@ class MeetResultMixin:
                     performance=best_perf,
                     entered_by=str(attempt["entered_by"] or ""),
                 )
-            self._recalculate_event_ranks(repo, event_id, scoring_strategy)
+            self._recalculate_event_ranks(repo, event_id, scoring_strategy, round_id)
             conn.commit()

@@ -15,11 +15,13 @@ class ResultRepositoryMixin:
             team_id: Optional[int],
             performance: Optional[str],
             entered_by: Optional[str] = None,
+            round_id: int = 0,
         ) -> int:
             return self._crud_insert(
                 RESULTS,
                 {
                     "event_id": event_id,
+                    "round_id": round_id,
                     "athlete_type": athlete_type,
                     "athlete_ref_id": athlete_ref_id,
                     "team_id": team_id,
@@ -40,11 +42,13 @@ class ResultRepositoryMixin:
             performance: Optional[str],
             entered_by: Optional[str] = None,
             attempt_number: int = 1,
+            round_id: int = 0,
         ) -> int:
             return self._crud_insert(
                 ATTEMPTS,
                 {
                     "event_id": event_id,
+                    "round_id": round_id,
                     "athlete_type": athlete_type,
                     "athlete_ref_id": athlete_ref_id,
                     "team_id": team_id,
@@ -62,16 +66,17 @@ class ResultRepositoryMixin:
             athlete_type: Optional[str],
             athlete_ref_id: Optional[int],
             team_id: Optional[int],
+            round_id: int = 0,
         ) -> int:
             if athlete_ref_id is not None:
                 row = self.conn.execute(
-                    "SELECT MAX(attempt_number) AS mx FROM attempts WHERE event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL",
-                    (event_id, athlete_type, athlete_ref_id),
+                    "SELECT MAX(attempt_number) AS mx FROM attempts WHERE event_id=? AND round_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL",
+                    (event_id, round_id, athlete_type, athlete_ref_id),
                 ).fetchone()
             elif team_id is not None:
                 row = self.conn.execute(
-                    "SELECT MAX(attempt_number) AS mx FROM attempts WHERE event_id=? AND team_id=? AND athlete_ref_id IS NULL",
-                    (event_id, team_id),
+                    "SELECT MAX(attempt_number) AS mx FROM attempts WHERE event_id=? AND round_id=? AND team_id=? AND athlete_ref_id IS NULL",
+                    (event_id, round_id, team_id),
                 ).fetchone()
             else:
                 return 1
@@ -79,7 +84,7 @@ class ResultRepositoryMixin:
 
     def get_attempt_by_id(self, attempt_id: int):
             return self.conn.execute(
-                "SELECT id, event_id, athlete_type, athlete_ref_id, team_id, attempt_number, rank, performance, is_void, entered_by, created_at FROM attempts WHERE id=?",
+                "SELECT id, event_id, round_id, athlete_type, athlete_ref_id, team_id, attempt_number, rank, performance, is_void, entered_by, created_at FROM attempts WHERE id=?",
                 (attempt_id,),
             ).fetchone()
 
@@ -92,27 +97,38 @@ class ResultRepositoryMixin:
             athlete_type: Optional[str],
             athlete_ref_id: Optional[int],
             team_id: Optional[int],
+            round_id: int | None = None,
         ):
             if athlete_ref_id is not None:
+                wheres = ["event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL"]
+                params = [event_id, athlete_type, athlete_ref_id]
+                if round_id is not None:
+                    wheres.append("round_id=?")
+                    params.append(round_id)
                 return self.conn.execute(
-                    """
-                    SELECT id, attempt_number, rank, performance, is_void, created_at
+                    f"""
+                    SELECT id, round_id, attempt_number, rank, performance, is_void, created_at
                     FROM attempts
-                    WHERE event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL
+                    WHERE {' AND '.join(wheres)}
                     ORDER BY attempt_number ASC, id ASC
                     """,
-                    (event_id, athlete_type, athlete_ref_id),
+                    tuple(params),
                 ).fetchall()
 
             if team_id is not None:
+                wheres = ["event_id=? AND team_id=? AND athlete_ref_id IS NULL AND athlete_type IS NULL"]
+                params = [event_id, team_id]
+                if round_id is not None:
+                    wheres.append("round_id=?")
+                    params.append(round_id)
                 return self.conn.execute(
-                    """
-                    SELECT id, attempt_number, rank, performance, is_void, created_at
+                    f"""
+                    SELECT id, round_id, attempt_number, rank, performance, is_void, created_at
                     FROM attempts
-                    WHERE event_id=? AND team_id=? AND athlete_ref_id IS NULL AND athlete_type IS NULL
+                    WHERE {' AND '.join(wheres)}
                     ORDER BY attempt_number ASC, id ASC
                     """,
-                    (event_id, team_id),
+                    tuple(params),
                 ).fetchall()
 
             return []
@@ -123,29 +139,40 @@ class ResultRepositoryMixin:
             athlete_type: Optional[str],
             athlete_ref_id: Optional[int],
             team_id: Optional[int],
+            round_id: int | None = None,
         ):
             if athlete_ref_id is not None:
+                wheres = ["event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL"]
+                params = [event_id, athlete_type, athlete_ref_id]
+                if round_id is not None:
+                    wheres.append("round_id=?")
+                    params.append(round_id)
                 return self.conn.execute(
-                    """
-                    SELECT id, rank, points, performance, entered_by
+                    f"""
+                    SELECT id, round_id, rank, points, performance, entered_by
                     FROM results
-                    WHERE event_id=? AND athlete_type=? AND athlete_ref_id=? AND team_id IS NULL
+                    WHERE {' AND '.join(wheres)}
                     ORDER BY id DESC
                     LIMIT 1
                     """,
-                    (event_id, athlete_type, athlete_ref_id),
+                    tuple(params),
                 ).fetchone()
 
             if team_id is not None:
+                wheres = ["event_id=? AND team_id=? AND athlete_ref_id IS NULL AND athlete_type IS NULL"]
+                params = [event_id, team_id]
+                if round_id is not None:
+                    wheres.append("round_id=?")
+                    params.append(round_id)
                 return self.conn.execute(
-                    """
-                    SELECT id, rank, points, performance, entered_by
+                    f"""
+                    SELECT id, round_id, rank, points, performance, entered_by
                     FROM results
-                    WHERE event_id=? AND team_id=? AND athlete_ref_id IS NULL AND athlete_type IS NULL
+                    WHERE {' AND '.join(wheres)}
                     ORDER BY id DESC
                     LIMIT 1
                     """,
-                    (event_id, team_id),
+                    tuple(params),
                 ).fetchone()
 
             return None
@@ -163,21 +190,27 @@ class ResultRepositoryMixin:
                 values["entered_by"] = entered_by
             self._crud_update_by_id(RESULTS, result_id, values)
 
-    def list_event_results(self, event_id: int):
+    def list_event_results(self, event_id: int, round_id: int | None = None):
+            wheres = ["event_id=?"]
+            params = [event_id]
+            if round_id is not None:
+                wheres.append("round_id=?")
+                params.append(round_id)
             return self.conn.execute(
-                """
-                SELECT id, rank, performance
+                f"""
+                SELECT id, round_id, rank, performance
                 FROM results
-                WHERE event_id=?
+                WHERE {' AND '.join(wheres)}
                 ORDER BY rank ASC, id ASC
                 """,
-                (event_id,),
+                tuple(params),
             ).fetchall()
 
     def list_individual_results_for_event(self, event_id: int):
             return self.conn.execute(
                 """
                 SELECT
+                    r.round_id,
                     r.rank,
                     a.name AS athlete_name,
                     COALESCE(d1.name, '') AS department_name,
@@ -192,11 +225,17 @@ class ResultRepositoryMixin:
                 (event_id,),
             ).fetchall()
 
-    def list_individual_results_for_event_all(self, event_id: int):
+    def list_individual_results_for_event_all(self, event_id: int, round_id: int | None = None):
+            wheres = ["r.event_id=? AND r.athlete_ref_id IS NOT NULL"]
+            params = [event_id]
+            if round_id is not None:
+                wheres.append("r.round_id=?")
+                params.append(round_id)
             return self.conn.execute(
-                """
+                f"""
                 SELECT
                     r.id,
+                    r.round_id,
                     r.rank,
                     a.name AS athlete_name,
                     COALESCE(d1.name, '') AS department_name,
@@ -204,17 +243,23 @@ class ResultRepositoryMixin:
                 FROM results r
                 LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
                 LEFT JOIN departments d1 ON d1.id = a.department_id
-                WHERE r.event_id=? AND r.athlete_ref_id IS NOT NULL
+                WHERE {' AND '.join(wheres)}
                 ORDER BY r.id ASC
                 """,
-                (event_id,),
+                tuple(params),
             ).fetchall()
 
-    def list_team_results_for_event_all(self, event_id: int):
+    def list_team_results_for_event_all(self, event_id: int, round_id: int | None = None):
+            wheres = ["r.event_id=? AND r.team_id IS NOT NULL"]
+            params = [event_id]
+            if round_id is not None:
+                wheres.append("r.round_id=?")
+                params.append(round_id)
             return self.conn.execute(
-                """
+                f"""
                 SELECT
                     r.id,
+                    r.round_id,
                     r.rank,
                     COALESCE(t.name, '') AS team_name,
                     COALESCE(d.name, '') AS department_name,
@@ -222,10 +267,10 @@ class ResultRepositoryMixin:
                 FROM results r
                 LEFT JOIN teams t ON t.id = r.team_id
                 LEFT JOIN departments d ON d.id = t.department_id
-                WHERE r.event_id=? AND r.team_id IS NOT NULL
+                WHERE {' AND '.join(wheres)}
                 ORDER BY r.id ASC
                 """,
-                (event_id,),
+                tuple(params),
             ).fetchall()
 
     def update_result_rank_points(self, result_id: int, rank: int, points: int) -> None:
@@ -236,6 +281,7 @@ class ResultRepositoryMixin:
                 """
                 SELECT
                     r.id,
+                    r.round_id,
                     e.name AS event_name,
                     e.category,
                     e.scoring_strategy,
@@ -293,6 +339,7 @@ class ResultRepositoryMixin:
                 )
                 SELECT
                     r.id,
+                    r.round_id,
                     r.event_id,
                     e.name AS event_name,
                     e.category,
@@ -334,6 +381,7 @@ class ResultRepositoryMixin:
                 """
                 SELECT
                     r.id,
+                    r.round_id,
                     e.name AS event_name,
                     e.scoring_strategy,
                     CASE
@@ -427,6 +475,7 @@ class ResultRepositoryMixin:
             data_sql = f"""
                 SELECT
                     r.id,
+                    r.round_id,
                     r.event_id,
                     e.name AS event_name,
                     e.category,
@@ -563,6 +612,7 @@ class ResultRepositoryMixin:
             data_sql = f"""
                 SELECT
                     r.id,
+                    r.round_id,
                     r.event_id,
                     e.name AS event_name,
                     e.category,
@@ -593,14 +643,20 @@ class ResultRepositoryMixin:
             """
             return self._paged_query(count_sql, data_sql, tuple(params), page, page_size)
 
-    def list_personal_attempts_for_event(self, event_id: int, attempt_number: int | None = None):
+    def list_personal_attempts_for_event(self, event_id: int, attempt_number: int | None = None, round_id: int | None = None):
             if attempt_number is not None:
+                wheres = ["at.event_id=? AND at.athlete_ref_id IS NOT NULL AND at.attempt_number=?"]
+                params = [event_id, attempt_number]
+                if round_id is not None:
+                    wheres.append("at.round_id=?")
+                    params.append(round_id)
                 return self.conn.execute(
-                    """
+                    f"""
                     SELECT
                         a.athlete_no,
                         a.name AS athlete_name,
                         d.name AS department_name,
+                        at.round_id,
                         at.attempt_number,
                         at.rank,
                         at.performance,
@@ -609,17 +665,23 @@ class ResultRepositoryMixin:
                     FROM attempts at
                     JOIN athletes a ON a.athlete_type = at.athlete_type AND a.id = at.athlete_ref_id
                     LEFT JOIN departments d ON d.id = a.department_id
-                    WHERE at.event_id=? AND at.athlete_ref_id IS NOT NULL AND at.attempt_number=?
+                    WHERE {' AND '.join(wheres)}
                     ORDER BY a.athlete_no ASC
                     """,
-                    (event_id, attempt_number),
+                    tuple(params),
                 ).fetchall()
+            wheres = ["at.event_id=? AND at.athlete_ref_id IS NOT NULL"]
+            params = [event_id]
+            if round_id is not None:
+                wheres.append("at.round_id=?")
+                params.append(round_id)
             return self.conn.execute(
-                """
+                f"""
                 SELECT
                     a.athlete_no,
                     a.name AS athlete_name,
                     d.name AS department_name,
+                    at.round_id,
                     at.attempt_number,
                     at.rank,
                     at.performance,
@@ -628,19 +690,25 @@ class ResultRepositoryMixin:
                 FROM attempts at
                 JOIN athletes a ON a.athlete_type = at.athlete_type AND a.id = at.athlete_ref_id
                 LEFT JOIN departments d ON d.id = a.department_id
-                WHERE at.event_id=? AND at.athlete_ref_id IS NOT NULL
+                WHERE {' AND '.join(wheres)}
                 ORDER BY a.athlete_no ASC, at.attempt_number ASC
                 """,
-                (event_id,),
+                tuple(params),
             ).fetchall()
 
-    def list_team_attempts_for_event(self, event_id: int, attempt_number: int | None = None):
+    def list_team_attempts_for_event(self, event_id: int, attempt_number: int | None = None, round_id: int | None = None):
             if attempt_number is not None:
+                wheres = ["at.event_id=? AND at.team_id IS NOT NULL AND at.attempt_number=?"]
+                params = [event_id, attempt_number]
+                if round_id is not None:
+                    wheres.append("at.round_id=?")
+                    params.append(round_id)
                 return self.conn.execute(
-                    """
+                    f"""
                     SELECT
                         t.name AS team_name,
                         d.name AS department_name,
+                        at.round_id,
                         at.attempt_number,
                         at.rank,
                         at.performance,
@@ -649,16 +717,22 @@ class ResultRepositoryMixin:
                     FROM attempts at
                     JOIN teams t ON t.id = at.team_id
                     LEFT JOIN departments d ON d.id = t.department_id
-                    WHERE at.event_id=? AND at.team_id IS NOT NULL AND at.attempt_number=?
+                    WHERE {' AND '.join(wheres)}
                     ORDER BY t.name ASC
                     """,
-                    (event_id, attempt_number),
+                    tuple(params),
                 ).fetchall()
+            wheres = ["at.event_id=? AND at.team_id IS NOT NULL"]
+            params = [event_id]
+            if round_id is not None:
+                wheres.append("at.round_id=?")
+                params.append(round_id)
             return self.conn.execute(
-                """
+                f"""
                 SELECT
                     t.name AS team_name,
                     d.name AS department_name,
+                    at.round_id,
                     at.attempt_number,
                     at.rank,
                     at.performance,
@@ -667,8 +741,33 @@ class ResultRepositoryMixin:
                 FROM attempts at
                 JOIN teams t ON t.id = at.team_id
                 LEFT JOIN departments d ON d.id = t.department_id
-                WHERE at.event_id=? AND at.team_id IS NOT NULL
+                WHERE {' AND '.join(wheres)}
                 ORDER BY t.name ASC, at.attempt_number ASC
                 """,
-                (event_id,),
+                tuple(params),
             ).fetchall()
+
+    def list_results_grouped_by_heat(self, event_id: int, round_id: int):
+        return self.conn.execute(
+            """
+            SELECT
+                he.heat_id,
+                r.id AS result_id,
+                r.rank,
+                r.performance,
+                r.athlete_type,
+                r.athlete_ref_id,
+                r.team_id
+            FROM results r
+            JOIN heat_entries he ON (
+                (r.athlete_ref_id = he.athlete_ref_id AND r.athlete_type = he.athlete_type)
+                OR (r.team_id = he.team_id AND r.team_id IS NOT NULL)
+            )
+            JOIN heats h ON h.id = he.heat_id
+            JOIN rounds rd ON rd.id = h.round_id
+            WHERE rd.event_id = ? AND rd.round_number = ?
+              AND r.event_id = ? AND r.round_id = ?
+            ORDER BY he.heat_id, r.rank
+            """,
+            (event_id, round_id, event_id, round_id),
+        ).fetchall()

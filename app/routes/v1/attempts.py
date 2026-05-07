@@ -10,6 +10,7 @@ def list_attempts():
         athlete_type = request.args.get("athlete_type", "").strip()
         athlete_id_text = request.args.get("athlete_ref_id")
         team_id_text = request.args.get("team_id")
+        round_id_text = request.args.get("round_id")
 
         if not event_id_text:
             raise ValueError("event_id 必填")
@@ -28,6 +29,7 @@ def list_attempts():
                 athlete_type=athlete_type if athlete_ref_id is not None else None,
                 athlete_ref_id=athlete_ref_id,
                 team_id=team_id,
+                round_id=int(round_id_text) if round_id_text else None,
             )
             items = [dict(r) for r in rows]
             return jsonify({"ok": True, "items": items, "total": len(items)})

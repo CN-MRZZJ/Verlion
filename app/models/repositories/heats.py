@@ -48,6 +48,24 @@ class HeatsRepositoryMixin:
     def update_heat_entry(self, entry_id: int, lane: int | None) -> None:
         self._crud_update_by_id(HEAT_ENTRIES, entry_id, {"lane": lane})
 
+    def get_heat_entry(self, entry_id: int):
+        return self._crud_get_by_id(HEAT_ENTRIES, entry_id)
+
+    def find_entry_at(self, heat_id: int, lane: int):
+        return self._crud_get_one(HEAT_ENTRIES, WhereClause("heat_id=? AND lane=?", (heat_id, lane)))
+
+    def move_heat_entry(self, entry_id: int, heat_id: int, lane: int | None) -> None:
+        self._crud_update_by_id(HEAT_ENTRIES, entry_id, {"heat_id": heat_id, "lane": lane})
+
+    def clear_round_data(self, round_id: int) -> None:
+        heat_rows = self.conn.execute("SELECT id FROM heats WHERE round_id=?", (round_id,)).fetchall()
+        heat_ids = [int(h["id"]) for h in heat_rows]
+        if heat_ids:
+            placeholders = ", ".join("?" for _ in heat_ids)
+            self.conn.execute(f"DELETE FROM heat_entries WHERE heat_id IN ({placeholders})", tuple(heat_ids))
+            self.conn.execute(f"DELETE FROM heats WHERE id IN ({placeholders})", tuple(heat_ids))
+        self.conn.execute("DELETE FROM rounds WHERE id=?", (round_id,))
+
     def clear_heats_for_event(self, event_id: int) -> None:
         round_ids = [
             int(r["id"])

@@ -71,6 +71,7 @@ EVENT = {
         "gender": {"type": "string", "description": "性别限制：male/female/mixed"},
         "group": {"type": "string", "description": "组别"},
         "is_individual": {"type": "integer", "description": "是否个人项目：1=个人 0=团体"},
+        "competition_format": {"type": "string", "description": "赛制：heats/knockout/round_robin，默认 heats"},
     },
 }
 
@@ -85,11 +86,13 @@ EVENT_PROGRESS = {
         "gender": {"type": "string", "description": "性别"},
         "group": {"type": "string", "description": "组别"},
         "is_individual": {"type": "integer", "description": "是否个人项目"},
+        "competition_format": {"type": "string", "description": "赛制"},
         "checkin_done": {"type": "integer", "description": "检录是否完成：0/1"},
         "competition_done": {"type": "integer", "description": "比赛是否完成：0/1"},
         "record_done": {"type": "integer", "description": "成绩录入是否完成：0/1"},
         "publish_done": {"type": "integer", "description": "公示是否完成：0/1"},
         "updated_at": {"type": "string", "description": "更新时间"},
+        "heat_rounds": {"type": "integer", "description": "道次赛轮次数量（1-4），默认 1"},
     },
 }
 
@@ -137,6 +140,7 @@ RESULT = {
         "performance": {"type": "string", "description": "成绩文本"},
         "entered_by": {"type": "string", "description": "录入人员"},
         "created_at": {"type": "string", "description": "创建时间"},
+        "round_id": {"type": "integer", "description": "轮次 ID，默认 1"},
     },
 }
 
@@ -149,6 +153,7 @@ ATTEMPT = {
         "performance": {"type": "string", "description": "成绩文本"},
         "is_void": {"type": "integer", "description": "是否作废：0=有效 1=作废"},
         "created_at": {"type": "string", "description": "创建时间"},
+        "round_id": {"type": "integer", "description": "轮次 ID，默认 1"},
     },
 }
 
@@ -209,6 +214,7 @@ EVENT_TYPE = {
         "code": {"type": "string", "description": "项目代号"},
         "name": {"type": "string", "description": "项目中文分类"},
         "scoring_strategy": {"type": "string", "description": "比较策略：time/length/count/count_miss"},
+        "competition_format": {"type": "string", "description": "赛制：heats/knockout/round_robin"},
     },
 }
 
@@ -227,6 +233,7 @@ CREATE_EVENT_TYPE_REQUEST = {
         "code": {"type": "string", "description": "项目代号"},
         "name": {"type": "string", "description": "项目中文分类"},
         "scoring_strategy": {"type": "string", "description": "比较策略：time/length/count/count_miss"},
+        "competition_format": {"type": "string", "description": "赛制：heats/knockout/round_robin，默认 heats"},
     },
 }
 
@@ -235,6 +242,7 @@ UPDATE_EVENT_TYPE_REQUEST = {
     "properties": {
         "name": {"type": "string", "description": "项目中文分类"},
         "scoring_strategy": {"type": "string", "description": "比较策略：time/length/count/count_miss"},
+        "competition_format": {"type": "string", "description": "赛制，默认 heats"},
     },
 }
 
@@ -302,8 +310,9 @@ CREATE_RESULT_REQUEST = {
         "team_id": {"type": "integer", "description": "队伍 ID（团体项目用）"},
         "performance": {"type": "string", "description": "成绩文本"},
         "entered_by": {"type": "string", "description": "录入人员姓名或编号"},
+        "round_id": {"type": "integer", "description": "轮次 ID（必填）"},
     },
-    "required": ["event_id"],
+    "required": ["event_id", "round_id"],
 }
 
 RULE_SAVE_REQUEST = {
@@ -496,7 +505,15 @@ CREATE_HEATS_REQUEST = {
 UPDATE_LANE_REQUEST = {
     "type": "object",
     "properties": {
-        "lane": {"type": "integer", "description": "新的道次，可为空"},
+        "heat_id": {"type": "integer", "description": "目标组次 ID，不传则保持在当前组"},
+        "lane": {"type": "integer", "description": "目标道次，不传则仅换组"},
+    },
+}
+
+HEATS_CONFIG_REQUEST = {
+    "type": "object",
+    "properties": {
+        "heat_rounds": {"type": "integer", "description": "轮次数量 1-4，默认 1"},
     },
 }
 
@@ -910,11 +927,20 @@ def get_openapi_spec() -> dict[str, Any]:
                 parameters=[_path("event_id", "项目 ID", "integer")],
             ),
         },
+        "/api/v1/events/{event_id}/heats/config": {
+            "put": _operation(
+                "分组分道",
+                "设置道次赛轮次",
+                "设置项目道次赛的轮次数量（1-4），默认 1（仅决赛）。",
+                parameters=[_path("event_id", "项目 ID", "integer")],
+                request_body=_json_body_ref("HeatsConfigRequest"),
+            )
+        },
         "/api/v1/events/{event_id}/heats/{heat_id}/entries/{entry_id}": {
             "put": _operation(
                 "分组分道",
-                "调整道次",
-                "手动调整某个道次分配的 lane 值（调道/换道）。",
+                "调整道次/组别",
+                "手动调整道次或组别。若目标位置已有运动员则自动对调。",
                 parameters=[
                     _path("event_id", "项目 ID", "integer"),
                     _path("heat_id", "组次 ID", "integer"),
@@ -1329,6 +1355,7 @@ def get_openapi_spec() -> dict[str, Any]:
                 "HeatsResponse": HEATS_RESPONSE,
                 "CreateHeatsRequest": CREATE_HEATS_REQUEST,
                 "UpdateLaneRequest": UPDATE_LANE_REQUEST,
+                "HeatsConfigRequest": HEATS_CONFIG_REQUEST,
             }
         },
     }

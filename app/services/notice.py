@@ -11,7 +11,23 @@ from openpyxl import load_workbook
 from app.models.repositories import SportsRepository
 
 
+_ROUND_NAMES_BY_COUNT = {
+    1: {1: "决赛"},
+    2: {1: "预赛", 2: "决赛"},
+    3: {1: "预赛", 2: "半决赛", 3: "决赛"},
+    4: {1: "预赛", 2: "复赛", 3: "半决赛", 4: "决赛"},
+}
+
+
 class MeetNoticeMixin:
+    def _round_name_for_notice(self, event_id: int, round_id: int) -> str:
+        with self.db.connect() as conn:
+            repo = SportsRepository(conn)
+            config = repo.get_heats_config(event_id)
+            heat_rounds = int(config["heat_rounds"]) if config else 1
+        names = _ROUND_NAMES_BY_COUNT.get(heat_rounds, _ROUND_NAMES_BY_COUNT[1])
+        return names.get(round_id, f"第{round_id}轮")
+
     def _rank_rows_for_notice(self, scoring_strategy: str, rows: list[dict]) -> list[dict]:
         tie_eps = 1e-9
 
@@ -40,12 +56,14 @@ class MeetNoticeMixin:
     def export_personal_result_notice_xlsx(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
     ) -> tuple[bytes, str]:
         return self._export_result_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=template_dir,
             layout_config_path=layout_config_path,
@@ -55,12 +73,14 @@ class MeetNoticeMixin:
     def export_team_result_notice_xlsx(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
     ) -> tuple[bytes, str]:
         return self._export_result_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=template_dir,
             layout_config_path=layout_config_path,
@@ -70,6 +90,7 @@ class MeetNoticeMixin:
     def _export_result_notice_xlsx(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
@@ -100,13 +121,14 @@ class MeetNoticeMixin:
             raise ValueError("row_template 缺少 rank 列配置")
 
         if personal_only:
-            event, rows, env = self._get_personal_notice_payload(event_id)
+            event, rows, env = self._get_personal_notice_payload(event_id, round_id)
         else:
-            event, rows, env = self._get_team_notice_payload(event_id)
+            event, rows, env = self._get_team_notice_payload(event_id, round_id)
 
         wb = load_workbook(template_path)
         ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
 
+        round_name = self._round_name_for_notice(event_id, round_id)
         env_values = {
             "date": env.get("date", ""),
             "wind_direction": env.get("wind_direction", ""),
@@ -117,6 +139,7 @@ class MeetNoticeMixin:
             "temperature_low": env.get("temperature_low", ""),
             "event_name": self._event_display_name(event),
             "notice_title": self._notice_title_for_event(event, layout),
+            "round_name": round_name,
         }
         for key, cell in environment_cells.items():
             if key in env_values and cell:
@@ -140,10 +163,10 @@ class MeetNoticeMixin:
         buf = io.BytesIO()
         wb.save(buf)
         event_name_token = re.sub(r"[\\/:*?\"<>|]+", "_", self._event_display_name(event))
-        filename = f"{'个人' if personal_only else '团体'}成绩公示单_{event_name_token}.xlsx"
+        filename = f"{'个人' if personal_only else '团体'}成绩公示单_{event_name_token}_{round_name}.xlsx"
         return buf.getvalue(), filename
 
-    def _get_personal_notice_payload(self, event_id: int) -> tuple[dict, list[dict], dict[str, str]]:
+    def _get_personal_notice_payload(self, event_id: int, round_id: int) -> tuple[dict, list[dict], dict[str, str]]:
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
             event_row = repo.get_event_by_id(event_id)
@@ -153,7 +176,7 @@ class MeetNoticeMixin:
             if int(event.get("is_individual", 0)) != 1:
                 raise ValueError("仅个人项目支持导出个人成绩公示单")
             scoring_strategy = str(event.get("scoring_strategy", ""))
-            raw_rows = [dict(r) for r in repo.list_individual_results_for_event_all(event_id)]
+            raw_rows = [dict(r) for r in repo.list_individual_results_for_event_all(event_id, round_id=round_id)]
             rows = self._rank_rows_for_notice(scoring_strategy, raw_rows)[:8]
             for row in rows:
                 row["performance"] = self._format_performance_for_display(scoring_strategy, row.get("performance"))
@@ -161,7 +184,7 @@ class MeetNoticeMixin:
         env = self.get_report_environment_settings()
         return event, rows, env
 
-    def _get_team_notice_payload(self, event_id: int) -> tuple[dict, list[dict], dict[str, str]]:
+    def _get_team_notice_payload(self, event_id: int, round_id: int) -> tuple[dict, list[dict], dict[str, str]]:
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
             event_row = repo.get_event_by_id(event_id)
@@ -171,7 +194,7 @@ class MeetNoticeMixin:
             if int(event.get("is_individual", 0)) != 0:
                 raise ValueError("仅团体项目支持导出团体成绩公示单")
             scoring_strategy = str(event.get("scoring_strategy", ""))
-            raw_rows = [dict(r) for r in repo.list_team_results_for_event_all(event_id)]
+            raw_rows = [dict(r) for r in repo.list_team_results_for_event_all(event_id, round_id=round_id)]
             rows = self._rank_rows_for_notice(scoring_strategy, raw_rows)[:8]
             for row in rows:
                 row["performance"] = self._format_performance_for_display(scoring_strategy, row.get("performance"))
@@ -261,12 +284,14 @@ class MeetNoticeMixin:
     def export_personal_result_notice_pdf(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
     ) -> tuple[bytes, str]:
         xlsx_bytes, xlsx_filename = self.export_personal_result_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=template_dir,
             layout_config_path=layout_config_path,
@@ -278,12 +303,14 @@ class MeetNoticeMixin:
     def export_team_result_notice_pdf(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
     ) -> tuple[bytes, str]:
         xlsx_bytes, xlsx_filename = self.export_team_result_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=template_dir,
             layout_config_path=layout_config_path,
@@ -297,6 +324,7 @@ class MeetNoticeMixin:
     def export_personal_attempt_notice_xlsx(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
@@ -304,6 +332,7 @@ class MeetNoticeMixin:
     ) -> tuple[bytes, str]:
         return self._export_attempt_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=template_dir,
             layout_config_path=layout_config_path,
@@ -314,6 +343,7 @@ class MeetNoticeMixin:
     def export_team_attempt_notice_xlsx(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
@@ -321,6 +351,7 @@ class MeetNoticeMixin:
     ) -> tuple[bytes, str]:
         return self._export_attempt_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=template_dir,
             layout_config_path=layout_config_path,
@@ -331,6 +362,7 @@ class MeetNoticeMixin:
     def _export_attempt_notice_xlsx(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
@@ -360,13 +392,14 @@ class MeetNoticeMixin:
         max_rows = int(layout.get("max_rows", 40))
 
         if personal_only:
-            event, groups, env = self._get_personal_attempt_notice_payload(event_id, attempt_number)
+            event, groups, env = self._get_personal_attempt_notice_payload(event_id, round_id, attempt_number)
         else:
-            event, groups, env = self._get_team_attempt_notice_payload(event_id, attempt_number)
+            event, groups, env = self._get_team_attempt_notice_payload(event_id, round_id, attempt_number)
 
         wb = load_workbook(template_path)
         ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
 
+        round_name = self._round_name_for_notice(event_id, round_id)
         env_values = {
             "date": env.get("date", ""),
             "wind_direction": env.get("wind_direction", ""),
@@ -377,6 +410,7 @@ class MeetNoticeMixin:
             "temperature_low": env.get("temperature_low", ""),
             "event_name": self._event_display_name(event),
             "notice_title": self._notice_title_for_event(event, layout),
+            "round_name": round_name,
         }
         for key, cell in environment_cells.items():
             if key in env_values and cell:
@@ -411,10 +445,10 @@ class MeetNoticeMixin:
         buf = io.BytesIO()
         wb.save(buf)
         event_name_token = re.sub(r"[\\/:*?\"<>|]+", "_", self._event_display_name(event))
-        filename = f"{'个人' if personal_only else '团体'}轮次成绩表_{event_name_token}.xlsx"
+        filename = f"{'个人' if personal_only else '团体'}轮次成绩表_{event_name_token}_{round_name}.xlsx"
         return buf.getvalue(), filename
 
-    def _get_personal_attempt_notice_payload(self, event_id: int, attempt_number: int | None = None) -> tuple[dict, list[dict], dict[str, str]]:
+    def _get_personal_attempt_notice_payload(self, event_id: int, round_id: int, attempt_number: int | None = None) -> tuple[dict, list[dict], dict[str, str]]:
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
             event_row = repo.get_event_by_id(event_id)
@@ -423,12 +457,12 @@ class MeetNoticeMixin:
             event = dict(event_row)
             if int(event.get("is_individual", 0)) != 1:
                 raise ValueError("仅个人项目支持导出个人轮次成绩表")
-            raw = [dict(r) for r in repo.list_personal_attempts_for_event(event_id, attempt_number)]
+            raw = [dict(r) for r in repo.list_personal_attempts_for_event(event_id, attempt_number=attempt_number, round_id=round_id)]
         groups = self._group_attempts_by_athlete(raw)
         env = self.get_report_environment_settings()
         return event, groups, env
 
-    def _get_team_attempt_notice_payload(self, event_id: int, attempt_number: int | None = None) -> tuple[dict, list[dict], dict[str, str]]:
+    def _get_team_attempt_notice_payload(self, event_id: int, round_id: int, attempt_number: int | None = None) -> tuple[dict, list[dict], dict[str, str]]:
         with self.db.connect() as conn:
             repo = SportsRepository(conn)
             event_row = repo.get_event_by_id(event_id)
@@ -437,7 +471,7 @@ class MeetNoticeMixin:
             event = dict(event_row)
             if int(event.get("is_individual", 0)) != 0:
                 raise ValueError("仅团体项目支持导出团体轮次成绩表")
-            raw = [dict(r) for r in repo.list_team_attempts_for_event(event_id, attempt_number)]
+            raw = [dict(r) for r in repo.list_team_attempts_for_event(event_id, attempt_number=attempt_number, round_id=round_id)]
         groups = self._group_attempts_by_team(raw)
         env = self.get_report_environment_settings()
         return event, groups, env
@@ -494,6 +528,7 @@ class MeetNoticeMixin:
     def export_personal_attempt_notice_pdf(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
@@ -501,6 +536,7 @@ class MeetNoticeMixin:
     ) -> tuple[bytes, str]:
         xlsx_bytes, xlsx_filename = self.export_personal_attempt_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=template_dir,
             layout_config_path=layout_config_path,
@@ -513,6 +549,7 @@ class MeetNoticeMixin:
     def export_team_attempt_notice_pdf(
         self,
         event_id: int,
+        round_id: int,
         template_name: str,
         template_dir: str,
         layout_config_path: str,
@@ -520,6 +557,7 @@ class MeetNoticeMixin:
     ) -> tuple[bytes, str]:
         xlsx_bytes, xlsx_filename = self.export_team_attempt_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=template_dir,
             layout_config_path=layout_config_path,

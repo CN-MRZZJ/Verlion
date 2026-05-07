@@ -1,10 +1,20 @@
 import sqlite3
 from typing import Optional
 
-from .crud import EVENTS, WhereClause
+from .crud import EVENTS, HEATS_CONFIG, WhereClause
 
 
 class EventRepositoryMixin:
+    def upsert_heats_config(self, event_id: int, heat_rounds: int) -> None:
+        self._crud_upsert(
+            HEATS_CONFIG,
+            {"event_id": event_id, "heat_rounds": heat_rounds},
+            conflict_columns=("event_id",),
+            update_columns=("heat_rounds",),
+        )
+
+    def get_heats_config(self, event_id: int):
+        return self._crud_get_by_id(HEATS_CONFIG, event_id)
     def insert_event(
             self,
             name: str,
@@ -14,6 +24,7 @@ class EventRepositoryMixin:
             gender: str,
             group: str,
             is_individual: int,
+            competition_format: str = "heats",
         ) -> int:
             return self._crud_insert(
                 EVENTS,
@@ -25,6 +36,7 @@ class EventRepositoryMixin:
                     "gender": gender,
                     "group": group,
                     "is_individual": is_individual,
+                    "competition_format": competition_format,
                 },
             )
 
@@ -37,14 +49,15 @@ class EventRepositoryMixin:
             gender: str,
             group: str,
             is_individual: int,
+            competition_format: str = "heats",
         ) -> bool:
             return self._crud_exists(
                 EVENTS,
                 WhereClause(
                     """
-                    name=? AND category=? AND event_type=? AND scoring_strategy=? AND gender=? AND "group"=? AND is_individual=?
+                    name=? AND category=? AND event_type=? AND scoring_strategy=? AND gender=? AND "group"=? AND is_individual=? AND competition_format=?
                     """,
-                    (name, category, event_type, scoring_strategy, gender, group, is_individual),
+                    (name, category, event_type, scoring_strategy, gender, group, is_individual, competition_format),
                 ),
             )
 
@@ -52,11 +65,27 @@ class EventRepositoryMixin:
             return self._crud_get_by_id(EVENTS, event_id)
 
     def list_events(self):
-            return self._crud_list(
-                EVENTS,
-                columns=("id", "name", "category", "event_type", "scoring_strategy", "gender", "group", "is_individual"),
-                order_by="id",
-            )
+            return self.conn.execute(
+                """
+                SELECT
+                    e.id,
+                    e.name,
+                    e.category,
+                    e.event_type,
+                    e.scoring_strategy,
+                    e.gender,
+                    e."group",
+                    e.is_individual,
+                    e.competition_format,
+                    COALESCE(hc.heat_rounds, 1) AS heat_rounds,
+                    COUNT(ar.id) AS registration_count
+                FROM events e
+                LEFT JOIN heats_config hc ON hc.event_id = e.id
+                LEFT JOIN athlete_registrations ar ON ar.event_id = e.id
+                GROUP BY e.id
+                ORDER BY e.id
+                """
+            ).fetchall()
 
     def list_events_with_progress(self):
             return self.conn.execute(
@@ -70,13 +99,19 @@ class EventRepositoryMixin:
                     e.gender,
                     e."group",
                     e.is_individual,
+                    e.competition_format,
                     COALESCE(p.checkin_done, 0) AS checkin_done,
                     COALESCE(p.competition_done, 0) AS competition_done,
                     COALESCE(p.record_done, 0) AS record_done,
                     COALESCE(p.publish_done, 0) AS publish_done,
-                    COALESCE(p.updated_at, '') AS updated_at
+                    COALESCE(p.updated_at, '') AS updated_at,
+                    COALESCE(hc.heat_rounds, 1) AS heat_rounds,
+                    COUNT(ar.id) AS registration_count
                 FROM events e
                 LEFT JOIN event_progress p ON p.event_id = e.id
+                LEFT JOIN heats_config hc ON hc.event_id = e.id
+                LEFT JOIN athlete_registrations ar ON ar.event_id = e.id
+                GROUP BY e.id
                 ORDER BY e.id
                 """
             ).fetchall()
@@ -155,7 +190,7 @@ class EventRepositoryMixin:
             count_sql = f"SELECT COUNT(*) AS c FROM events WHERE {where_sql}"
             data_sql = f"""
                 SELECT id, name, category, event_type, gender, "group", is_individual
-                , scoring_strategy
+                , scoring_strategy, competition_format
                 FROM events
                 WHERE {where_sql}
                 ORDER BY {order_sql}

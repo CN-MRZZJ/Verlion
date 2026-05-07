@@ -40,9 +40,11 @@ def save_report_environment():
 def export_personal_result_notice():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
+        round_id = int(str(request.args.get("round_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
         content, filename = get_service().export_personal_result_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["NOTICE_LAYOUT_CONFIG"],
@@ -64,9 +66,11 @@ def export_personal_result_notice():
 def preview_personal_result_notice_pdf():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
+        round_id = int(str(request.args.get("round_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
         content, filename = get_service().export_personal_result_notice_pdf(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["NOTICE_LAYOUT_CONFIG"],
@@ -88,9 +92,11 @@ def preview_personal_result_notice_pdf():
 def export_team_result_notice():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
+        round_id = int(str(request.args.get("round_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
         content, filename = get_service().export_team_result_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["TEAM_NOTICE_LAYOUT_CONFIG"],
@@ -112,9 +118,11 @@ def export_team_result_notice():
 def preview_team_result_notice_pdf():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
+        round_id = int(str(request.args.get("round_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
         content, filename = get_service().export_team_result_notice_pdf(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["TEAM_NOTICE_LAYOUT_CONFIG"],
@@ -136,10 +144,12 @@ def preview_team_result_notice_pdf():
 def export_personal_attempt_notice():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
+        round_id = int(str(request.args.get("round_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
         attempt_number = _parse_attempt_number(request.args.get("attempt_number"))
         content, filename = get_service().export_personal_attempt_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["PERSONAL_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
@@ -162,10 +172,12 @@ def export_personal_attempt_notice():
 def preview_personal_attempt_notice_pdf():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
+        round_id = int(str(request.args.get("round_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
         attempt_number = _parse_attempt_number(request.args.get("attempt_number"))
         content, filename = get_service().export_personal_attempt_notice_pdf(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["PERSONAL_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
@@ -188,10 +200,12 @@ def preview_personal_attempt_notice_pdf():
 def export_team_attempt_notice():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
+        round_id = int(str(request.args.get("round_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
         attempt_number = _parse_attempt_number(request.args.get("attempt_number"))
         content, filename = get_service().export_team_attempt_notice_xlsx(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["TEAM_ATTEMPT_NOTICE_LAYOUT_CONFIG"],
@@ -214,10 +228,12 @@ def export_team_attempt_notice():
 def preview_team_attempt_notice_pdf():
     try:
         event_id = int(str(request.args.get("event_id", "")).strip())
+        round_id = int(str(request.args.get("round_id", "")).strip())
         template_name = str(request.args.get("template_name", "")).strip()
         attempt_number = _parse_attempt_number(request.args.get("attempt_number"))
         content, filename = get_service().export_team_attempt_notice_pdf(
             event_id=event_id,
+            round_id=round_id,
             template_name=template_name,
             template_dir=current_app.config["NOTICE_TEMPLATE_DIR"],
             layout_config_path=current_app.config["TEAM_ATTEMPT_NOTICE_LAYOUT_CONFIG"],

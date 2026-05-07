@@ -43,9 +43,32 @@ class GroupingInput:
     event_id: int
     participants: list[Participant] = field(default_factory=list)
     config: GroupingConfig = field(default_factory=GroupingConfig)
+    heat_rounds: int = 1
 
 
 @dataclass
 class GroupingOutput:
     event_id: int
     stages: list[Stage] = field(default_factory=list)
+
+
+# ── Advancement (晋级) ─────────────────────────────────────────────
+
+@dataclass
+class QualifiedParticipant:
+    athlete_type: str | None = None
+    athlete_ref_id: int | None = None
+    team_id: int | None = None
+
+
+@dataclass
+class AdvancementInput:
+    event_id: int
+    results: list[dict] = field(default_factory=list)
+    params: dict = field(default_factory=dict)
+
+
+@dataclass
+class AdvancementOutput:
+    event_id: int
+    qualified: list[QualifiedParticipant] = field(default_factory=list)

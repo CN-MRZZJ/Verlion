@@ -33,7 +33,14 @@ CREATE TABLE IF NOT EXISTS events (
     scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss')),
     gender TEXT NOT NULL CHECK(gender IN ('male','female','mixed')),
     "group" TEXT NOT NULL,
-    is_individual INTEGER NOT NULL CHECK(is_individual IN (0,1))
+    is_individual INTEGER NOT NULL CHECK(is_individual IN (0,1)),
+    competition_format TEXT NOT NULL CHECK(competition_format IN ('heats','knockout','round_robin')) DEFAULT 'heats'
+);
+
+CREATE TABLE IF NOT EXISTS heats_config (
+    event_id INTEGER PRIMARY KEY,
+    heat_rounds INTEGER NOT NULL DEFAULT 1 CHECK(heat_rounds BETWEEN 1 AND 4),
+    FOREIGN KEY(event_id) REFERENCES events(id)
 );
 
 CREATE TABLE IF NOT EXISTS athlete_registrations (
@@ -68,6 +75,7 @@ CREATE TABLE IF NOT EXISTS team_members (
 CREATE TABLE IF NOT EXISTS results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id INTEGER NOT NULL,
+    round_id INTEGER NOT NULL DEFAULT 1,
     athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
     athlete_ref_id INTEGER,
     team_id INTEGER,
@@ -88,6 +96,7 @@ CREATE TABLE IF NOT EXISTS results (
 CREATE TABLE IF NOT EXISTS attempts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id INTEGER NOT NULL,
+    round_id INTEGER NOT NULL DEFAULT 1,
     athlete_type TEXT CHECK(athlete_type IN ('competitive','fun') OR athlete_type IS NULL),
     athlete_ref_id INTEGER,
     team_id INTEGER,
@@ -109,7 +118,8 @@ CREATE TABLE IF NOT EXISTS attempts (
 CREATE TABLE IF NOT EXISTS event_types (
     code TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss'))
+    scoring_strategy TEXT NOT NULL CHECK(scoring_strategy IN ('time','length','count','count_miss')),
+    competition_format TEXT NOT NULL DEFAULT 'heats' CHECK(competition_format IN ('heats','knockout','round_robin'))
 );
 
 CREATE TABLE IF NOT EXISTS point_rules (

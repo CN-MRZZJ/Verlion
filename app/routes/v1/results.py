@@ -48,9 +48,12 @@ def create_result():
         athlete_no_text = str(payload.get("athlete_no", "")).strip()
         team_id_text = payload.get("team_id")
         performance = payload.get("performance")
+        round_id_text = payload.get("round_id")
 
         if not event_id_text:
             raise ValueError("event_id 必填")
+        if not round_id_text:
+            raise ValueError("round_id 必填")
 
         result_id = get_service().record_result(
             event_id=int(str(event_id_text).strip()),
@@ -61,6 +64,7 @@ def create_result():
             team_id=int(str(team_id_text).strip()) if team_id_text else None,
             performance=str(performance).strip() if performance else None,
             entered_by=str(payload.get("entered_by", "")).strip(),
+            round_id=int(str(round_id_text).strip()),
         )
         return jsonify({"ok": True, "result_id": result_id})
     except Exception as exc:
