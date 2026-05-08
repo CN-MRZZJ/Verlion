@@ -364,8 +364,15 @@ class MeetNoticeMixin:
         else:
             event, groups, env = self._get_team_attempt_notice_payload(event_id, attempt_number)
 
+        scoring_strategy = str(event.get("scoring_strategy", ""))
+        if attempt_number is not None:
+            for grp in groups:
+                att = grp["attempts"][0] if grp["attempts"] else {}
+                grp["performance"] = att.get("performance")
+            groups = self._rank_rows_for_notice(scoring_strategy, groups)
+
         wb = load_workbook(template_path)
-        ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
+        template_ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
 
         env_values = {
             "date": env.get("date", ""),
@@ -378,35 +385,51 @@ class MeetNoticeMixin:
             "event_name": self._event_display_name(event),
             "notice_title": self._notice_title_for_event(event, layout),
         }
-        for key, cell in environment_cells.items():
-            if key in env_values and cell:
-                ws[str(cell)] = env_values[key]
+        if attempt_number is not None:
+            env_values["notice_title"] = f"{env_values['notice_title']} - 第{attempt_number}轮"
 
-        for idx, group in enumerate(groups[:max_rows]):
-            row_num = start_row + idx
-            rank_cell = row_template.get("rank")
-            if rank_cell:
-                ws[f"{rank_cell}{row_num}"] = group.get("rank", "")
-            no_cell = row_template.get("athlete_no")
-            if no_cell:
-                ws[f"{no_cell}{row_num}"] = group.get("athlete_no", "")
-            name_cell = row_template.get("name")
-            if name_cell:
-                ws[f"{name_cell}{row_num}"] = group.get("name", "")
-            dept_cell = row_template.get("department")
-            if dept_cell:
-                ws[f"{dept_cell}{row_num}"] = group.get("department_name", "")
+        total = len(groups)
+        page_count = max((total + max_rows - 1) // max_rows, 1) if max_rows > 0 else 1
 
-            for att_idx, att in enumerate(group.get("attempts", [])):
-                if att_idx >= len(attempt_columns):
-                    break
-                col = attempt_columns[att_idx]
-                perf = self._format_performance_for_display(
-                    str(event.get("scoring_strategy", "")), att.get("performance")
-                )
-                if int(att.get("is_void", 0)):
-                    perf = f"{perf}(作废)" if perf else "(作废)"
-                ws[f"{col}{row_num}"] = perf
+        for page in range(page_count):
+            if page == 0:
+                ws = template_ws
+            else:
+                ws = wb.copy_worksheet(template_ws)
+                ws.title = f"{sheet_name}_{page + 1}"
+
+            for key, cell in environment_cells.items():
+                if key in env_values and cell:
+                    ws[str(cell)] = env_values[key]
+
+            page_start = page * max_rows
+            for idx, group in enumerate(groups[page_start:page_start + max_rows]):
+                row_num = start_row + idx
+                rank_cell = row_template.get("rank")
+                if rank_cell:
+                    ws[f"{rank_cell}{row_num}"] = group.get("rank", "")
+                no_cell = row_template.get("athlete_no")
+                if no_cell:
+                    ws[f"{no_cell}{row_num}"] = group.get("athlete_no", "")
+                name_cell = row_template.get("name")
+                if name_cell:
+                    ws[f"{name_cell}{row_num}"] = group.get("name", "")
+                dept_cell = row_template.get("department")
+                if dept_cell:
+                    ws[f"{dept_cell}{row_num}"] = group.get("department_name", "")
+
+                for att_idx, att in enumerate(group.get("attempts", [])):
+                    if att_idx >= len(attempt_columns):
+                        break
+                    col = attempt_columns[att_idx]
+                    if personal_only and not col:
+                        continue
+                    perf = self._format_performance_for_display(
+                        scoring_strategy, att.get("performance")
+                    )
+                    if int(att.get("is_void", 0)):
+                        perf = f"{perf}(作废)" if perf else "(作废)"
+                    ws[f"{col}{row_num}"] = perf
 
         buf = io.BytesIO()
         wb.save(buf)
