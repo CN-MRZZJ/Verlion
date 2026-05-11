@@ -95,17 +95,30 @@ class MeetHeatsMixin:
             names = _ROUND_NAMES.get(heat_rounds, _ROUND_NAMES[1])
             next_round_name = names[next_round_number - 1]
 
-            # Look up participants to get name/department info
+            # Build performance index from current round results
+            perf_by_athlete: dict[int, float] = {}
+            for r in results:
+                aid = r.get("athlete_ref_id")
+                perf = r.get("performance")
+                if aid and perf is not None:
+                    try:
+                        perf_by_athlete[int(aid)] = float(perf)
+                    except (ValueError, TypeError):
+                        pass
+
             qualified_participants = []
             for q in output.qualified:
                 if q.athlete_ref_id is not None:
                     athlete = repo.get_athlete_by_id(q.athlete_type or "", q.athlete_ref_id)
+                    seed = perf_by_athlete.get(q.athlete_ref_id)
                     qualified_participants.append(Participant(
                         athlete_id=q.athlete_ref_id,
                         name=str(athlete["name"]) if athlete else "",
                         athlete_type=q.athlete_type or "",
                         department=str(athlete.get("department_name", "")),
+                        seed_mark=seed,
                     ))
+                # team support tbd
 
             from app.grouping import get_algorithm
             from app.grouping.schema import GroupingConfig, GroupingInput
