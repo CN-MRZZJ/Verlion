@@ -93,10 +93,9 @@ app/
 配置项通过环境变量覆盖，有基于 `BASE_DIR` 的默认值：
 - `SECRET_KEY` — Flask secret key
 - `SPORTS_MEET_DB` — SQLite 数据库路径，默认 `{BASE_DIR}/sports_meet.db`
-- `SPORTS_RULES_CONFIG` — 规则配置文件路径，默认 `{BASE_DIR}/sports_rules.json`
 
 ### 规则引擎（app/rules.py）
-从 `sports_rules.json` 加载配置（`lru_cache`），支持运行时保存并自动刷新缓存。包含：
+首次启动自动播种默认规则到数据库，运行时通过 API 修改并自动刷新缓存。包含：
 - `point_rule`：个人/团体名次积分映射
 - `attempt_policy`：`best`（取最优）/ `latest`（取最新）
 - `group_options`：运动员组别（A/B/C）、项目组别（A/B/C/ALL）、`team_event_default`

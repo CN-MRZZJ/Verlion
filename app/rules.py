@@ -1,15 +1,10 @@
 import json
-import os
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
 from app.models.database import Database
 
 _rules_db: Database | None = None
-
-DEFAULT_RULE_CONFIG_PATH = Path(__file__).resolve().parent.parent / "sports_rules.json"
-RULE_CONFIG_PATH = Path(os.getenv("SPORTS_RULES_CONFIG", str(DEFAULT_RULE_CONFIG_PATH)))
 
 
 def set_rules_db(db: Database) -> None:

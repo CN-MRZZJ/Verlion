@@ -1,5 +1,6 @@
 from .base import BaseAlgorithm
 from .random import RandomAlgorithm
+from .seeded import SeededAlgorithm
 
 _registry: dict[str, BaseAlgorithm] = {}
 
@@ -19,3 +20,4 @@ def list_algorithms() -> list[str]:
 
 
 register(RandomAlgorithm())
+register(SeededAlgorithm())

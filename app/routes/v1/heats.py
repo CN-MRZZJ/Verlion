@@ -99,8 +99,9 @@ def advance_round(event_id: int, round_id: int):
         payload = request.get_json(silent=True) or {}
         strategy = str(payload.get("strategy", "per_heat_top"))
         lanes_per_heat = int(payload.get("lanes_per_heat", 8))
+        algorithm = str(payload.get("algorithm", "seeded"))
         params = payload.get("params", {})
-        result = get_service().advance_to_next_round(event_id, round_id, strategy, lanes_per_heat, params)
+        result = get_service().advance_to_next_round(event_id, round_id, strategy, lanes_per_heat, algorithm, params)
         return jsonify({"ok": True, **result})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400

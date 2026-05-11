@@ -74,7 +74,7 @@ class MeetHeatsMixin:
 
         self._repo_write(_write)
 
-    def advance_to_next_round(self, event_id: int, current_round_id: int, strategy: str, lanes_per_heat: int, params: dict | None = None) -> dict:
+    def advance_to_next_round(self, event_id: int, current_round_id: int, strategy: str, lanes_per_heat: int, algorithm: str = "seeded", params: dict | None = None) -> dict:
         def _write(repo):
             hc = repo.get_heats_config(event_id)
             heat_rounds = int(hc["heat_rounds"]) if hc else 1
@@ -122,11 +122,11 @@ class MeetHeatsMixin:
 
             from app.grouping import get_algorithm
             from app.grouping.schema import GroupingConfig, GroupingInput
-            algo = get_algorithm("random")
+            algo = get_algorithm(algorithm)
             input2 = GroupingInput(
                 event_id=event_id,
                 participants=qualified_participants,
-                config=GroupingConfig(lanes_per_heat=lanes_per_heat, algorithm="random"),
+                config=GroupingConfig(lanes_per_heat=lanes_per_heat, algorithm=algorithm),
                 heat_rounds=1,
             )
             output2 = algo.run(input2)

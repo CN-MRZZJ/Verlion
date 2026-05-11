@@ -12,4 +12,3 @@ class Config:
     TEAM_NOTICE_LAYOUT_CONFIG = str(BASE_DIR / "app" / "static" / "notice_templates" / "team_notice_layout.json")
     PERSONAL_ATTEMPT_NOTICE_LAYOUT_CONFIG = str(BASE_DIR / "app" / "static" / "notice_templates" / "personal_attempt_notice_layout.json")
     TEAM_ATTEMPT_NOTICE_LAYOUT_CONFIG = str(BASE_DIR / "app" / "static" / "notice_templates" / "team_attempt_notice_layout.json")
-    SPORTS_RULES_CONFIG = os.getenv("SPORTS_RULES_CONFIG", str(BASE_DIR / "sports_rules.json"))

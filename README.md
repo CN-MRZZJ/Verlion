@@ -22,7 +22,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 run:app  # 生产（Linux: Gunicorn）
 |----------|------|--------|
 | `SECRET_KEY` | Flask secret key | `dev-secret-key` |
 | `SPORTS_MEET_DB` | SQLite 数据库路径 | `{项目根}/sports_meet.db` |
-| `SPORTS_RULES_CONFIG` | 规则种子文件 | `{项目根}/sports_rules.json` |
+
 
 ## 核心功能
 
@@ -60,7 +60,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 run:app  # 生产（Linux: Gunicorn）
 
 ### 规则配置
 - 数据库管理，运行时修改立即生效
-- 首次启动从 `sports_rules.json` 播种
+- 首次启动自动播种默认规则，可通过 API 修改
 
 ### 数据安全
 - 清除数据需多重确认：勾选表 → 口令 `DELETE` → 校验码 `CLEAR-N` → 风险确认

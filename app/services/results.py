@@ -6,6 +6,11 @@ from app.models.repositories.crud import RESULTS
 
 
 class MeetResultMixin:
+    def _is_final_round(self, repo: SportsRepository, event_id: int, round_id: int) -> bool:
+        config = repo.get_heats_config(event_id)
+        heat_rounds = int(config["heat_rounds"]) if config else 1
+        return round_id >= heat_rounds
+
     def _pick_best_attempt(
         self,
         scoring_strategy: str,
@@ -92,7 +97,8 @@ class MeetResultMixin:
                 rank = prev_rank
             else:
                 rank = pos
-            repo.update_result_rank_points(int(row["id"]), rank, points_for_rank(rank, is_individual))
+            pts = points_for_rank(rank, is_individual) if self._is_final_round(repo, event_id, round_id) else 0
+            repo.update_result_rank_points(int(row["id"]), rank, pts)
             prev_val = val
             prev_rank = rank
 
@@ -246,7 +252,7 @@ class MeetResultMixin:
                 repo.update_result(
                     result_id=result_id,
                     rank=best_rank,
-                    points=points_for_rank(best_rank, int(event["is_individual"])),
+                    points=points_for_rank(best_rank, int(event["is_individual"])) if self._is_final_round(repo, event_id, round_id) else 0,
                     performance=best_perf,
                     entered_by=entered_by_text if entered_by_text else None,
                 )
@@ -255,7 +261,7 @@ class MeetResultMixin:
                     event_id=event_id,
                     round_id=round_id,
                     rank=best_rank,
-                    points=points_for_rank(best_rank, int(event["is_individual"])),
+                    points=points_for_rank(best_rank, int(event["is_individual"])) if self._is_final_round(repo, event_id, round_id) else 0,
                     athlete_type=athlete_type if has_athlete else None,
                     athlete_ref_id=athlete_ref_id if has_athlete else None,
                     team_id=team_id if has_team else None,
@@ -320,7 +326,7 @@ class MeetResultMixin:
                 repo.update_result(
                     result_id=int(exists["id"]),
                     rank=best_rank,
-                    points=points_for_rank(best_rank, int(event["is_individual"])),
+                    points=points_for_rank(best_rank, int(event["is_individual"])) if self._is_final_round(repo, event_id, round_id) else 0,
                     performance=best_perf,
                 )
             else:
@@ -328,7 +334,7 @@ class MeetResultMixin:
                     event_id=event_id,
                     round_id=round_id,
                     rank=best_rank,
-                    points=points_for_rank(best_rank, int(event["is_individual"])),
+                    points=points_for_rank(best_rank, int(event["is_individual"])) if self._is_final_round(repo, event_id, round_id) else 0,
                     athlete_type=athlete_type,
                     athlete_ref_id=athlete_ref_id,
                     team_id=team_id,

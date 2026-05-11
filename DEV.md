@@ -172,7 +172,7 @@ class SportsMeetService(
 
 ### 规则引擎（`app/rules.py`）
 
-从 `sports_rules.json` 加载配置（首次播种到 DB），运行时 `GET/PUT /api/v1/rules` 读写。
+首次启动自动播种默认规则到 DB，运行时 `GET/PUT /api/v1/rules` 读写。
 
 核心函数：
 - `point_rule()` — 名次 → 积分映射

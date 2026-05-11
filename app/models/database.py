@@ -259,7 +259,7 @@ class Database:
         conn.execute("PRAGMA foreign_keys = ON;")
 
     def _migrate_rules_tables(self, conn: sqlite3.Connection) -> None:
-        """Create rules config tables and seed from sports_rules.json if empty."""
+        """Create rules config tables and seed defaults if empty."""
         if not self._table_exists(conn, "event_types"):
             conn.execute("""
                 CREATE TABLE event_types (
@@ -289,7 +289,7 @@ class Database:
                     UNIQUE(scope, value)
                 )
             """)
-        self._seed_rules_from_json(conn)
+        self._seed_defaults(conn)
 
     def _migrate_group_rename(self, conn: sqlite3.Connection) -> None:
         """Rename age_group → group in tables and columns."""
@@ -335,64 +335,42 @@ class Database:
             conn.execute("ALTER TABLE events_new RENAME TO events")
             conn.execute("PRAGMA foreign_keys = ON;")
 
-    def _seed_rules_from_json(self, conn: sqlite3.Connection) -> None:
-        """One-time seed from sports_rules.json into new tables if empty."""
-        import json
-
-        json_path = Path(__file__).resolve().parent.parent.parent / "sports_rules.json"
-        if not json_path.exists():
-            return
-
-        with json_path.open("r", encoding="utf-8") as f:
-            config = json.load(f)
-
-        count = conn.execute("SELECT COUNT(*) AS c FROM event_types").fetchone()["c"]
-        if count == 0:
-            name_map = {"track": "径赛", "field": "田赛", "fun": "趣味"}
-            for code, strategy in config.get("event_scoring_strategy", {}).items():
-                if str(code).startswith("_"):
-                    continue
+    def _seed_defaults(self, conn: sqlite3.Connection) -> None:
+        """One-time seed sensible defaults into empty config tables."""
+        if conn.execute("SELECT COUNT(*) AS c FROM event_types").fetchone()["c"] == 0:
+            for code, name, strategy in [
+                ("track", "径赛", "time"),
+                ("field", "田赛", "length"),
+                ("fun", "趣味", "count"),
+            ]:
                 conn.execute(
-                    "INSERT INTO event_types(code, name, scoring_strategy) VALUES(?,?,?)",
-                    (code, name_map.get(code, code), strategy),
+                    "INSERT INTO event_types(code, name, scoring_strategy, competition_format) VALUES(?,?,?,?)",
+                    (code, name, strategy, "heats"),
                 )
 
-        count = conn.execute("SELECT COUNT(*) AS c FROM point_rules").fetchone()["c"]
-        if count == 0:
-            point_rule = config.get("point_rule", {})
+        if conn.execute("SELECT COUNT(*) AS c FROM point_rules").fetchone()["c"] == 0:
+            defaults = {1: 9, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
             for result_type in ("individual", "team"):
-                rules = point_rule.get(result_type, {})
-                for rank, points in rules.items():
-                    if str(rank).startswith("_"):
-                        continue
+                for rank, points in defaults.items():
                     conn.execute(
                         "INSERT INTO point_rules(result_type, rank, points) VALUES(?,?,?)",
-                        (result_type, int(rank), int(points)),
+                        (result_type, rank, points),
                     )
 
-        count = conn.execute("SELECT COUNT(*) AS c FROM group_options").fetchone()["c"]
-        if count == 0:
-            groups = config.get("age_group_options") or config.get("group_options", {})
-            for scope in ("athlete", "event"):
-                for sort_idx, item in enumerate(groups.get(scope, [])):
-                    if not isinstance(item, dict):
-                        continue
+        if conn.execute("SELECT COUNT(*) AS c FROM group_options").fetchone()["c"] == 0:
+            for scope, values in [
+                ("athlete", ["A", "B", "C"]),
+                ("event", ["A", "B", "C", "ALL"]),
+            ]:
+                for idx, v in enumerate(values):
                     conn.execute(
                         "INSERT INTO group_options(scope, value, label, sort_order) VALUES(?,?,?,?)",
-                        (scope, item.get("value", ""), item.get("label", ""), sort_idx),
+                        (scope, v, f"{v}组", idx),
                     )
 
-        for key, default in [
-            ("rule.attempt_policy", "best"),
-            ("rule.team_event_default", "ALL"),
-        ]:
+        for key, val in [("rule.attempt_policy", "best"), ("rule.team_event_default", "ALL")]:
             existing = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
             if not existing:
-                if key == "rule.attempt_policy":
-                    val = str(config.get("attempt_policy", default)).strip()
-                else:
-                    groups = config.get("group_options") or config.get("age_group_options", {})
-                    val = str(groups.get("team_event_default", default)).strip()
                 conn.execute("INSERT INTO settings(key, value) VALUES(?,?)", (key, val))
 
     def _migrate_heats_tables(self, conn: sqlite3.Connection) -> None:
