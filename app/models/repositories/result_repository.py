@@ -149,7 +149,7 @@ class ResultRepositoryMixin:
                     params.append(round_id)
                 return self.conn.execute(
                     f"""
-                    SELECT id, round_id, rank, points, performance, entered_by
+                    SELECT id, round_id, rank, heat_rank, points, performance, entered_by
                     FROM results
                     WHERE {' AND '.join(wheres)}
                     ORDER BY id DESC
@@ -166,7 +166,7 @@ class ResultRepositoryMixin:
                     params.append(round_id)
                 return self.conn.execute(
                     f"""
-                    SELECT id, round_id, rank, points, performance, entered_by
+                    SELECT id, round_id, rank, heat_rank, points, performance, entered_by
                     FROM results
                     WHERE {' AND '.join(wheres)}
                     ORDER BY id DESC
@@ -206,25 +206,6 @@ class ResultRepositoryMixin:
                 tuple(params),
             ).fetchall()
 
-    def list_individual_results_for_event(self, event_id: int):
-            return self.conn.execute(
-                """
-                SELECT
-                    r.round_id,
-                    r.rank,
-                    a.name AS athlete_name,
-                    COALESCE(d1.name, '') AS department_name,
-                    r.performance
-                FROM results r
-                LEFT JOIN athletes a ON a.athlete_type = r.athlete_type AND a.id = r.athlete_ref_id
-                LEFT JOIN departments d1 ON d1.id = a.department_id
-                WHERE r.event_id=? AND r.athlete_ref_id IS NOT NULL
-                ORDER BY r.rank ASC, r.id ASC
-                LIMIT 8
-                """,
-                (event_id,),
-            ).fetchall()
-
     def list_individual_results_for_event_all(self, event_id: int, round_id: int | None = None):
             wheres = ["r.event_id=? AND r.athlete_ref_id IS NOT NULL"]
             params = [event_id]
@@ -237,6 +218,7 @@ class ResultRepositoryMixin:
                     r.id,
                     r.round_id,
                     r.rank,
+                    r.heat_rank,
                     a.name AS athlete_name,
                     COALESCE(d1.name, '') AS department_name,
                     r.performance
@@ -303,6 +285,7 @@ class ResultRepositoryMixin:
                         ELSE d2.name
                     END AS department_name,
                     r.rank,
+                    r.heat_rank,
                     r.points,
                     r.performance,
                     r.entered_by,
@@ -361,6 +344,7 @@ class ResultRepositoryMixin:
                     COALESCE(ms.team_member_genders, '') AS team_member_genders,
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN d1.name ELSE d2.name END AS department_name,
                     r.rank,
+                    r.heat_rank,
                     r.points,
                     r.performance,
                     r.entered_by,
@@ -389,6 +373,7 @@ class ResultRepositoryMixin:
                         ELSE t.name
                     END AS target_name,
                     r.rank,
+                    r.heat_rank,
                     r.points,
                     r.performance,
                     r.entered_by
@@ -486,6 +471,7 @@ class ResultRepositoryMixin:
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN a.name ELSE t.name END AS target_name,
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN d1.name ELSE d2.name END AS department_name,
                     r.rank,
+                    r.heat_rank,
                     r.points,
                     r.performance,
                     r.entered_by,
@@ -634,6 +620,7 @@ class ResultRepositoryMixin:
                     COALESCE(ms.team_member_genders, '') AS team_member_genders,
                     CASE WHEN r.athlete_ref_id IS NOT NULL THEN d1.name ELSE d2.name END AS department_name,
                     r.rank,
+                    r.heat_rank,
                     r.points,
                     r.performance,
                     r.entered_by,
@@ -752,8 +739,10 @@ class ResultRepositoryMixin:
             """
             SELECT
                 he.heat_id,
+                h.heat_name,
                 r.id AS result_id,
                 r.rank,
+                r.heat_rank,
                 r.performance,
                 r.athlete_type,
                 r.athlete_ref_id,
@@ -767,7 +756,7 @@ class ResultRepositoryMixin:
             JOIN rounds rd ON rd.id = h.round_id
             WHERE rd.event_id = ? AND rd.round_number = ?
               AND r.event_id = ? AND r.round_id = ?
-            ORDER BY he.heat_id, r.rank
+            ORDER BY he.heat_id, r.heat_rank
             """,
             (event_id, round_id, event_id, round_id),
         ).fetchall()

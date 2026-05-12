@@ -18,7 +18,8 @@ class PerHeatTopAdvancement(BaseAdvancement):
             by_heat.setdefault(int(r["heat_id"]), []).append(r)
 
         for heat_id in sorted(by_heat):
-            for r in by_heat[heat_id][:count]:
+            ranked_in_heat = sorted(by_heat[heat_id], key=lambda r: int(r.get("heat_rank", r.get("rank", 0))))
+            for r in ranked_in_heat[:count]:
                 key = self._key(r)
                 if key not in qualified:
                     q = self._to_participant(r)
@@ -26,7 +27,7 @@ class PerHeatTopAdvancement(BaseAdvancement):
                     order.append(key)
 
         if extra > 0:
-            all_sorted = sorted(input.results, key=lambda r: int(r["rank"]))
+            all_sorted = sorted(input.results, key=lambda r: int(r.get("heat_rank", r.get("rank", 0))))
             for r in all_sorted:
                 key = self._key(r)
                 if key not in qualified:

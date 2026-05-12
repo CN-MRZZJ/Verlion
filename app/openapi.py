@@ -379,19 +379,6 @@ CLEAR_DATA_REQUEST = {
     "required": ["tables", "confirm_text", "confirm_code", "acknowledged"],
 }
 
-REPORT_ENVIRONMENT_REQUEST = {
-    "type": "object",
-    "properties": {
-        "date": {"type": "string", "description": "日期"},
-        "wind_direction": {"type": "string", "description": "风向"},
-        "wind_speed": {"type": "string", "description": "风速"},
-        "air_quality": {"type": "string", "description": "空气质量"},
-        "weather": {"type": "string", "description": "天气"},
-        "temperature_high": {"type": "string", "description": "最高温"},
-        "temperature_low": {"type": "string", "description": "最低温"},
-    },
-}
-
 CREATE_DEPARTMENT_REQUEST = {
     "type": "object",
     "properties": {
@@ -1057,86 +1044,6 @@ def get_openapi_spec() -> dict[str, Any]:
                 request_body=_json_body_ref("ClearDataRequest"),
             )
         },
-        "/api/v1/settings/report-environment": {
-            "post": _operation(
-                "公示",
-                "保存公示环境信息",
-                "保存成绩公示单使用的日期、天气、风向、温度等环境信息。",
-                request_body=_json_body_ref("ReportEnvironmentRequest"),
-            )
-        },
-        "/api/v1/notices/personal-result.xlsx": {
-            "get": _operation(
-                "公示",
-                "导出个人成绩公示 XLSX",
-                "按项目和模板导出个人项目成绩公示单。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
-                success=_file_response("XLSX 文件", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-            )
-        },
-        "/api/v1/notices/personal-result.pdf": {
-            "get": _operation(
-                "公示",
-                "预览个人成绩公示 PDF",
-                "按项目和模板生成个人项目成绩公示 PDF。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
-                success=_file_response("PDF 文件", "application/pdf"),
-            )
-        },
-        "/api/v1/notices/team-result.xlsx": {
-            "get": _operation(
-                "公示",
-                "导出团体成绩公示 XLSX",
-                "按项目和模板导出团体项目成绩公示单。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
-                success=_file_response("XLSX 文件", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-            )
-        },
-        "/api/v1/notices/team-result.pdf": {
-            "get": _operation(
-                "公示",
-                "预览团体成绩公示 PDF",
-                "按项目和模板生成团体项目成绩公示 PDF。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True)],
-                success=_file_response("PDF 文件", "application/pdf"),
-            )
-        },
-        "/api/v1/notices/personal-attempt.xlsx": {
-            "get": _operation(
-                "公示",
-                "导出个人轮次成绩表 XLSX",
-                "按项目和模板导出个人项目轮次成绩表（含每次尝试记录及作废标记）。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True), _query("attempt_number", "指定轮次（不传则导出所有轮次）", "integer")],
-                success=_file_response("XLSX 文件", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-            )
-        },
-        "/api/v1/notices/personal-attempt.pdf": {
-            "get": _operation(
-                "公示",
-                "预览个人轮次成绩表 PDF",
-                "按项目和模板生成个人项目轮次成绩表 PDF。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True), _query("attempt_number", "指定轮次（不传则导出所有轮次）", "integer")],
-                success=_file_response("PDF 文件", "application/pdf"),
-            )
-        },
-        "/api/v1/notices/team-attempt.xlsx": {
-            "get": _operation(
-                "公示",
-                "导出团体轮次成绩表 XLSX",
-                "按项目和模板导出团体项目轮次成绩表（含每次尝试记录及作废标记）。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True), _query("attempt_number", "指定轮次（不传则导出所有轮次）", "integer")],
-                success=_file_response("XLSX 文件", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-            )
-        },
-        "/api/v1/notices/team-attempt.pdf": {
-            "get": _operation(
-                "公示",
-                "预览团体轮次成绩表 PDF",
-                "按项目和模板生成团体项目轮次成绩表 PDF。",
-                parameters=[_query("event_id", "项目 ID", "integer", True), _query("template_name", "XLSX 模板文件名", required=True), _query("attempt_number", "指定轮次（不传则导出所有轮次）", "integer")],
-                success=_file_response("PDF 文件", "application/pdf"),
-            )
-        },
         "/api/v1/results": {
             "get": _operation(
                 "成绩",
@@ -1343,7 +1250,6 @@ def get_openapi_spec() -> dict[str, Any]:
                 "DeleteTeamRequest": DELETE_TEAM_REQUEST,
                 "TeamMemberRequest": TEAM_MEMBER_REQUEST,
                 "ClearDataRequest": CLEAR_DATA_REQUEST,
-                "ReportEnvironmentRequest": REPORT_ENVIRONMENT_REQUEST,
                 "CreateDepartmentRequest": CREATE_DEPARTMENT_REQUEST,
                 "UpdateDepartmentRequest": UPDATE_DEPARTMENT_REQUEST,
                 "DeleteDepartmentRequest": DELETE_DEPARTMENT_REQUEST,

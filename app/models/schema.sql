@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS results (
     athlete_ref_id INTEGER,
     team_id INTEGER,
     rank INTEGER NOT NULL CHECK(rank >= 1),
+    heat_rank INTEGER,
     points INTEGER NOT NULL DEFAULT 0,
     performance TEXT,
     entered_by TEXT NOT NULL DEFAULT '',

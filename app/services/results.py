@@ -102,6 +102,27 @@ class MeetResultMixin:
             prev_val = val
             prev_rank = rank
 
+        # Per-heat ranking
+        grouped = repo.list_results_grouped_by_heat(event_id, round_id)
+        by_heat: dict[int, list[dict]] = {}
+        for g in grouped:
+            d = dict(g)
+            d["id"] = d.get("result_id", d.get("id"))  # ensure _sort_key works
+            by_heat.setdefault(int(d["heat_id"]), []).append(d)
+        for heat_id, entries in by_heat.items():
+            sorted_entries = sorted(entries, key=_sort_key)
+            prev_val_h = None
+            prev_rank_h = 0
+            for pos_h, e in enumerate(sorted_entries, start=1):
+                val_h = self._parse_performance_numeric(scoring_strategy, e.get("performance"))
+                if prev_val_h is not None and val_h is not None and abs(val_h - prev_val_h) <= tie_eps:
+                    hr = prev_rank_h
+                else:
+                    hr = pos_h
+                repo._crud_update_by_id(RESULTS, int(e["result_id"]), {"heat_rank": hr})
+                prev_val_h = val_h
+                prev_rank_h = hr
+
     def record_result(
         self,
         event_id: int,
@@ -137,6 +158,8 @@ class MeetResultMixin:
             if not athlete_type:
                 raise ValueError("录入个人成绩时，athlete_type 必填")
             athlete_type = self._validate_athlete_type(athlete_type)
+        _SPECIAL_MARKS = {"DNS", "DNF", "DQ", "NM"}
+
         entered_by_text = str(entered_by or "").strip()
 
         with self.db.connect() as conn:
@@ -145,8 +168,12 @@ class MeetResultMixin:
             if not event:
                 raise ValueError(f"比赛项目不存在: {event_id}")
             scoring_strategy = str(event["scoring_strategy"])
-            normalized_performance = self._normalize_performance_text(scoring_strategy, performance)
-            if performance and not normalized_performance:
+            is_special = str(performance or "").strip().upper() in _SPECIAL_MARKS
+            if is_special:
+                normalized_performance = str(performance or "").strip().upper()
+            else:
+                normalized_performance = self._normalize_performance_text(scoring_strategy, performance)
+            if performance and not normalized_performance and not is_special:
                 if scoring_strategy == "time":
                     raise ValueError("径赛成绩格式无效，请使用 '.' 分隔（示例：9.86 或 1.36.5）")
                 if scoring_strategy == "length":
@@ -156,31 +183,32 @@ class MeetResultMixin:
                 if scoring_strategy == "count_miss":
                     raise ValueError("count_miss 成绩格式应为 个数/失误次数（示例：120/2）")
                 raise ValueError("成绩格式无效，请使用数字并用 '.' 分隔")
-            if scoring_strategy == "time":
-                if normalized_performance:
-                    sec = self._parse_performance_numeric("time", normalized_performance)
-                    if sec is None:
-                        raise ValueError("径赛成绩格式无效，请使用 '.' 分隔（示例：9.86 或 1.36.5）")
-                    normalized_performance = f"{sec:.2f}"
-                else:
-                    normalized_performance = None
-            elif scoring_strategy == "count":
-                if normalized_performance:
-                    cnt = self._parse_performance_numeric("count", normalized_performance)
-                    if cnt is None:
-                        raise ValueError("count 成绩必须为整数，单位个（示例：18）")
-                    normalized_performance = str(int(cnt))
-                else:
-                    normalized_performance = None
-            elif scoring_strategy == "count_miss":
-                if normalized_performance:
-                    val = self._parse_performance_numeric("count_miss", normalized_performance)
-                    if val is None or "/" not in normalized_performance:
-                        raise ValueError("count_miss 成绩格式应为 个数/失误次数（示例：120/2）")
-                    left, right = normalized_performance.split("/", 1)
-                    normalized_performance = f"{int(left)}/{int(right)}"
-                else:
-                    normalized_performance = None
+            if not is_special:
+                if scoring_strategy == "time":
+                    if normalized_performance:
+                        sec = self._parse_performance_numeric("time", normalized_performance)
+                        if sec is None:
+                            raise ValueError("径赛成绩格式无效，请使用 '.' 分隔（示例：9.86 或 1.36.5）")
+                        normalized_performance = f"{sec:.2f}"
+                    else:
+                        normalized_performance = None
+                elif scoring_strategy == "count":
+                    if normalized_performance:
+                        cnt = self._parse_performance_numeric("count", normalized_performance)
+                        if cnt is None:
+                            raise ValueError("count 成绩必须为整数，单位个（示例：18）")
+                        normalized_performance = str(int(cnt))
+                    else:
+                        normalized_performance = None
+                elif scoring_strategy == "count_miss":
+                    if normalized_performance:
+                        val = self._parse_performance_numeric("count_miss", normalized_performance)
+                        if val is None or "/" not in normalized_performance:
+                            raise ValueError("count_miss 成绩格式应为 个数/失误次数（示例：120/2）")
+                        left, right = normalized_performance.split("/", 1)
+                        normalized_performance = f"{int(left)}/{int(right)}"
+                    else:
+                        normalized_performance = None
 
             if has_athlete:
                 athlete = repo.get_athlete_by_id(athlete_type or "", int(athlete_ref_id))

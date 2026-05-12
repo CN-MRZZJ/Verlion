@@ -358,6 +358,7 @@ class Database:
                     )
 
         if conn.execute("SELECT COUNT(*) AS c FROM group_options").fetchone()["c"] == 0:
+            labels = {"A": "甲组", "B": "乙组", "C": "丙组", "ALL": "不限"}
             for scope, values in [
                 ("athlete", ["A", "B", "C"]),
                 ("event", ["A", "B", "C", "ALL"]),
@@ -365,7 +366,7 @@ class Database:
                 for idx, v in enumerate(values):
                     conn.execute(
                         "INSERT INTO group_options(scope, value, label, sort_order) VALUES(?,?,?,?)",
-                        (scope, v, f"{v}组", idx),
+                        (scope, v, labels.get(v, v), idx),
                     )
 
         for key, val in [("rule.attempt_policy", "best"), ("rule.team_event_default", "ALL")]:
@@ -447,6 +448,8 @@ class Database:
             conn.execute("ALTER TABLE events ADD COLUMN competition_format TEXT NOT NULL DEFAULT 'heats'")
         if self._table_exists(conn, "results") and "round_id" not in self._table_columns(conn, "results"):
             conn.execute("ALTER TABLE results ADD COLUMN round_id INTEGER NOT NULL DEFAULT 1")
+        if self._table_exists(conn, "results") and "heat_rank" not in self._table_columns(conn, "results"):
+            conn.execute("ALTER TABLE results ADD COLUMN heat_rank INTEGER")
         if self._table_exists(conn, "attempts") and "round_id" not in self._table_columns(conn, "attempts"):
             conn.execute("ALTER TABLE attempts ADD COLUMN round_id INTEGER NOT NULL DEFAULT 1")
 

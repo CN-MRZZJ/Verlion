@@ -108,17 +108,15 @@ app/
 - `count_miss`：命中/失误型，`命中数/失误数` 格式，内部编码为 `count * 1000000 - miss`
 
 ### 多次尝试与作废（Attempts）
-`attempts` 表记录每次成绩录入，支持多轮次（`attempt_number`）和作废标记（`is_void`）。策略由 `attempt_policy` 规则决定：`best` 取最优有效成绩，`latest` 取最新有效成绩。作废/取消作废时自动重算该对象的最终成绩。公示单支持导出轮次成绩表（personal-attempt / team-attempt），包含每次尝试记录及作废标记。
-
-### 项目流程状态（event_progress）
-每个项目跟踪 4 个阶段：`checkin_done`（检录）→ `competition_done`（比赛）→ `record_done`（成绩录入）→ `publish_done`（公示）。通过 `PUT /events/{id}/progress` 更新。
+`attempts` 表记录每次成绩录入，支持多轮次（`attempt_number` + `round_id`）和作废标记（`is_void`）。策略由 `attempt_policy` 规则决定：`best` 取最优有效成绩，`latest` 取最新有效成绩。作废/取消作废时按轮次隔离重算。
 
 ### 公示单系统
 - 模板目录：`app/static/notice_templates/`
-- 布局配置文件（JSON）指定 Excel 单元格坐标，包含 `environment_cells`、`rank_rows` 等区域
-- 支持 4 种公示单：personal-result、team-result、personal-attempt、team-attempt
-- 每种均可导出 XLSX 或在线预览 PDF
-- 环境信息（日期、天气、风向、风速、气温、空气质量）存储在 `settings` 表的 `report_env.*` 键下
+- 布局配置文件（JSON）指定 Excel 单元格坐标，支持 `environment_cells` 和 `row_template`
+- 分组公告（grouped-result）：每组一页 ZIP 打包，显示 heat_rank
+- 全部公告（full-result）：单文件，显示总 rank
+- 模板名可选，有默认值 fallback
+- 环境信息（日期、天气、风向、风速、气温、空气质量）通过 `GET/POST /settings/report-environment` 管理
 
 ### 数据清除安全机制
 清除数据需同时满足：勾选至少一张表 + 输入确认口令 `DELETE` + 输入动态校验码 `CLEAR-N`（N 为所选表数量）+ 勾选风险确认。系统按依赖关系自动处理关联删除。

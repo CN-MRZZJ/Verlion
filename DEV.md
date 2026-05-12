@@ -350,17 +350,22 @@ attempts:
 
 ## 7. 公示单系统
 
+### 两种模式
+
+| 模式 | API | 返回 |
+|------|-----|------|
+| 分组公告 | `/notices/grouped-result.xlsx|.pdf` | ZIP（每组一个文件），按 heat_rank 排 |
+| 全部公告 | `/notices/full-result.xlsx|.pdf` | 单文件，按总 rank 排 |
+
+均需 `event_id` + `round_id`，`template_name` 可选（默认 `heat_notice_template.xlsx`）。
+
 ### 模板结构
 
 ```
 app/static/notice_templates/
-├── personal_notice_template.xlsx        个人成绩模板
-├── personal_attempt_template.xlsx       个人轮次模板
-├── team_notice_template.xlsx            团体成绩模板
-├── personal_notice_layout.json          个人成绩布局
-├── personal_attempt_notice_layout.json  个人轮次布局
-├── team_notice_layout.json              团体成绩布局
-├── team_attempt_notice_layout.json      团体轮次布局
+├── heat_notice_template.xlsx        公告模板
+├── grouped_result_layout.json       分组公告布局
+└── full_result_layout.json          全部公告布局
 ```
 
 ### 布局配置
@@ -369,36 +374,40 @@ app/static/notice_templates/
 {
   "sheet_name": "Sheet1",
   "environment_cells": {
-    "date": "B2",
-    "event_name": "B4",
-    "round_name": "D4",
-    "notice_title": "B6",
+    "date": "C8",
+    "event_name": "B6",
+    "weather": "C12",
+    "temperature_high": "E12",
     ...
   },
   "row_template": {
-    "rank": "A",
-    "athlete_no": "B",
+    "rank": "B",
     "name": "C",
     "department": "D",
-    ...
+    "performance": "G"
   },
-  "start_row": 15,
-  "max_rows": 8
+  "start_row": 15
 }
 ```
 
-`environment_cells` 中的 key 对应 `env_values` dict：
-- `date`, `wind_direction`, `wind_speed`, `air_quality`, `weather`, `temperature_high`, `temperature_low` — 从 settings 读数
-- `event_name` — 项目显示名（含性别组别）
-- `round_name` — 轮次中文名（从 heats_config.heat_rounds + round_id 推导）
-- `notice_title` — 模板内置标题
+`row_template` 支持：`rank`, `heat_rank`, `heat_name`, `name`, `department`, `athlete_no`, `performance`, `points`。
+
+`environment_cells` 支持：`date`, `weather`, `wind_direction`, `wind_speed`, `air_quality`, `temperature_high`, `temperature_low`, `event_name`, `round_name`, `notice_title`。
+
+分组公告每组一页，项目名后自动追加" - 第N组"。
 
 ### 生成流程
 
-1. 创建 OpenPyXL workbook → 填入环境信息
-2. 逐行填入成绩/尝试数据
-3. 成绩公示单按名次排序，轮次成绩表按编号排序
-4. PDF 转换优先尝试 Excel（Windows pywin32），失败则降级到 LibreOffice
+1. 从 template 加载 workbook → 填入环境信息 → 逐行写成绩
+2. 分组公告：每组独立 load template 写入后打包 ZIP（避免 copy_worksheet 丢失格式）
+3. PDF 优先 Excel（pywin32），降级 LibreOffice
+
+### 环境信息
+
+```
+GET  /api/v1/settings/report-environment   → 读取
+POST /api/v1/settings/report-environment   → 保存
+```
 
 ---
 

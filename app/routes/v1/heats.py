@@ -80,6 +80,43 @@ def update_heat_entry(event_id: int, heat_id: int, entry_id: int):
         return jsonify({"ok": False, "error": str(exc)}), 400
 
 
+@api_v1_bp.post("/events/<int:event_id>/heats/<int:heat_id>/entries")
+def add_heat_entry(event_id: int, heat_id: int):
+    try:
+        payload = request.get_json(silent=True) or request.form
+        athlete_type = str(payload.get("athlete_type", "")).strip()
+        athlete_id_text = payload.get("athlete_id")
+        lane = payload.get("lane")
+        if athlete_id_text:
+            athlete_ref_id = int(athlete_id_text)
+        else:
+            return jsonify({"ok": False, "error": "athlete_id 必填"}), 400
+        if lane is not None:
+            lane = int(lane)
+        get_service().add_heat_entry(heat_id, athlete_type, athlete_ref_id, lane)
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.delete("/events/<int:event_id>/heats/<int:heat_id>/entries/<int:entry_id>")
+def remove_heat_entry(event_id: int, heat_id: int, entry_id: int):
+    try:
+        get_service().remove_heat_entry(entry_id)
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@api_v1_bp.get("/events/<int:event_id>/unassigned-participants")
+def list_unassigned_participants(event_id: int):
+    try:
+        result = get_service().list_unassigned_participants(event_id)
+        return jsonify({"ok": True, "items": result, "total": len(result)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
 @api_v1_bp.put("/events/<int:event_id>/heats/config")
 def set_heats_config(event_id: int):
     try:

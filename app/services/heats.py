@@ -1,5 +1,6 @@
 from app.grouping.schema import GroupingOutput, AdvancementInput, Participant
 from app.grouping.advancement import get_advancement
+from app.models.repositories.crud import HEAT_ENTRIES
 
 _ROUND_NAMES = {
     1: ["决赛"],
@@ -67,6 +68,45 @@ class MeetHeatsMixin:
             repo.move_heat_entry(entry_id, target_heat_id, target_lane)
 
         self._repo_write(_write)
+
+    def add_heat_entry(self, heat_id: int, athlete_type: str, athlete_ref_id: int, lane: int | None) -> None:
+        def _write(repo):
+            repo.insert_heat_entry(heat_id, athlete_type, athlete_ref_id, None, lane)
+
+        self._repo_write(_write)
+
+    def remove_heat_entry(self, entry_id: int) -> None:
+        def _write(repo):
+            repo._crud_delete_by_id(HEAT_ENTRIES, entry_id)  # noqa: F821
+
+        self._repo_write(_write)
+
+    def list_unassigned_participants(self, event_id: int) -> list[dict]:
+        def _read(repo):
+            assigned_ids = set()
+            rounds = repo.list_rounds(event_id)
+            for r in rounds:
+                for h in repo.list_heats(r["id"]):
+                    for e in repo.list_heat_entries(h["id"]):
+                        if e["athlete_ref_id"]:
+                            assigned_ids.add(int(e["athlete_ref_id"]))
+
+            all_rows = repo.list_event_participants(event_id)
+            result = []
+            for r in all_rows:
+                d = dict(r)
+                if d["id"] not in assigned_ids:
+                    result.append({
+                        "athlete_id": d["id"],
+                        "athlete_name": d["name"],
+                        "athlete_no": d.get("athlete_no", ""),
+                        "athlete_type": d.get("athlete_type", ""),
+                        "department_name": d.get("department_name", ""),
+                        "group": d.get("group", ""),
+                    })
+            return result
+
+        return self._repo_read(_read)
 
     def set_heats_config(self, event_id: int, heat_rounds: int) -> None:
         def _write(repo):
