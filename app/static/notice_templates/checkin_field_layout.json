@@ -1,0 +1,21 @@
+{
+  "sheet_name": "Sheet1",
+  "environment_cells": {
+    "event_name": "A3",
+    "round_name": "H3"
+  },
+  "heat_block": {
+    "anchor_row": 1,
+    "block_height": 35,
+    "info_row": 3,
+    "start_col": "B",
+    "lanes": 1,
+    "heat_name_col": "N"
+  },
+  "row_template": {
+    "athlete_no": "B",
+    "athlete_name": "C"
+  },
+  "start_row": 6,
+  "max_rows": 30
+}

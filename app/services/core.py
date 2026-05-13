@@ -7,6 +7,7 @@ from .heats import MeetHeatsMixin
 from .imports import MeetImportMixin
 from .notice import MeetNoticeMixin
 from .results import MeetResultMixin
+from .worksheet import MeetWorksheetMixin
 from .teams import MeetTeamMixin
 from .views import MeetViewMixin
 
@@ -23,5 +24,6 @@ class SportsMeetService(
     MeetDepartmentMixin,
     MeetEventTypeMixin,
     MeetHeatsMixin,
+    MeetWorksheetMixin,
 ):
     pass

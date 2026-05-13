@@ -11,3 +11,7 @@ class Config:
     GROUPED_RESULT_LAYOUT = str(BASE_DIR / "app" / "static" / "notice_templates" / "grouped_result_layout.json")
     FULL_RESULT_LAYOUT = str(BASE_DIR / "app" / "static" / "notice_templates" / "full_result_layout.json")
     DEFAULT_NOTICE_TEMPLATE = "heat_notice_template.xlsx"
+    CHECKIN_NOTICE_LAYOUT = str(BASE_DIR / "app" / "static" / "notice_templates" / "checkin_layout.json")
+    CHECKIN_FIELD_LAYOUT = str(BASE_DIR / "app" / "static" / "notice_templates" / "checkin_field_layout.json")
+    DEFAULT_CHECKIN_TEMPLATE = "checkin_template.xlsx"
+    DEFAULT_FIELD_CHECKIN_TEMPLATE = "checkin_field_template.xlsx"

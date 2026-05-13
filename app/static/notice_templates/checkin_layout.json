@@ -1,0 +1,16 @@
+{
+  "sheet_name": "Sheet1",
+  "environment_cells": {},
+  "heat_block": {
+    "anchor_row": 1,
+    "start_col": "B",
+    "lanes": 8,
+    "block_height": 10,
+    "info_row": 3,
+    "rows": {
+      "athlete_no": 4,
+      "athlete_name": 5,
+      "remarks": 6
+    }
+  }
+}
